@@ -16,6 +16,7 @@ with open(args.filename) as f:
 #pprint (cfg_dict[1])
 
 f = cfg.FunctionCFG(cfg_dict[1])
+f.compute_defs_and_uevs()
 #f.perform_liveness_analysis()
 #f.perform_dominance_analysis()
 print f.pretty_str()

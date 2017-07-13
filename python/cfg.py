@@ -186,28 +186,35 @@ class BasicBlock:
         self.instr_counter += 1
         return i
 
-    # Lazily computes and returns a pair of variable sets (defs, uevs) for this basic block
+    # Computes variable sets (defs, uevs) for this basic block.
     # defs - variables defined in the basic block
-    # uevs - variables that are used before any redefinition
+    # uevs - variables that are used before any redefinition. Here such set
+    #        is computed per each incomming edge separately because of PHI
+    #        functions. PHI functions use given variables depending on which
+    #        edge was chosen during program execution.
+    #
     # It doesn't take into account global variables.
-    def get_defs_and_uevs(self):
-        if self.defs is not None and self.uevs is not None:
-            return self.defs, self.uevs
-
-        defs = set()
-        uevs = set()
-        """
+    def compute_defs_and_uevs(self):
+        pred_ids = self.preds.keys()
+        defs = set() #{pred_id: set() for pred_id in pred_ids}
+        uevs = {pred_id: set() for pred_id in pred_ids}
+    
         for instr in self.instructions:
-            for use in instr.uses:
-                if use not in defs and use.local:
-                    uevs.add(use)
-            
+            if instr.is_phi():
+                for (bb_id, use) in instr.phi_uses:
+                    if use not in defs and use.local:
+                        uevs[bb_id].add(use)
+            else:
+                for use in instr.uses:
+                    # Each use add to each edge
+                    if use not in defs and use.local:
+                        for pred_id in pred_ids:
+                            uevs[pred_id].add(use)
+
             defs.add(instr.definition)
-        """
 
         self.defs = defs
         self.uevs = uevs
-        return self.defs, self.uevs
 
     # Lazily computes and returns two lists of Live-In and Live-Out
     # sets of subsequent instructions of this basic block.
@@ -262,16 +269,27 @@ class BasicBlock:
 
         # upword-exposed vars and definitions
         if print_uev_def:
-            defs, uevs = self.get_defs_and_uevs()
-            defs, uevs = list(defs), list(uevs)
+            assert self.uevs is not None
             # uevars
-            res = res + "\n  UEV: ["
-            for i in range(len(uevs)):
+            res = res + "\n  UEV: "
+            iter_uevs = [(k,v) for (k,v) in self.uevs.iteritems()]
+            for i in range(len(iter_uevs)):
                 if i:
-                    res = res + ", "
-                res = res + uevs[i].pretty_str(kwargs)
-            res = res + "]"
+                    res = res + "\n       "
+                (bid, uevset) = iter_uevs[i]
+                res = res + "(" + bid + " -> "
+                uevlist = list(uevset)
+                res = res + "["
+                for i in range(len(uevlist)):
+                    if i:
+                        res = res + ", "
+                    res = res + uevlist[i].pretty_str(kwargs)
+                res = res + "]"    
+                res = res + ")"
+            
             # definitions
+            assert self.defs is not None
+            defs = list(self.defs)
             res = res + "\n  DEFS: ["
             for i in range(len(defs)):
                 if i:
@@ -355,6 +373,11 @@ class FunctionCFG:
     def get_variable(self, vid):
         assert vid in self.vars
         return self.vars[vid]
+
+    # Computes definitions and upword-exposed variables for each basic block.
+    def compute_defs_and_uevs(self):
+        for bb in self.bblocks.values():
+            bb.compute_defs_and_uevs()
 
     # Performs liveness analysis - for each basic block and instruction computes 
     # live_in and live_out variable sets
