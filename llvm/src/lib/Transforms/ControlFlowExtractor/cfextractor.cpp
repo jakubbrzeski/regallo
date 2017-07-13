@@ -81,7 +81,7 @@ namespace {
             std::string fname = F.getName();
             prettyOutputStream << "* * * Function: " << fname << " * * *" << endl;
 
-            json functionJson;
+            json functionJson = json::object();
             functionJson["name"] = fname;
 
             std::string entry_bb = getSlotAndName(&F.getEntryBlock(), bbMap);
@@ -91,15 +91,15 @@ namespace {
             /*
              * BASIC BLOCKS 
              */
-            json bblocksJson;
+            json bblocksJson = json::array();
             for (auto &Bb : F.getBasicBlockList()) {
                 std::string bbName = getSlotAndName(&Bb, bbMap);
                 prettyOutputStream << "Basic Block: " << bbName << endl;
 
-                json bblockJson;
+                json bblockJson = json::object();
                 bblockJson["name"] = bbName;
 
-                json predJson;
+                json predJson = json::array();
                 prettyOutputStream << "-Predecessors: ";
                 for (BasicBlock *predBb : predecessors(&Bb)) {
                     std::string predName = getSlotAndName(predBb, bbMap);
@@ -109,7 +109,7 @@ namespace {
                 bblockJson["predecessors"] = predJson;
                 prettyOutputStream << endl;
 
-                json succJson;
+                json succJson = json::array();
                 prettyOutputStream << "-Successors: ";
                 for (BasicBlock *succBb : successors(&Bb)) {
                     std::string succName = getSlotAndName(succBb, bbMap);
@@ -122,10 +122,9 @@ namespace {
                 /*
                  * INSTRUCTIONS
                  */
-                json instructionsJson;
+                json instructionsJson = json::array();
                 for (auto &Inst : Bb.getInstList()) {
-                    json instructionJson;
-
+                    json instructionJson = json::object();
 
                     unsigned numop = Inst.getNumOperands();
                     std::string opName = Inst.getOpcodeName(); // name of operation e.g. add, br, mul.
@@ -140,16 +139,18 @@ namespace {
                      * OPERANDS
                      */
                     prettyOutputStream << "       USE: ";
-                    json usesJson;
+                    json usesJson = json::array();
                     if (const PHINode *PN = dyn_cast<PHINode>(&Inst)) {
                         for (unsigned op = 0, Eop = PN->getNumIncomingValues(); op < Eop; ++op) {
-                            json phiOpJson;
+                            json phiOpJson = json::object();
+
                             Value* v = PN->getIncomingValue(op);
                             BasicBlock* b = PN->getIncomingBlock(op);
                             std::string vName = getSlotAndName(v, regMap);
                             std::string bName = getSlotAndName(b, bbMap);
                             phiOpJson["val"] = vName;
                             phiOpJson["bb"] = bName;
+
                             usesJson.push_back(phiOpJson);
                             prettyOutputStream << "[" << bName << " -> " << vName << "], ";
                         }
