@@ -18,12 +18,35 @@ def get_id_from_full_name(full_name):
 #########################################################################
 ############################### CFG MODEL ###############################
 #########################################################################
+
+# Variable names are of the form id/llvm_id/{L,G}. The llvm_id may be empty.
 class Variable:
-    def __init__(self, instr, full_name):
-        self.instr = instr # parent instruction
-        # id is of the form 'v' + unique number e.g. "v128"
-        self.id, self.llvm_id, gl = full_name.split(SEPARATOR)
-        self.local = (False, True)[gl == "L"]
+    def __init__(self, name, function):
+        # The FunctionCFG we operate in
+        self.f = function
+
+        # The same variable may be used by many instructions, so we keep record
+        # of them in dictionary: {instruction-id: Instruction}.
+        self.instructions = {}
+
+        vinfo = name.split(SEPARATOR)
+        self.id = vinfo[0]
+        
+        self.llvm_id = None
+        if len(vinfo) > 1 and vinfo[1] != '':
+            self.llvm_id = vinfo[1]
+
+        self.local = True
+        if len(vinfo) > 2 and vinfo[2] == 'G':
+            self.local = False
+
+    # Adds the given Instruction to this Variable's record if it's not already there.
+    # Returns True if the instruction was added and False otherwise.
+    def maybe_add_instr(self, instr):
+        if instr.id not in self.instructions:
+            self.instructions[instr.id] = instr
+            return True
+        return False
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -51,21 +74,63 @@ class Variable:
         return res
 
 class Instruction:
-    def __init__(self, bb, instruction_json):
-        self.bb = bb # parent basic block
+    def __init__(self, instruction_json, iid, bb):
+        # Instruction ID is useful when we keep record of Instructions in Variables
+        self.id = iid         
+        # Parent BasicBlock
+        self.bb = bb
+        # Parent FunctionCFG
+        self.f = bb.f 
+        # Operation name e.g. alloc, add, br, phi
         self.opname = instruction_json['opname']
-        self.definition = Variable(self, instruction_json['def'])
-        self.uses = [Variable(self, use) for use in instruction_json['use']]
+
+        # Variable defined by this instruction
+        self.definition = self.f.get_or_create_variable(instruction_json['def'], self)
+
+        # Variables that are used by this instruction. Normally it is a list of Variables
+        # except for the PHI instruction when it is a list of pairs (bblock-id, Variable),
+        # meaning from which basic block the given variable is coming from.
+        # We use basic block id instead of BasicBlock object because we cannot be sure if
+        # the BasicBlock has been already created (e.g. in case of loop).
+        self.phi_uses = None
+        self.uses = None
+
+        if self.is_phi():
+            self.phi_uses = []
+            for op_json in instruction_json['use']:
+                bb_name = op_json['bb']
+                bb_id = bb_name.split(SEPARATOR)[0]
+                val_name = op_json['val']
+                use = (bb_id, self.f.get_or_create_variable(val_name, self))
+                self.phi_uses.append(use)
+            
+        else :
+            self.uses = []
+            for use in instruction_json['use']:
+                v = self.f.get_or_create_variable(use, self)
+                self.uses.append(v)
+
+        
         self.live_in = None
         self.live_out = None
+
+
+    def is_phi(self):
+        return self.opname == "phi"
 
     # Returns pretty string representation of this instruction
     def pretty_str(self, kwargs):
         live_vars = kwargs.get("live_vars", [])
         res = Colors.YELLOW + self.definition.pretty_str(kwargs) + " = " 
         res = res + Colors.RED + self.opname + Colors.YELLOW
-        for use in self.uses:
-            res = res + " " + use.pretty_str(kwargs)
+        if self.is_phi():
+            for use in self.phi_uses:
+                bb_id, v = use
+                res = res + " (" + bb_id + " -> " + v.pretty_str(kwargs) + "),"
+        else:
+            for use in self.uses:
+                res = res + " " + use.pretty_str(kwargs) + ","
+            
         res = res + Colors.ENDC
 
         if len(live_vars) > 0:
@@ -79,10 +144,29 @@ class Instruction:
         return res + Colors.ENDC
 
 class BasicBlock:
-    def __init__(self, func, bblock_json):
-        self.parent = func
-        self.id, self.llvm_id, _ = bblock_json['name'].split(SEPARATOR)
-        self.instructions = [Instruction(self, instr_json) for instr_json in bblock_json['instructions']]
+    def __init__(self, bblock_json, function):
+        # The parent function this basic block is located in.
+        self.f = function
+
+        # We give each instruction a number (or id). Ids may not correspond with
+        # instruction's order in basic block because in the future we may need to
+        # add a new instruction in the middle of the block granting it a new, higher
+        # number.
+        self.instr_counter = 0 
+
+        bbinfo = bblock_json['name'].split(SEPARATOR)
+        self.id = bbinfo[0]
+        self.llvm_id = None
+        if len(bbinfo)>1 and bbinfo[1] != '':
+            self.llvm_id = bbinfo[1]
+
+        # BasicBlock consists of a list of instructions.
+        self.instructions = [
+                self.create_instruction(instr_json) 
+                for instr_json in bblock_json['instructions']
+                ]
+
+        # dictionaries of predecessors and successors {bblock-id: BasicBlock}
         self.preds = None
         self.succs = None
 
@@ -91,10 +175,16 @@ class BasicBlock:
 
         self.defs = None
         self.uevs = None
+
         self.live_in = None
         self.live_out = None
 
         self.dominators = None
+
+    def create_instruction(self, instr_json):
+        i = Instruction(instr_json, self.instr_counter, self)
+        self.instr_counter += 1
+        return i
 
     # Lazily computes and returns a pair of variable sets (defs, uevs) for this basic block
     # defs - variables defined in the basic block
@@ -106,12 +196,14 @@ class BasicBlock:
 
         defs = set()
         uevs = set()
+        """
         for instr in self.instructions:
             for use in instr.uses:
                 if use not in defs and use.local:
                     uevs.add(use)
             
             defs.add(instr.definition)
+        """
 
         self.defs = defs
         self.uevs = uevs
@@ -142,7 +234,7 @@ class BasicBlock:
         print_dominance = kwargs.get("dominance", False)
 
         res = self.id 
-        if len(self.llvm_id) > 0:
+        if self.llvm_id is not None:
             res = res + "("+self.llvm_id+")"
 
         for instr in self.instructions:
@@ -150,10 +242,11 @@ class BasicBlock:
         
         # successors
         res = res + "\n  SUCC: ["
-        for i in range(len(self.succs)):
+        succs_ids = self.succs.keys()
+        for i in range(len(succs_ids)):
             if i:
                 res = res + ", "
-            res = res + self.succs[i].id
+            res = res + succs_ids[i]
         res = res + "]"
 
         # dominators
@@ -212,35 +305,56 @@ class BasicBlock:
 class FunctionCFG:
     def __init__(self, function_json):
         self.name = function_json['name']
-        entry_block_id = get_id_from_full_name(function_json['entry_block'])
-        
+        self.vars = {} # dictionary of variables in this function
+
+        # Function consists of basic blocks
         bblocks_json = function_json['bblocks']
-        self.bb_list = [BasicBlock(self, bb) for bb in bblocks_json]
-        self.bb_dict = {bb.id: bb for bb in self.bb_list} # {id -> BasicBlock}
+        bblocks_list = [BasicBlock(bb_json, self) for bb_json in bblocks_json]
+        self.bblocks = {bb.id: bb for bb in bblocks_list}
+
+        # Entry block
+        entry_block_id = get_id_from_full_name(function_json['entry_block'])
+        self.entry_block = self.bblocks[entry_block_id]
 
         # Liveness sets
         self.bb_live_in = None
         self.bb_live_out = None
        
-        # Set predecessors and successors
+        # For each basic block set its predecessors and successors
         for bbj in bblocks_json:
             _id = get_id_from_full_name(bbj['name'])
 
-            preds_list = []
-            if bbj['predecessors'] is not None:
-                pred_ids = [get_id_from_full_name(fname) for fname in bbj['predecessors']]
-                preds_list = [self.bb_dict[pred_id] for pred_id in pred_ids]
+            pred_ids = [get_id_from_full_name(fname) for fname in bbj['predecessors']]
+            preds = {pred_id: self.bblocks[pred_id] for pred_id in pred_ids}
 
-            succs_list = []
-            if bbj['successors'] is not None:
-                succ_ids = [get_id_from_full_name(fname) for fname in bbj['successors']]
-                succs_list = [self.bb_dict[succ_id] for succ_id in succ_ids]
+            succ_ids = [get_id_from_full_name(fname) for fname in bbj['successors']]
+            succs = {succ_id: self.bblocks[succ_id] for succ_id in succ_ids}
 
-            self.bb_dict[_id].preds = preds_list
-            self.bb_dict[_id].succs = succs_list
-            
+            self.bblocks[_id].preds = preds
+            self.bblocks[_id].succs = succs
 
-        self.entry_block = self.bb_dict[entry_block_id]
+    # Checks if there exists a variable with the same id. If so, it return this variable,
+    # and if not, it creates new variable with this id. In both cases we "maybe-add" the
+    # instruction the variable is used by. 
+    def get_or_create_variable(self, name, parent_instr):
+        vinfo = name.split(SEPARATOR)
+        vid = vinfo[0]
+        
+        if vid in self.vars:
+            v = self.vars[vid]
+            v.maybe_add_instr(parent_instr)
+            return v
+        else:
+            v = Variable(name, self)
+            v.maybe_add_instr(parent_instr)
+            self.vars[vid] = v
+            return v
+
+    # Assumes there exists a varialbe with given id in the function's dictionary and returns
+    # this variable.
+    def get_variable(self, vid):
+        assert vid in self.vars
+        return self.vars[vid]
 
     # Performs liveness analysis - for each basic block and instruction computes 
     # live_in and live_out variable sets
@@ -250,7 +364,7 @@ class FunctionCFG:
     #                          round robin algorithm, e.g. in reverse postorder.
     def perform_liveness_analysis(self, ordered_bbs = None):
         if ordered_bbs is None:
-            ordered_bbs = self.bb_list
+            ordered_bbs = self.bblocks.values()
 
         live_in = {}
         live_out = {}
@@ -267,8 +381,8 @@ class FunctionCFG:
             change = False
             for bb in ordered_bbs:
                 live_in_size, live_out_size = len(bb.live_in), len(bb.live_out)
-                for succ in bb.succs:
-                    # We add to current basic block's live-out set all 
+                for succ in bb.succs.values():
+                    # To the current basic block's live-out set we add all 
                     # variables that are 'live in' in its successor.
                     bb.live_out |= succ.live_in
 
@@ -293,7 +407,7 @@ class FunctionCFG:
     # Performs dominance analysis on basic blocks of this function
     def perform_dominance_analysis(self, ordered_bbs = None):
         if ordered_bbs is None:
-            ordered_bbs = self.bb_list
+            ordered_bbs = self.bblocks.values()
 
         for bb in ordered_bbs:
             bb.dominators = set({bb})
@@ -304,7 +418,7 @@ class FunctionCFG:
         
             for bb in ordered_bbs:
                 dominators_size = len(bb.dominators)
-                preds_dominators = [pred.dominators for pred in bb.preds]
+                preds_dominators = [pred.dominators for pred in bb.preds.values()]
                 if len(preds_dominators) > 0:
                     bb.dominators |= set.intersection(*preds_dominators)
 
@@ -317,7 +431,7 @@ class FunctionCFG:
         print_uev_def = kwargs.get("uev_def", True)
 
         res = "FUNCTION " + self.name
-        for bb in self.bb_list:
+        for bb in self.bblocks.values():
             res = res + "\n" + bb.pretty_str(kwargs)
                        
         return res

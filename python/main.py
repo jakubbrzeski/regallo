@@ -15,10 +15,12 @@ with open(args.filename) as f:
 #pprint (cfg_dict)
 #pprint (cfg_dict[1])
 
-f = cfg.FunctionCFG(cfg_dict[0])
-f.perform_liveness_analysis()
-f.perform_dominance_analysis()
-print f.pretty_str(liveness=True, dominance=True, live_vars=["v1", "v12"], llvm_ids=True)
+f = cfg.FunctionCFG(cfg_dict[1])
+#f.perform_liveness_analysis()
+#f.perform_dominance_analysis()
+print f.pretty_str()
+
+#print f.pretty_str(liveness=True, dominance=True, live_vars=["v1", "v12"], llvm_ids=True)
 #print f.entry_block
 
 '''
