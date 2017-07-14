@@ -1,19 +1,8 @@
 SEPARATOR = "/" # Should be the same as in cfgextractor in C++
 
-class Colors:
-    RED = '\033[31m'
-    GREEN = '\033[32m'
-    YELLOW = '\033[33m'
-    BLUE = '\033[34m'
-    MAGENTA = '\033[35m'
-    CYAN = '\033[36m'
-    WHITE = '\033[37m'
-    ENDC = '\033[0m'
-
 def get_id_from_full_name(full_name):
     _id, _, _ = full_name.split(SEPARATOR)
     return _id
-
 
 #########################################################################
 ############################### CFG MODEL ###############################
@@ -22,7 +11,7 @@ def get_id_from_full_name(full_name):
 # Variable names are of the form id/llvm_id/{L,G}. The llvm_id may be empty.
 class Variable:
     def __init__(self, name, function):
-        # The FunctionCFG we operate in
+        # The Function we operate in
         self.f = function
 
         # The same variable may be used by many instructions, so we keep record
@@ -62,16 +51,6 @@ class Variable:
     def __repr__(self):
         return str(self.id)
 
-    # Returns pretty string representation of this variable
-    def pretty_str(self, kwargs):
-        print_llvm_ids = kwargs.get("llvm_ids", False)
-        if not self.local:
-            res = "@" + self.id
-        else:
-            res = self.id
-        if print_llvm_ids and len(self.llvm_id) > 0:
-            res = res + "(" + self.llvm_id + ")"
-        return res
 
 class Instruction:
     def __init__(self, instruction_json, iid, bb):
@@ -79,7 +58,7 @@ class Instruction:
         self.id = iid         
         # Parent BasicBlock
         self.bb = bb
-        # Parent FunctionCFG
+        # Parent Function
         self.f = bb.f 
         # Operation name e.g. alloc, add, br, phi
         self.opname = instruction_json['opname']
@@ -118,30 +97,6 @@ class Instruction:
     def is_phi(self):
         return self.opname == "phi"
 
-    # Returns pretty string representation of this instruction
-    def pretty_str(self, kwargs):
-        live_vars = kwargs.get("live_vars", [])
-        res = Colors.YELLOW + self.definition.pretty_str(kwargs) + " = " 
-        res = res + Colors.RED + self.opname + Colors.YELLOW
-        if self.is_phi():
-            for use in self.phi_uses:
-                bb_id, v = use
-                res = res + " (" + bb_id + " -> " + v.pretty_str(kwargs) + "),"
-        else:
-            for use in self.uses:
-                res = res + " " + use.pretty_str(kwargs) + ","
-            
-        res = res + Colors.ENDC
-
-        if len(live_vars) > 0:
-            res = res + "  | " + Colors.GREEN
-            assert self.live_in is not None
-            live_ids = [v.id for v in list(self.live_in)]
-            for i in range(len(live_vars)):
-                if live_vars[i] in live_ids:
-                    res = res + " (" + str(live_vars[i]) + ")"
-            
-        return res + Colors.ENDC
 
 class BasicBlock:
     def __init__(self, bblock_json, function):
@@ -231,96 +186,9 @@ class BasicBlock:
             instr.live_out |= current_live_set
             current_live_set -= {instr.definition}
             instr.live_in |= current_live_set
-            
-
-    # Returns pretty string representation of this basic block
-    def pretty_str(self, kwargs):
-        print_llvm_ids = kwargs.get("llvm_ids", False)
-        print_uev_def = kwargs.get("uev_def", True)
-        print_liveness = kwargs.get("liveness", False)
-        print_dominance = kwargs.get("dominance", False)
-
-        res = self.id 
-        if self.llvm_id is not None:
-            res = res + "("+self.llvm_id+")"
-
-        for instr in self.instructions:
-            res = res + "\n  > " + instr.pretty_str(kwargs)
-        
-        # successors
-        res = res + "\n  SUCC: ["
-        succs_ids = self.succs.keys()
-        for i in range(len(succs_ids)):
-            if i:
-                res = res + ", "
-            res = res + succs_ids[i]
-        res = res + "]"
-
-        # dominators
-        if print_dominance:
-            assert self.dominators is not None
-            dominators = list(self.dominators)
-            res = res + "\n  DOM: ["
-            for i in range(len(dominators)):
-                if i:
-                    res = res + ", "
-                res = res + dominators[i].id
-            res = res + "]"
-
-        # upword-exposed vars and definitions
-        if print_uev_def:
-            assert self.uevs is not None
-            # uevars
-            res = res + "\n  UEV: "
-            iter_uevs = [(k,v) for (k,v) in self.uevs.iteritems()]
-            for i in range(len(iter_uevs)):
-                if i:
-                    res = res + "\n       "
-                (bid, uevset) = iter_uevs[i]
-                res = res + "(" + bid + " -> "
-                uevlist = list(uevset)
-                res = res + "["
-                for i in range(len(uevlist)):
-                    if i:
-                        res = res + ", "
-                    res = res + uevlist[i].pretty_str(kwargs)
-                res = res + "]"    
-                res = res + ")"
-            
-            # definitions
-            assert self.defs is not None
-            defs = list(self.defs)
-            res = res + "\n  DEFS: ["
-            for i in range(len(defs)):
-                if i:
-                    res = res + ", "
-                res = res + defs[i].pretty_str(kwargs)
-            res = res + "]"
-
-        # live variables
-        if print_liveness:
-            assert self.live_in is not None and self.live_out is not None
-            # live-in 
-            live_in_list = list(self.live_in)
-            res = res + "\n  LIVE-IN: ["
-            for i in range(len(live_in_list)):
-                if i:
-                    res = res + ", "
-                res = res + live_in_list[i].pretty_str(kwargs)
-            res = res + "]"
-            # live-out
-            live_out_list = list(self.live_out)
-            res = res + "\n  LIVE-OUT: ["
-            for i in range(len(live_out_list)):
-                if i:
-                    res = res + ", "
-                res = res + live_out_list[i].pretty_str(kwargs)
-            res = res + "]"
-
-        return res
 
 
-class FunctionCFG:
+class Function:
     def __init__(self, function_json):
         self.name = function_json['name']
         self.vars = {} # dictionary of variables in this function
@@ -448,17 +316,7 @@ class FunctionCFG:
                 if len(bb.dominators) > dominators_size:
                     change = True
 
-    # Returns pretty string representation of this function
-    def pretty_str(self, **kwargs):
-        print_bb_live_sets = kwargs.get("bb_live_sets", True)
-        print_uev_def = kwargs.get("uev_def", True)
-
-        res = "FUNCTION " + self.name
-        for bb in self.bblocks.values():
-            res = res + "\n" + bb.pretty_str(kwargs)
-                       
-        return res
-    
+            
 class Module:
     def __init__(self, cfg_json):
         self.functions = [Function(f) for f in cfg_json]
