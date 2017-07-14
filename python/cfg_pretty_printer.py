@@ -21,11 +21,29 @@ def print_variable(var, **kwargs):
         res = res + "(" + var.llvm_id + ")"
     return res
 
+def print_sorted_variable_list(var_list, **kwargs):
+    res = "["
+    # variable ids are of the form "v[0-9]+" so we sort it by the numerical suffix
+    sorted_var_list = sorted(var_list, key=lambda v: int(v.id[1:]))
+    for i in range(len(sorted_var_list)):
+        if i:
+            res = res + ", "
+        res = res + print_variable(sorted_var_list[i], **kwargs)
+    return res + "]"
+
+def print_id_list(id_list, **kwargs):
+    res = "["
+    for i in range(len(id_list)):
+        if i:
+            res = res + ", "
+        res = res + id_list[i]
+    return res + "]"
 
 def print_instruction(instr, **kwargs):
     live_vars = kwargs.get("live_vars", [])
     res = Colors.YELLOW + print_variable(instr.definition, **kwargs) + " = " 
     res = res + Colors.RED + instr.opname + Colors.YELLOW
+
     if instr.is_phi():
         for use in instr.phi_uses:
             bb_id, v = use
@@ -61,14 +79,9 @@ def print_basic_block(bb, **kwargs):
     for instr in bb.instructions:
         res = res + "\n  > " + print_instruction(instr, **kwargs)
     
-    # successors
-    res = res + "\n  SUCC: ["
-    succs_ids = bb.succs.keys()
-    for i in range(len(succs_ids)):
-        if i:
-            res = res + ", "
-        res = res + succs_ids[i]
-    res = res + "]"
+    # successors (ids are of the form "bb[0-9]+" so we sort it by the numerical suffix)
+    res = res + "\n  SUCC: " + print_id_list(
+            sorted(bb.succs.keys(), key=lambda bid: int(bid[2:])), **kwargs)
 
     # dominators
     if print_dominance:
@@ -85,51 +98,34 @@ def print_basic_block(bb, **kwargs):
     if print_uev_def:
         assert bb.uevs is not None
         # uevars
-        res = res + "\n  UEV: "
+        res = res + "\n  UEV: {"
         iter_uevs = [(k,v) for (k,v) in bb.uevs.iteritems()]
         for i in range(len(iter_uevs)):
             if i:
-                res = res + "\n       "
+                res = res + "\n        "
             (bid, uevset) = iter_uevs[i]
-            res = res + "(" + bid + " -> "
-            uevlist = list(uevset)
-            res = res + "["
-            for i in range(len(uevlist)):
-                if i:
-                    res = res + ", "
-                res = res + print_variable(uevlist[i], **kwargs)
-            res = res + "]"    
-            res = res + ")"
+            res = res + bid + " -> " + print_sorted_variable_list(list(uevset), **kwargs)
+        res = res + "}" 
         
         # definitions
         assert bb.defs is not None
-        defs = list(bb.defs)
-        res = res + "\n  DEFS: ["
-        for i in range(len(defs)):
-            if i:
-                res = res + ", "
-            res = res + print_variable(defs[i], **kwargs)
-        res = res + "]"
+        res = res + "\n  DEFS: " + print_sorted_variable_list(list(bb.defs), **kwargs)
 
     # live variables
     if print_liveness:
         assert bb.live_in is not None and bb.live_out is not None
         # live-in 
-        live_in_list = list(bb.live_in)
-        res = res + "\n  LIVE-IN: ["
-        for i in range(len(live_in_list)):
+        res = res + "\n  LIVE-IN: {"
+        iter_livein = [(k, v) for (k,v) in bb.live_in.iteritems()]
+        for i in range(len(iter_livein)):
             if i:
-                res = res + ", "
-            res = res + print_variable(live_in_list[i], **kwargs)
-        res = res + "]"
+                res = res + ",\n            "
+            (bid, livein_set) = iter_livein[i]
+            res = res + bid + " -> " + print_sorted_variable_list(list(livein_set), **kwargs)
+        res = res + "}"
         # live-out
         live_out_list = list(bb.live_out)
-        res = res + "\n  LIVE-OUT: ["
-        for i in range(len(live_out_list)):
-            if i:
-                res = res + ", "
-            res = res + print_variable(live_out_list[i], **kwargs)
-        res = res + "]"
+        res = res + "\n  LIVE-OUT: " + print_sorted_variable_list(list(bb.live_out), **kwargs)
 
     return res
 
@@ -139,10 +135,9 @@ def print_function(f, **kwargs):
     print_uev_def = kwargs.get("uev_def", True)
 
     res = "FUNCTION " + f.name
-    for bb in f.bblocks.values():
-        res = res + "\n" + print_basic_block(bb, **kwargs)
+    sorted_bblocks = sorted(f.bblocks.values(), key=lambda bb: bb.id)
+    for bb in sorted_bblocks:
+        res = res + "\n" + print_basic_block(bb, **kwargs) + "\n"
                    
     return res
-
-
 

@@ -121,19 +121,24 @@ class BasicBlock:
                 for instr_json in bblock_json['instructions']
                 ]
 
-        # dictionaries of predecessors and successors {bblock-id: BasicBlock}
+        # Dictionaries of predecessors and successors {bblock-id: BasicBlock}.
         self.preds = None
         self.succs = None
 
-        self.instr_live_in = None
-        self.instr_live_out = None
-
-        self.defs = None
+        # The uevs set is a dictionary of sets of upword-exposed variables (variables that
+        # are used before any redefinition in this block) computed per incoming edge,
+        # i.e uevs = {predecessor_id: set of variables}. It is because of PHI functions,
+        # where the given variable is used depending on where the control flow comes from.
         self.uevs = None
+        self.defs = None
 
+        # The live_in sets are computed per incoming edge because of PHI functions:
+        # so live_in = {predecessor_id: set of live variablie}.
+        # live_out set is a sum of live_in variables from all successors.
         self.live_in = None
         self.live_out = None
 
+        # Set of dominators of this basic block.
         self.dominators = None
 
     def create_instruction(self, instr_json):
@@ -171,10 +176,13 @@ class BasicBlock:
         self.defs = defs
         self.uevs = uevs
 
-    # Lazily computes and returns two lists of Live-In and Live-Out
-    # sets of subsequent instructions of this basic block.
+    # For each instruction computes sets of live-in and
+    # live-out variables (before and after the instruction)
     def perform_instr_liveness_analysis(self):
-        current_live_set = self.live_in.copy()
+        current_live_set = set()
+        for pred_id in self.preds.keys():
+            current_live_set |= self.live_in[pred_id].copy()
+            
         for instr in self.instructions:
             instr.live_in = current_live_set
             current_live_set -= {instr.definition}
@@ -257,12 +265,10 @@ class Function:
         if ordered_bbs is None:
             ordered_bbs = self.bblocks.values()
 
-        live_in = {}
-        live_out = {}
-
         # initialize sets
         for bb in ordered_bbs:
-            bb.live_in = set()
+            assert bb.defs is not None and bb.uevs is not None
+            bb.live_in = {pred_id: set() for pred_id in bb.preds.keys()}
             bb.live_out = set()
 
         change = True
@@ -271,29 +277,30 @@ class Function:
             iterations += 1
             change = False
             for bb in ordered_bbs:
-                live_in_size, live_out_size = len(bb.live_in), len(bb.live_out)
+                live_out_size = len(bb.live_out)
                 for succ in bb.succs.values():
                     # To the current basic block's live-out set we add all 
-                    # variables that are 'live in' in its successor.
-                    bb.live_out |= succ.live_in
-
+                    # variables that are live on the edge to this successor.
+                    bb.live_out |= succ.live_in[bb.id]
+                
+                if len(bb.live_out) > live_out_size:
+                    change = True
                 # Live-in set of the basic block consists of all variables
                 # that are upword-exposed or live-out but not defined in this block.
-                defs, uevs = bb.get_defs_and_uevs() # sets
-                bb.live_in = (uevs | (bb.live_out - defs))
-
-                if len(bb.live_in) > live_in_size or len(bb.live_out) > live_out_size:
-                    change = True
+                for pred_id in bb.preds.keys():
+                    live_in_size = len(bb.live_in[pred_id])
+                    # Main part of the algorithm - updating live-in set.
+                    # Variable is in live on the edge between blocks (p --> bb)
+                    # if it is upword-exposed in bb (i.e. used before any redefinition)
+                    # or is live on the exit from bb and not defined in this block.
+                    bb.live_in[pred_id] = (bb.uevs[pred_id] | (bb.live_out - bb.defs))
+                    if len(bb.live_in[pred_id]) > live_in_size:
+                        change = True
 
         for bb in ordered_bbs:
             bb.perform_instr_liveness_analysis() # updates liveness for each instr
-            live_in[bb.id] = bb.live_in
-            live_out[bb.id] = bb.live_out
 
-        self.live_in = live_in
-        self.live_out = live_out
         print "Liveness analysis done, #iterations = ", iterations
-        return self.live_in, self.live_out
 
     # Performs dominance analysis on basic blocks of this function
     def perform_dominance_analysis(self, ordered_bbs = None):
