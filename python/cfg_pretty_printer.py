@@ -9,29 +9,37 @@ class Colors:
     CYAN = '\033[36m'
     WHITE = '\033[37m'
     ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
-def print_variable(var, **kwargs):
-    print_llvm_ids = kwargs.get("llvm_ids", False)
-    if not var.local:
-        res = "@" + var.id
-    else:
-        res = var.id
-    if print_llvm_ids and len(var.llvm_id) > 0:
-        res = res + "(" + var.llvm_id + ")"
+def var_str(var, **kwargs):
+    print_llvm_names = kwargs.get("llvm_names", False)
+    res = var.id
+    if print_llvm_names and len(var.llvm_name) > 0:
+        res = res + "(" + var.llvm_name + ")"
     return res
 
-def print_sorted_variable_list(var_list, **kwargs):
+def value_str(val, **kwargs):
+    # if val is variable then var_str
+    # if not, print the value as a string
+    if isinstance(val, cfg.Variable):
+        return Colors.YELLOW + Colors.BOLD + var_str(val) + Colors.ENDC
+    else:
+        return str(val)
+
+
+def sorted_varlist_str(var_list, **kwargs):
     res = "["
     # variable ids are of the form "v[0-9]+" so we sort it by the numerical suffix
     sorted_var_list = sorted(var_list, key=lambda v: int(v.id[1:]))
     for i in range(len(sorted_var_list)):
         if i:
             res = res + ", "
-        res = res + print_variable(sorted_var_list[i], **kwargs)
+        res = res + var_str(sorted_var_list[i], **kwargs)
     return res + "]"
 
-def print_id_list(id_list, **kwargs):
+def id_list_str(id_list, **kwargs):
     res = "["
     for i in range(len(id_list)):
         if i:
@@ -39,21 +47,40 @@ def print_id_list(id_list, **kwargs):
         res = res + id_list[i]
     return res + "]"
 
-def print_instruction(instr, **kwargs):
+def instruction_str(instr, **kwargs):
     live_vars = kwargs.get("live_vars", [])
-    res = Colors.YELLOW + print_variable(instr.definition, **kwargs) + " = " 
-    res = res + Colors.RED + instr.opname + Colors.YELLOW
+    loop_depth = kwargs.get("loop_depth", False)
+    nums = kwargs.get("instr_nums", None)
+    intervals = kwargs.get("intervals", None)
+    print_interval_for = kwargs.get("print_interval_for", None)
+
+    res = ""
+
+    if print_interval_for:
+        assert intervals is not None and nums is not None
+        num = nums.get(instr.id)
+        ivs = intervals[print_interval_for]
+        for iv in ivs:
+            if iv.fr <= num and num <= iv.to:
+                res = res + Colors.GREEN + " | " + Colors.ENDC
+    
+    if nums is not None:
+        res = res + " " + str(nums.get(instr.id)) + ": "
+    else:
+        res = res + " > "
+
+    res = res + value_str(instr.definition, **kwargs) + " = " 
+    res = res + Colors.RED + instr.opname + Colors.ENDC
 
     if instr.is_phi():
-        for use in instr.phi_uses:
-            bb_id, v = use
-            res = res + " (" + bb_id + " -> " + print_variable(v, **kwargs) + "),"
+        for (bb_id, v) in zip(instr.phi_preds, instr.uses_debug):
+            res = res + " (" + value_str(bb_id, **kwargs) + " -> " + value_str(v, **kwargs) + ")"
     else:
-        for use in instr.uses:
-            res = res + " " + print_variable(use, **kwargs) + ","
-        
-    res = res + Colors.ENDC
-
+        for use in instr.uses_debug:
+            res = res + " " + value_str(use, **kwargs)
+    
+    if loop_depth:
+        res = res + "  | " + Colors.GREEN + "loop depth: " + str(instr.get_loop_depth())
     if len(live_vars) > 0:
         res = res + "  | " + Colors.GREEN
         assert instr.live_in is not None
@@ -65,23 +92,28 @@ def print_instruction(instr, **kwargs):
     return res + Colors.ENDC
 
 
-def print_basic_block(bb, **kwargs):
-    print_llvm_ids = kwargs.get("llvm_ids", False)
-    print_uev_def = kwargs.get("uev_def", True)
+def basic_block_str(bb, **kwargs):
+    print_llvm_names = kwargs.get("llvm_names", False)
+    print_succ = kwargs.get("succ", False)
+    print_uev_def = kwargs.get("uev_def", False)
     print_liveness = kwargs.get("liveness", False)
     print_dominance = kwargs.get("dominance", False)
 
     # result string
-    res = bb.id 
-    if bb.llvm_id is not None:
-        res = res + "(" + bb.llvm_id + ")"
+    res = Colors.UNDERLINE + bb.id 
+    if bb.llvm_name is not None:
+        res = res + " (" + bb.llvm_name + ")"
+    res = res + Colors.ENDC
 
     for instr in bb.instructions:
-        res = res + "\n  > " + print_instruction(instr, **kwargs)
-    
+        res = res + "\n  " + instruction_str(instr, **kwargs)
+
+    res = res + "\n"
+
     # successors (ids are of the form "bb[0-9]+" so we sort it by the numerical suffix)
-    res = res + "\n  SUCC: " + print_id_list(
-            sorted(bb.succs.keys(), key=lambda bid: int(bid[2:])), **kwargs)
+    if print_succ:
+        res = res + "\n  SUCC: " + id_list_str(
+                sorted(bb.succs.keys(), key=lambda bid: int(bid[2:])), **kwargs)
 
     # dominators
     if print_dominance:
@@ -104,40 +136,45 @@ def print_basic_block(bb, **kwargs):
             if i:
                 res = res + "\n        "
             (bid, uevset) = iter_uevs[i]
-            res = res + bid + " -> " + print_sorted_variable_list(list(uevset), **kwargs)
+            res = res + bid + " -> " + sorted_varlist_str(list(uevset), **kwargs)
         res = res + "}" 
         
         # definitions
         assert bb.defs is not None
-        res = res + "\n  DEFS: " + print_sorted_variable_list(list(bb.defs), **kwargs)
+        res = res + "\n  DEFS: " + sorted_varlist_str(list(bb.defs), **kwargs)
 
     # live variables
     if print_liveness:
         assert bb.live_in is not None and bb.live_out is not None
-        # live-in 
-        res = res + "\n  LIVE-IN: {"
-        iter_livein = [(k, v) for (k,v) in bb.live_in.iteritems()]
-        for i in range(len(iter_livein)):
-            if i:
-                res = res + ",\n            "
-            (bid, livein_set) = iter_livein[i]
-            res = res + bid + " -> " + print_sorted_variable_list(list(livein_set), **kwargs)
-        res = res + "}"
+        # live-in
+        res = res + "\n  LIVE-IN: " + sorted_varlist_str(list(bb.live_in), **kwargs)
         # live-out
-        live_out_list = list(bb.live_out)
-        res = res + "\n  LIVE-OUT: " + print_sorted_variable_list(list(bb.live_out), **kwargs)
+        res = res + "\n  LIVE-OUT: " + sorted_varlist_str(list(bb.live_out), **kwargs)
 
     return res
 
 
-def print_function(f, **kwargs):
+def function_str(f, **kwargs):
     print_bb_live_sets = kwargs.get("bb_live_sets", True)
     print_uev_def = kwargs.get("uev_def", True)
 
     res = "FUNCTION " + f.name
     sorted_bblocks = sorted(f.bblocks.values(), key=lambda bb: bb.id)
     for bb in sorted_bblocks:
-        res = res + "\n" + print_basic_block(bb, **kwargs) + "\n"
+        res = res + "\n" + basic_block_str(bb, **kwargs) + "\n"
                    
     return res
 
+
+def intervals_str(intervals, **kwargs):
+    all_ivs = []
+    for ivlist in intervals.values():
+        all_ivs.extend(ivlist)
+
+    all_ivs = sorted(all_ivs, key=lambda iv: (iv.fr, iv.to))
+
+    res = ""
+    for iv in all_ivs:
+        res += "[" + str(iv.fr) + ", " + str(iv.to) + "] " + value_str(iv.var) + "\n"
+
+    return res

@@ -54,15 +54,18 @@ namespace {
         } regMap, bbMap;
 
         std::string getSlotAndName(Value *val, SlotMap& map) {
-            bool global = isa<GlobalValue>(val);
-            std::string slotID = map.getSlotID(&(*val));
-            std::string gl = global ? "G" : "L";
-            std::string name = slotID + SEPARATOR;
-            if (val->hasName()) name = name + (std::string)val->getName();
-            name = name + SEPARATOR + gl;
+            std::string name = map.getSlotID(&(*val));
+            if (val->hasName()) name = name + SEPARATOR + (std::string)val->getName();
             return name;
         }
-        
+
+        std::string createOrGetName(Value *val) {
+            if (isa<Constant>(val)) return "const";
+            if (isa<GlobalValue>(val)) return "global";
+            if (isa<BasicBlock>(val)) return getSlotAndName(val, bbMap);
+            return getSlotAndName(val, regMap);
+        }
+
         std::ofstream jsonOutputStream;
         std::ostringstream prettyOutputStream;
         typedef std::pair<std::string, std::string> strpair;
@@ -84,7 +87,7 @@ namespace {
             json functionJson = json::object();
             functionJson["name"] = fname;
 
-            std::string entry_bb = getSlotAndName(&F.getEntryBlock(), bbMap);
+            std::string entry_bb = createOrGetName(&F.getEntryBlock());
             functionJson["entry_block"] = entry_bb;
             prettyOutputStream << "Entry Block: " << entry_bb << endl;
 
@@ -93,7 +96,7 @@ namespace {
              */
             json bblocksJson = json::array();
             for (auto &Bb : F.getBasicBlockList()) {
-                std::string bbName = getSlotAndName(&Bb, bbMap);
+                std::string bbName = createOrGetName(&Bb);
                 prettyOutputStream << "Basic Block: " << bbName << endl;
 
                 json bblockJson = json::object();
@@ -102,7 +105,7 @@ namespace {
                 json predJson = json::array();
                 prettyOutputStream << "-Predecessors: ";
                 for (BasicBlock *predBb : predecessors(&Bb)) {
-                    std::string predName = getSlotAndName(predBb, bbMap);
+                    std::string predName = createOrGetName(predBb);//, bbMap);
                     predJson.push_back(predName);
                     prettyOutputStream << predName <<", ";
                 }
@@ -112,7 +115,7 @@ namespace {
                 json succJson = json::array();
                 prettyOutputStream << "-Successors: ";
                 for (BasicBlock *succBb : successors(&Bb)) {
-                    std::string succName = getSlotAndName(succBb, bbMap);
+                    std::string succName = createOrGetName(succBb);//, bbMap);
                     succJson.push_back(succName);
                     prettyOutputStream << succName << ", ";
                 }
@@ -128,7 +131,7 @@ namespace {
 
                     unsigned numop = Inst.getNumOperands();
                     std::string opName = Inst.getOpcodeName(); // name of operation e.g. add, br, mul.
-                    std::string defName = getSlotAndName(&Inst, regMap); // id of variable defined by this instr.
+                    std::string defName = createOrGetName(&Inst); // id of variable defined by this instr.
                     instructionJson["opname"] = opName;
                     instructionJson["def"] = defName;
 
@@ -146,8 +149,9 @@ namespace {
 
                             Value* v = PN->getIncomingValue(op);
                             BasicBlock* b = PN->getIncomingBlock(op);
-                            std::string vName = getSlotAndName(v, regMap);
-                            std::string bName = getSlotAndName(b, bbMap);
+
+                            std::string vName = createOrGetName(v);
+                            std::string bName = createOrGetName(b);
                             phiOpJson["val"] = vName;
                             phiOpJson["bb"] = bName;
 
@@ -156,10 +160,9 @@ namespace {
                         }
 
                     } else {
-
                         for (unsigned i = 0; i < numop; i++) {
                             Value* op = Inst.getOperand(i);
-                            std::string operandName = getSlotAndName(op, regMap);
+                            std::string operandName = createOrGetName(op);
                             usesJson.push_back(operandName);
                             prettyOutputStream << operandName <<", ";
                         }

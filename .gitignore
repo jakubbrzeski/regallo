@@ -1,0 +1,6 @@
+*.DS_Store
+*.swp
+*.pyc
+llvm2/
+llvm/
+!llvm/src/lib/Transforms/ControlFlowExtractor
