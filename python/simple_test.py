@@ -1,5 +1,6 @@
 import unittest
 import cfg
+import cfg_pretty_printer as cfgprinter
 """
 Intervals:
 [-1, 6] v3
@@ -69,7 +70,7 @@ class SimpleGCDTest(unittest.TestCase):
         i2 = cfg.Instruction(f.get_free_iid(), bb2, var["v5"], "xor", [var["v2"], var["v3"]], 
                 uses_debug=["v2", "v3"])
         i3 = cfg.Instruction(f.get_free_iid(), bb2, var["v6"], "xor", [var["v3"], var["v5"]], 
-                uses_debug=["v2", "v5"])
+                uses_debug=["v3", "v5"])
         i4 = cfg.Instruction(f.get_free_iid(), bb2, var["v7"], "xor", [var["v5"], var["v6"]], 
                 uses_debug=["v5", "v6"])
         i5 = cfg.Instruction(f.get_free_iid(), bb2, var["v8"], "br", [], uses_debug=["bb4"])
@@ -134,5 +135,6 @@ class SimpleGCDTest(unittest.TestCase):
         self.f = f
 
     def test_anything(self):
+        print cfgprinter.function_str(self.f)
         self.assertEqual(self.f.name, "gcd")
 

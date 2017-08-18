@@ -25,26 +25,45 @@ f.perform_dominance_analysis()
 f.perform_loop_analysis()
 
 
-
 bls = lscan.BasicLinearScan(f)
-bls.compute_intervals(print_debug=True)
+print cfgprinter.function_str(f, instr_nums=bls.num)
+intervals = bls.compute_intervals(print_debug=1)
+print cfgprinter.intervals_str(intervals)
 
+bls.allocate_registers(intervals, 6)
+utils.update_alloc(intervals)
+
+
+print cfgprinter.function_str(f, instr_nums=bls.num)
+
+
+"""
+utils.draw_intervals(bls.intervals, "before.png")
 print "\n"
+
+
+
+
+print "Intervals:"
+print cfgprinter.intervals_str(bls.intervals)
+utils.draw_intervals(bls.intervals, "before.png")
+
+
+print ""
 
 print cfgprinter.function_str(f, 
         liveness=False, 
         dominance=False, 
         loop_depth=True, 
+        allocation=allocation,
         live_vars=[], 
         instr_nums=bls.num)
 
 
 print "Intervals:"
 print cfgprinter.intervals_str(bls.intervals)
-
-
-
-
+utils.draw_intervals(bls.intervals, "after.png")
+"""
 
 
 '''

@@ -1,25 +1,4 @@
-import re
 import utils
-
-SEPARATOR = "/" # Should be the same as in cfgextractor in C++
-
-#########################################################################
-########################## HELPER FUNCTIONS ############################
-#########################################################################
-
-# Often Variable or BasicBlock names are of the form var_id/llvm_name
-# or bb_id/llvm_name. This function extracts the id.
-def extract_id(full_name):
-    return full_name.split(SEPARATOR)[0]
-
-# Checks if the given name is the name of proper (allocable) Variable.
-def is_variable(name):
-    return re.match('v[0-9]+', name) is not None
-
-# Checks if the given name is the name of BasicBlock.
-def is_bblock(name):
-    return re.match('bb[0-9]+', name) is not None
-
 
 #########################################################################
 ############################### CFG MODEL ###############################
@@ -46,7 +25,7 @@ class Variable:
         # {iid: Instruction}
         self.uses = {}
 
-        vinfo = name.split(SEPARATOR)
+        vinfo = name.split(utils.SEPARATOR)
         self.id = vinfo[0]
         
         self.llvm_name = None
@@ -81,7 +60,7 @@ class Instruction:
     STORE = "store"
     MOVE = "move"
 
-    def __init__(self, iid, bb, defn, opname, uses, phi_preds=None, uses_debug=None):
+    def __init__(self, iid, bb, defn, opname, uses, phi_preds=None, uses_debug=[]):
         # Instruction id.
         self.id = iid
 
@@ -90,6 +69,12 @@ class Instruction:
 
         # Parent Function.
         self.f = bb.f 
+
+        # Number of instruction. It's something different than id. Id is unique,
+        # but we can number the instruction multiple times. It is useful especially
+        # when dealing with linearized program , e.g. in linear scan register allocation. 
+        #TODO: finish description
+        self.num = None
 
         # Variable defined by this instruction.
         self.definition = defn
@@ -108,11 +93,14 @@ class Instruction:
         self.phi_preds = phi_preds
         self.uses = uses
 
+        # Dicitonary {variable id: register}
+        self.alloc = {}
+
         # For each variable we update instructions it is used in.
         for var in uses:
             var.uses[iid] = self
 
-        # Lists of all values (not only allocable Variables) used by the instruction in 
+        # Lists of all values (not only allocable Variables) used by the instruction in
         # string format. These are e.g. labels (basic block ids) or constants and are useful
         # for debugging purposes.
         self.uses_debug = uses_debug
@@ -142,15 +130,15 @@ class Instruction:
             val_name = op_json
             if is_phi:
                 val_name = op_json['val']
-                bb_id = extract_id(op_json['bb'])
+                bb_id = utils.extract_id(op_json['bb'])
                 phi_preds.append(bb_id)
 
-            if is_variable(val_name):
+            if utils.is_varname(val_name):
                 v = bb.f.get_or_create_variable(val_name)
                 uses.append(v)
-                uses_debug.append(v)
-            elif is_bblock(val_name): # label, keep just id string.
-                uses_debug.append(extract_id(val_name))
+                uses_debug.append(utils.extract_id(val_name))
+            elif utils.is_bbname(val_name): # label, keep just id string.
+                uses_debug.append(utils.extract_id(val_name))
             else:
                 uses_debug.append(val_name)
 
@@ -207,7 +195,7 @@ class BasicBlock:
 
     @classmethod
     def from_json(cls, bblock_json, f):
-        bbinfo = bblock_json['name'].split(SEPARATOR)
+        bbinfo = bblock_json['name'].split(utils.SEPARATOR)
         bid = bbinfo[0]
         llvm_name = None
 
@@ -224,7 +212,6 @@ class BasicBlock:
         bb.set_instructions(instructions)
 
         return bb
-
 
     def set_instructions(self, new_instructions):
         self.instructions = new_instructions
@@ -341,14 +328,14 @@ class Function:
         bblocks_list = [BasicBlock.from_json(bb_json, f) for bb_json in bblocks_json]
         bblocks = {bb.id: bb for bb in bblocks_list}
         
-        entry_block_id = extract_id(function_json['entry_block'])
+        entry_block_id = utils.extract_id(function_json['entry_block'])
         entry_bblock = bblocks[entry_block_id]
 
         # For each basic block we set its predecessors and successors.
         for bbj in bblocks_json:
-            bid = extract_id(bbj['name'])
+            bid = utils.extract_id(bbj['name'])
 
-            pred_ids = [extract_id(fname) for fname in bbj['predecessors']]
+            pred_ids = [utils.extract_id(fname) for fname in bbj['predecessors']]
             for pid in pred_ids:
                 bblocks[bid].preds[pid] = bblocks[pid]
                 bblocks[pid].succs[bid] = bblocks[bid]
@@ -369,10 +356,17 @@ class Function:
     # Checks if there exists a variable with the same id. If so, it return this variable,
     # and if not, it creates new variable with this id. In both cases we "maybe-add" the
     # instruction the variable is used by. 
-    def get_or_create_variable(self, name):
-        assert is_variable(name)
+    def get_or_create_variable(self, name=None):
+        if name is None:
+            free_num = len(self.vars) + 1
+            vid = "v"+str(free_num)
+            v = Variable(vid, self)
+            self.vars[vid] = v
+            return v
 
-        vinfo = name.split(SEPARATOR)
+        assert utils.is_varname(name)
+
+        vinfo = name.split(utils.SEPARATOR)
         vid = vinfo[0]
         v = None 
 

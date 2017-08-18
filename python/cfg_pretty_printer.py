@@ -1,4 +1,5 @@
 import cfg
+import utils
 
 class Colors:
     RED = '\033[31m'
@@ -25,8 +26,13 @@ def value_str(val, **kwargs):
     # if not, print the value as a string
     if isinstance(val, cfg.Variable):
         return Colors.YELLOW + Colors.BOLD + var_str(val) + Colors.ENDC
-    else:
-        return str(val)
+    elif isinstance(val, basestring):
+        if utils.is_varname(val):
+            return Colors.YELLOW + Colors.BOLD + val + Colors.ENDC
+        if utils.is_regname(val):
+            return Colors.BLUE + Colors.BOLD + val + Colors.ENDC
+        
+    return str(val)
 
 
 def sorted_varlist_str(var_list, **kwargs):
@@ -53,6 +59,7 @@ def instruction_str(instr, **kwargs):
     nums = kwargs.get("instr_nums", None)
     intervals = kwargs.get("intervals", None)
     print_interval_for = kwargs.get("print_interval_for", None)
+    allocation = kwargs.get("allocation", None)
 
     res = ""
 
@@ -65,7 +72,7 @@ def instruction_str(instr, **kwargs):
                 res = res + Colors.GREEN + " | " + Colors.ENDC
     
     if nums is not None:
-        res = res + " " + str(nums.get(instr.id)) + ": "
+        res = res + " " + str(instr.num) + ": "
     else:
         res = res + " > "
 
@@ -78,6 +85,8 @@ def instruction_str(instr, **kwargs):
     else:
         for use in instr.uses_debug:
             res = res + " " + value_str(use, **kwargs)
+            if allocation is not None and use in allocation:
+                res = res + "(" + Colors.BLUE + allocation[use][instr.id] + Colors.ENDC + ")"
     
     if loop_depth:
         res = res + "  | " + Colors.GREEN + "loop depth: " + str(instr.get_loop_depth())
@@ -108,7 +117,7 @@ def basic_block_str(bb, **kwargs):
     for instr in bb.instructions:
         res = res + "\n  " + instruction_str(instr, **kwargs)
 
-    res = res + "\n"
+#    res = res + "\n"
 
     # successors (ids are of the form "bb[0-9]+" so we sort it by the numerical suffix)
     if print_succ:
@@ -167,14 +176,17 @@ def function_str(f, **kwargs):
 
 
 def intervals_str(intervals, **kwargs):
-    all_ivs = []
-    for ivlist in intervals.values():
-        all_ivs.extend(ivlist)
-
-    all_ivs = sorted(all_ivs, key=lambda iv: (iv.fr, iv.to))
-
     res = ""
-    for iv in all_ivs:
-        res += "[" + str(iv.fr) + ", " + str(iv.to) + "] " + value_str(iv.var) + "\n"
+    sivs = []
+    for iv in intervals.values():
+        sivs.extend(iv.subintervals)
+    
+    sivs = sorted(sivs, key=lambda siv: (siv.num_from(), siv.num_to()))
+
+    for siv in sivs:
+        res += "[" + str(siv.num_from()) + ", " + str(siv.num_to()) + "] " + value_str(siv.parent.var) + "\n"
 
     return res
+
+
+

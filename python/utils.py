@@ -1,3 +1,37 @@
+import re
+from matplotlib import pyplot as plt
+
+SEPARATOR = "/" # Should be the same as in cfgextractor in C++
+
+#########################################################################
+########################## HELPER FUNCTIONS ############################
+#########################################################################
+
+# Extracts first number from a string if there is any.
+def extract_num_from_id(id_):
+    res = re.findall(r'\d+', id_)
+    if len(res) > 0:
+        return res[0]
+    return None
+
+# Often Variable or BasicBlock names are of the form var_id/llvm_name
+# or bb_id/llvm_name. This function extracts the id.
+def extract_id(full_name):
+    return full_name.split(SEPARATOR)[0]
+
+# Checks if the given name is the name of proper (allocable) Variable
+def is_varname(name):
+    return re.match('v[0-9]+', name) is not None
+
+# Checks if the given name is the name of a BasicBlock.
+def is_bbname(name):
+    return re.match('bb[0-9]+', name) is not None
+
+# Checks if the given name is the name of a register
+def is_regname(name):
+    return re.match('reg[0-9]+', name) is not None
+
+
 #########################################################################
 ########################### GRAPH OPERATIONS ############################
 #########################################################################
@@ -48,16 +82,13 @@ def reverse_postorder(f):
     return bbs[::-1]
 
 # This function takes list of basic blocks, and assignes numbers to instructions in this order.
-# Returns dictionary {instruction_id: number}
 def number_instructions(bbs):
-    d = {}
-    num = 0
+    n = 0
     for bb in bbs:
         for instr in bb.instructions:
-            d[instr.id] = num
-            num += 1
+            instr.num = n
+            n +=1
 
-    return d
 
 
 #########################################################################
@@ -91,4 +122,32 @@ class RegisterSet:
         self.free.add(reg)
 
 
+# Draws plot with provided intervals. Each interval is a line segment [iv.fr, iv.to],
+# with Y coordinate equal to numerical sufix of corresponding variable id.
+# save_to_file - name of the file where the plot should be saved. If None, the plot is shown
+#                in the pop-up window.
+def draw_intervals(intervals, save_to_file=None):
+    for (vid, ivlist) in intervals.iteritems():
+        x = []
+        y = []
+        num = extract_num_from_id(vid)
+        for iv in ivlist:
+            # None at the end guarantees that line is not continuous all the time and
+            # there are holes in the plot in proper moments.
+            x.extend([iv.fr, iv.to, None])
+            y.extend([num, num, None])
+        plt.plot(x,y, label=str(vid))
 
+    if save_to_file:
+        plt.savefig(save_to_file)
+    else:
+        plt.show()
+
+
+def update_alloc(intervals):
+    for iv in intervals.values():
+        for siv in iv.subintervals:
+            print iv.var.id, iv.reg
+            siv.defn.alloc[iv.var.id] = iv.reg
+            for use in siv.uses:
+                use.alloc[iv.var.id] = iv.reg
