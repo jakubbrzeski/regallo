@@ -56,7 +56,7 @@ def id_list_str(id_list, **kwargs):
 def instruction_str(instr, **kwargs):
     live_vars = kwargs.get("live_vars", [])
     loop_depth = kwargs.get("loop_depth", False)
-    nums = kwargs.get("instr_nums", None)
+    nums = kwargs.get("nums", False)
     intervals = kwargs.get("intervals", None)
     print_interval_for = kwargs.get("print_interval_for", None)
     allocation = kwargs.get("allocation", None)
@@ -71,7 +71,7 @@ def instruction_str(instr, **kwargs):
             if iv.fr <= num and num <= iv.to:
                 res = res + Colors.GREEN + " | " + Colors.ENDC
     
-    if nums is not None:
+    if nums:
         res = res + " " + str(instr.num) + ": "
     else:
         res = res + " > "
@@ -80,7 +80,7 @@ def instruction_str(instr, **kwargs):
     res = res + Colors.RED + instr.opname + Colors.ENDC
 
     if instr.is_phi():
-        for (bb_id, v) in zip(instr.phi_preds, instr.uses_debug):
+        for (bb_id, v) in zip(instr.phi_preds_debug, instr.uses_debug):
             res = res + " (" + value_str(bb_id, **kwargs) + " -> " + value_str(v, **kwargs) + ")"
     else:
         for use in instr.uses_debug:
@@ -174,17 +174,56 @@ def function_str(f, **kwargs):
                    
     return res
 
-
+#'{:20s} {:4.1f} <--- {}'.format(name_last_first, average, grades)
 def intervals_str(intervals, **kwargs):
-    res = ""
-    sivs = []
-    for iv in intervals.values():
-        sivs.extend(iv.subintervals)
-    
-    sivs = sorted(sivs, key=lambda siv: (siv.num_from(), siv.num_to()))
+    verbose = kwargs.get("verbose", False)
+    regs = kwargs.get("registers", False)
 
-    for siv in sivs:
-        res += "[" + str(siv.num_from()) + ", " + str(siv.num_to()) + "] " + value_str(siv.parent.var) + "\n"
+    res = ""
+    ivs = []
+    for ivlist in intervals.values():
+        ivs.extend(ivlist)
+    
+    ivs = sorted(ivs, key=lambda iv: (iv.fr.num, iv.to.num))
+    res += "{:10s} {:10s}".format("INTERVAL", "VAR-ID")
+    if regs:
+        res += "{:10s}".format("REGISTER")
+    if verbose:
+        res += "{:15s} {:15s}\n".format("DEFINED-AT", "USED-AT")
+
+    res += "\n"
+
+    for iv in ivs:
+        if not iv.empty():
+            nums_str = "[" + str(iv.fr.num) + ", " + str(iv.to.num) + "]"
+            var_str = str(iv.var)
+            
+            info_f = "{:10s} {:10s}"
+            reg_f = "{:10s}"
+            verb_f = "{:15s} {:15s}"
+
+            res += info_f.format(nums_str, var_str)
+            if regs:
+                res += reg_f.format(iv.reg)
+            
+            if verbose:
+                pass
+                """
+                defnum = iv.defn.num if iv.defn else None
+                def_str = str(defnum)
+                uses_str = "["
+                rev_uses = siv.uses[::-1]
+                for i in range(len(siv.uses)):
+                    if i:
+                        uses_str += ", "
+                    uses_str += str(rev_uses[i].num)
+                uses_str += "]"
+                res += "{:10s} {:10s} {:15s} {:15s}\n".format(nums_str, var_str, def_str, uses_str)
+            
+                """
+            res += "\n" 
+        
+
 
     return res
 

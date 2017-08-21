@@ -60,7 +60,7 @@ class Instruction:
     STORE = "store"
     MOVE = "move"
 
-    def __init__(self, iid, bb, defn, opname, uses, phi_preds=None, uses_debug=[]):
+    def __init__(self, iid, bb, defn, opname, uses, uses_debug=None, phi_preds=None, phi_preds_debug=None):
         # Instruction id.
         self.id = iid
 
@@ -100,10 +100,11 @@ class Instruction:
         for var in uses:
             var.uses[iid] = self
 
+        self.phi_preds_debug = phi_preds_debug if phi_preds_debug else []
         # Lists of all values (not only allocable Variables) used by the instruction in
         # string format. These are e.g. labels (basic block ids) or constants and are useful
         # for debugging purposes.
-        self.uses_debug = uses_debug
+        self.uses_debug = uses_debug if uses_debug else []
       
         # Set of variables live-in and live-out of this instruction.
         self.live_in = None
@@ -115,34 +116,32 @@ class Instruction:
         opname = instruction_json['opname']
         defn = bb.f.get_or_create_variable(instruction_json['def'])
         is_phi = (opname == Instruction.PHI)
-        phi_preds = None
+        phi_preds = {} if is_phi else None
+        phi_preds_debug = [] if is_phi else None
         uses = []
         uses_debug = []
 
-        # TODO: what if there are two phi_preds but one use variable?
-        #       is it possible?
-        #       e.g. 
-        if is_phi:
-            phi_preds = []
-
         # Setting up uses and phi predecessors.
         for op_json in instruction_json['use']:
-            val_name = op_json
+            val_name = op_json['val'] if is_phi else op_json
+            bb_id = None
             if is_phi:
-                val_name = op_json['val']
                 bb_id = utils.extract_id(op_json['bb'])
-                phi_preds.append(bb_id)
+                phi_preds_debug.append(bb_id)
 
             if utils.is_varname(val_name):
                 v = bb.f.get_or_create_variable(val_name)
                 uses.append(v)
                 uses_debug.append(utils.extract_id(val_name))
+                if bb_id is not None:
+                    phi_preds[v.id] = bb_id
+
             elif utils.is_bbname(val_name): # label, keep just id string.
                 uses_debug.append(utils.extract_id(val_name))
             else:
                 uses_debug.append(val_name)
 
-        return cls(iid, bb, defn, opname, uses, phi_preds, uses_debug)
+        return cls(iid, bb, defn, opname, uses, uses_debug, phi_preds, phi_preds_debug)
 
     def is_phi(self):
         return self.opname == Instruction.PHI
@@ -247,8 +246,9 @@ class BasicBlock:
     
         for instr in self.instructions:
             if instr.is_phi():
-                for (bb_id, use) in zip(instr.phi_preds, instr.uses):
+                for use in instr.uses:
                     if use not in defs:
+                        bb_id = instr.phi_preds[use.id]
                         uevs[bb_id].add(use)
             else:
                 for use in instr.uses:

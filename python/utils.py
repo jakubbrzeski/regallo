@@ -84,11 +84,14 @@ def reverse_postorder(f):
 # This function takes list of basic blocks, and assignes numbers to instructions in this order.
 def number_instructions(bbs):
     n = 0
+    num_to_instr = {}
     for bb in bbs:
         for instr in bb.instructions:
             instr.num = n
+            num_to_instr[n] = instr
             n +=1
 
+    return num_to_instr
 
 
 #########################################################################
@@ -134,7 +137,7 @@ def draw_intervals(intervals, save_to_file=None):
         for iv in ivlist:
             # None at the end guarantees that line is not continuous all the time and
             # there are holes in the plot in proper moments.
-            x.extend([iv.fr, iv.to, None])
+            x.extend([iv.fr.num, iv.to.num, None])
             y.extend([num, num, None])
         plt.plot(x,y, label=str(vid))
 

@@ -26,15 +26,19 @@ f.perform_loop_analysis()
 
 
 bls = lscan.BasicLinearScan(f)
-print cfgprinter.function_str(f, instr_nums=bls.num)
+print cfgprinter.function_str(f, nums=True)
 intervals = bls.compute_intervals(print_debug=1)
-print cfgprinter.intervals_str(intervals)
+print cfgprinter.intervals_str(intervals, registers=True, verbose=False)
+#utils.draw_intervals(intervals, "alloc.png")
 
-bls.allocate_registers(intervals, 6)
-utils.update_alloc(intervals)
+bls.allocate_registers(intervals, 4)
+print cfgprinter.intervals_str(intervals, registers=True, verbose=False)
 
+bls.insert_spill_code(intervals)
+print cfgprinter.function_str(f, nums=True)
+print cfgprinter.intervals_str(intervals, registers=True, verbose=False)
 
-print cfgprinter.function_str(f, instr_nums=bls.num)
+#print cfgprinter.function_str(f, instr_nums=bls.num)
 
 
 """

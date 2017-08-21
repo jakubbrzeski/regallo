@@ -1,10 +1,11 @@
 import unittest
 import cfg
 import cfg_pretty_printer as cfgprinter
+import lscan
 """
 Intervals:
-[-1, 6] v3
-[-1, 7] v2
+[0, 6] v3
+[0, 7] v2
 [0, 1] v1
 [2, 4] v5
 [3, 6] v6
@@ -47,8 +48,9 @@ bb5 (while.body)
 bb6 (while.end)
    15: v18 = ret v14
 """
-class SimpleGCDTest(unittest.TestCase):
+class GCDTest(unittest.TestCase):
     def setUp(self):
+        print "GCDTest setup"
         # Create gcd funtion based on llvm output.
         f = cfg.Function("gcd")
         
@@ -133,8 +135,71 @@ class SimpleGCDTest(unittest.TestCase):
 
         f.set_bblocks(d, bb1)
         self.f = f
+        f.compute_defs_and_uevs()
+        f.perform_liveness_analysis()
+        f.perform_dominance_analysis()
+        f.perform_loop_analysis()
 
-    def test_anything(self):
-        print cfgprinter.function_str(self.f)
-        self.assertEqual(self.f.name, "gcd")
+
+
+class BasicLinearScanTest(GCDTest):
+
+    def setUp(self):
+        super(BasicLinearScanTest, self).setUp()
+        self.bls = lscan.BasicLinearScan(self.f)
+        print "BasicLinearScanTest setup"
+
+    def test_intervals(self):
+        intervals = self.bls.compute_intervals()
+
+        def assertInterval(vid, num_fr, num_to, num_def, num_uses):
+            self.assertIn(vid, intervals)
+            # In basic linear scan each variable should have only one interval 
+            # with only one subinterval.
+            self.assertEqual(len(intervals[vid]), 1)
+            iv = intervals[vid][0]
+            self.assertEqual(iv.fr.num, num_fr)
+            self.assertEqual(iv.to.num, num_to)
+            # Def
+            if num_def is not None:
+                self.assertIsNotNone(iv.defn)
+                self.assertEqual(iv.defn.num, num_def)
+            else:
+                self.assertIsNone(iv.defn)
+            # Uses
+            self.assertEqual(len(iv.uses), len(num_uses))
+            iv_num_uses = sorted([use.num for use in iv.uses])
+            num_uses = sorted(num_uses)
+            for i in range(len(num_uses)):
+                self.assertEqual(iv_num_uses[i], num_uses[i])
+                
+        def assertEmptyInterval(vid):
+            self.assertEqual(len(intervals[vid]), 1)
+            self.assertTrue(intervals[vid][0].empty())
+
+        assertInterval("v1", 0, 1, 0, [1])
+        assertInterval("v2", 0, 7, None, [0, 2, 7])
+        assertInterval("v3", 0, 6, None, [0, 2, 3, 6])
+        assertEmptyInterval("v4")
+        assertInterval("v5", 2, 4, 2, [3,4])
+        assertInterval("v6", 3, 6, 3, [4, 6])
+        assertInterval("v7", 4, 7, 4, [7])
+        assertEmptyInterval("v8")
+        assertInterval("v9", 6, 14, 6, [9])
+        assertInterval("v10", 7, 14, 7, [10])
+        assertEmptyInterval("v11")
+        assertInterval("v12", 9, 13, 9, [10, 11, 13])
+        assertInterval("v13", 9, 14, 13, [9])
+        assertInterval("v14", 10, 15, 10, [13, 15])
+        assertInterval("v15", 11, 12, 11, [12])
+        assertEmptyInterval("v16")
+        assertEmptyInterval("v17")
+        assertEmptyInterval("v18")
+
+
+
+
+
+
+
 
