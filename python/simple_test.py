@@ -141,7 +141,6 @@ class GCDTest(unittest.TestCase):
         f.perform_loop_analysis()
 
 
-
 class BasicLinearScanTest(GCDTest):
 
     def setUp(self):

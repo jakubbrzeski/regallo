@@ -3,78 +3,48 @@ import argparse
 import cfg
 import utils
 import lscan
-import cfg_pretty_printer as cfgprinter
+import cost
+import phi
+from cfgprinter import FunctionPrinter, IntervalsPrinter, CostPrinter, PrintOptions as Opts
 from pprint import pprint
 
 parser = argparse.ArgumentParser(description='Process json with CFG')
-
 parser.add_argument('-filename', help="Name of the json file with CFG")
-
 args = parser.parse_args()
 
 with open(args.filename) as f:
     cfg_dict = json.load(f)
 
-#pprint (cfg_dict)
-#pprint (cfg_dict[1])
-
 f = cfg.Function.from_json(cfg_dict[0])
-f.compute_defs_and_uevs()
-f.perform_liveness_analysis()
-f.perform_dominance_analysis()
-f.perform_loop_analysis()
+f.perform_full_analysis()
 
+options_full = Opts(predecessors=True, successors=True,
+        uevs_defs=True, liveness=True, dominance=True, intervals_verbose=True,
+        show_spilled=True)
+
+print FunctionPrinter(f, options_full)
 
 bls = lscan.BasicLinearScan(f)
-print cfgprinter.function_str(f, nums=True)
 intervals = bls.compute_intervals(print_debug=1)
-print cfgprinter.intervals_str(intervals, registers=True, verbose=False)
-#utils.draw_intervals(intervals, "alloc.png")
+print IntervalsPrinter(intervals).full()
 
-bls.allocate_registers(intervals, 4)
-print cfgprinter.intervals_str(intervals, registers=True, verbose=False)
+#utils.draw_intervals(intervals, "before.png")
+bls.allocate_registers(intervals, 2)
+print IntervalsPrinter(intervals).full()
 
 bls.insert_spill_code(intervals)
-print cfgprinter.function_str(f, nums=True)
-print cfgprinter.intervals_str(intervals, registers=True, verbose=False)
+print FunctionPrinter(f)
 
-#print cfgprinter.function_str(f, instr_nums=bls.num)
+print "AFTER PHI ELIMINATION"
 
+phi.eliminate_phi(f)
+f.perform_full_analysis()
 
-"""
-utils.draw_intervals(bls.intervals, "before.png")
-print "\n"
+print FunctionPrinter(f, Opts(nums=True, alloc_only=True))
 
+#utils.draw_intervals(intervals, "after.png")
+bcost = cost.BasicCostCalculator()
+print CostPrinter(f, bcost).full()
 
+#print "COST: ", bcost.function_cost(f)
 
-
-print "Intervals:"
-print cfgprinter.intervals_str(bls.intervals)
-utils.draw_intervals(bls.intervals, "before.png")
-
-
-print ""
-
-print cfgprinter.function_str(f, 
-        liveness=False, 
-        dominance=False, 
-        loop_depth=True, 
-        allocation=allocation,
-        live_vars=[], 
-        instr_nums=bls.num)
-
-
-print "Intervals:"
-print cfgprinter.intervals_str(bls.intervals)
-utils.draw_intervals(bls.intervals, "after.png")
-"""
-
-
-'''
-for loop in f.loops:
-    llvm_names = [bb.llvm_name for bb in loop.body]
-    parent = "None"
-    if loop.parent is not None:
-        parent = loop.parent.header.llvm_name
-    print loop.header.llvm_name, " -> ", loop.tail.llvm_name, "depth: ", loop.depth, "parent", parent
-'''

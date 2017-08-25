@@ -27,6 +27,10 @@ class Variable:
 
         vinfo = name.split(utils.SEPARATOR)
         self.id = vinfo[0]
+
+        # Mapping from instruction-id to register or None meaning
+        # where has this variable been allocated at the given instruction.
+        self.alloc = {}
         
         self.llvm_name = None
         if len(vinfo) > 1 and vinfo[1] != '':
@@ -54,21 +58,26 @@ class Variable:
             return True
         return False
 
+    def is_spilled_at(self, instr):
+        if instr.id not in self.alloc:
+            return False
+        return self.alloc[instr.id] is None
+
 class Instruction:
     PHI = "phi"
     LOAD = "load"
     STORE = "store"
-    MOVE = "move"
+    MOV = "mov"
 
-    def __init__(self, iid, bb, defn, opname, uses, uses_debug=None, phi_preds=None, phi_preds_debug=None):
-        # Instruction id.
-        self.id = iid
-
+    def __init__(self, bb, defn, opname, uses, uses_debug=None):
         # Parent BasicBlock.
         self.bb = bb
 
         # Parent Function.
         self.f = bb.f 
+
+        # Instruction id.
+        self.id = self.f.get_free_iid()
 
         # Number of instruction. It's something different than id. Id is unique,
         # but we can number the instruction multiple times. It is useful especially
@@ -79,7 +88,8 @@ class Instruction:
         # Variable defined by this instruction.
         self.definition = defn
         # By the way we update the variable's defs dictionary.
-        defn.defs[iid] = self
+        if defn:
+            defn.defs[self.id] = self
 
         # Operation name e.g. alloc, add, br, phi.
         self.opname = opname
@@ -87,20 +97,27 @@ class Instruction:
         # Variables that are used by this instruction. It doesn't include constants, labels
         # or any other values that are not interesting for register allocator. All values
         # are hold in self.uses_debug (see below).
-        # If this is PHI instruction, we keep ids of this basic block predecessors 
-        # which correspond to the particular variables in self.uses. It means that
-        # self.phi_preds[i] is id of bb where the variable self.uses[i] comes from.
-        self.phi_preds = phi_preds
         self.uses = uses
+
+        # TODO: finish descr.
+        self.phi_preds = None
+
+        if opname == Instruction.PHI:
+            phi_uses = {}
+            self.phi_preds = {}
+            for (bid, var) in uses:
+                phi_uses[bid] = var
+                self.phi_preds[var.id] = bid
+                var.uses[self.id] = self
+
+            self.uses = phi_uses
+        else:
+            for var in uses:
+                var.uses[self.id] = self
 
         # Dicitonary {variable id: register}
         self.alloc = {}
 
-        # For each variable we update instructions it is used in.
-        for var in uses:
-            var.uses[iid] = self
-
-        self.phi_preds_debug = phi_preds_debug if phi_preds_debug else []
         # Lists of all values (not only allocable Variables) used by the instruction in
         # string format. These are e.g. labels (basic block ids) or constants and are useful
         # for debugging purposes.
@@ -110,38 +127,46 @@ class Instruction:
         self.live_in = None
         self.live_out = None
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.id == other.id
+            
+        return False
+
     @classmethod
     def from_json(cls, instruction_json, bb):
-        iid = bb.f.get_free_iid()
         opname = instruction_json['opname']
         defn = bb.f.get_or_create_variable(instruction_json['def'])
         is_phi = (opname == Instruction.PHI)
-        phi_preds = {} if is_phi else None
-        phi_preds_debug = [] if is_phi else None
         uses = []
         uses_debug = []
 
         # Setting up uses and phi predecessors.
         for op_json in instruction_json['use']:
             val_name = op_json['val'] if is_phi else op_json
-            bb_id = None
-            if is_phi:
-                bb_id = utils.extract_id(op_json['bb'])
-                phi_preds_debug.append(bb_id)
+            bb_id = utils.extract_id(op_json['bb']) if is_phi else None
 
             if utils.is_varname(val_name):
                 v = bb.f.get_or_create_variable(val_name)
-                uses.append(v)
-                uses_debug.append(utils.extract_id(val_name))
-                if bb_id is not None:
-                    phi_preds[v.id] = bb_id
+                if is_phi:
+                    uses.append((bb_id, v))
+                    uses_debug.append((bb_id, v))
+                else:
+                    uses.append(v)
+                    uses_debug.append(v)
 
             elif utils.is_bbname(val_name): # label, keep just id string.
-                uses_debug.append(utils.extract_id(val_name))
+                if is_phi:
+                    uses_debug.append((bb_id, utils.extract_id(val_name)))
+                else:
+                    uses_debug.append(utils.extract_id(val_name))
             else:
-                uses_debug.append(val_name)
+                if is_phi:
+                    uses_debug.append((bb_id, val_name))
+                else:
+                    uses_debug.append(val_name)
 
-        return cls(iid, bb, defn, opname, uses, uses_debug, phi_preds, phi_preds_debug)
+        return cls(bb, defn, opname, uses, uses_debug)
 
     def is_phi(self):
         return self.opname == Instruction.PHI
@@ -166,6 +191,9 @@ class BasicBlock:
 
         # BasicBlock consists of a list of instructions. 
         self.instructions = []
+        
+        # Optional list of phi instructions.
+        self.phis = []
 
         # Dictionaries of predecessors and successors {bblock-id: BasicBlock}.
         self.preds = {}
@@ -175,13 +203,10 @@ class BasicBlock:
         # are used before any redefinition in this block) computed per incoming edge,
         # i.e uevs = {predecessor_id: set of variables}. It is because of PHI functions,
         # where the given variable is used depending on where the control flow comes from.
-        self.uevs = {}
-        self.defs = set()
+        self.uevs = None
+        self.defs = None
 
-        # The live_in sets are computed per incoming edge because of PHI functions:
-        # so live_in = {predecessor_id: set of live variables}.
-        # live_out set is a sum of live_in variables from all successors.
-        self.live_in_edge = {}
+        # TODO: descr.
         self.live_in = set()
         self.live_out = set()
 
@@ -203,17 +228,20 @@ class BasicBlock:
 
         bb = cls(bid, f, llvm_name)
 
-        instructions = [
-                Instruction.from_json(instr_json, bb)
-                for instr_json in bblock_json['instructions']
-                ]
-
-        bb.set_instructions(instructions)
+        for instr_json in bblock_json['instructions']:
+            instr = Instruction.from_json(instr_json, bb)
+            bb.instructions.append(instr)
+            if instr.is_phi():
+                bb.phis.append(instr)
 
         return bb
 
     def set_instructions(self, new_instructions):
         self.instructions = new_instructions
+        self.phis = []
+        for instr in new_instructions:
+            if instr.is_phi():
+                self.phis.append(instr)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -232,30 +260,26 @@ class BasicBlock:
         
         return self.loop.header.id == self.id
 
+    def first_instr(self):
+        return self.instructions[0]
+
+    def last_instr(self):
+        return self.instructions[-1]
 
     # Computes variable sets (defs, uevs) for this basic block.
     # defs - variables defined in the basic block
-    # uevs - variables that are used before any redefinition. We compute
-    #        this set per each incoming edge (i.e. per each predecessor block),
-    #        because of PHI functions, where it depends on flow direction which
-    #        of the variables is going to be used.
+    # uevs - variables that are used before any redefinition.
     def compute_defs_and_uevs(self):
         pred_ids = self.preds.keys()
-        defs = set() #{pred_id: set() for pred_id in pred_ids}
-        uevs = {pred_id: set() for pred_id in pred_ids}
+        defs = set() 
+        uevs = set()
     
         for instr in self.instructions:
-            if instr.is_phi():
-                for use in instr.uses:
-                    if use not in defs:
-                        bb_id = instr.phi_preds[use.id]
-                        uevs[bb_id].add(use)
-            else:
+            if not instr.is_phi():
                 for use in instr.uses:
                     # Each use add to each edge
                     if use not in defs:
-                        for pred_id in pred_ids:
-                            uevs[pred_id].add(use)
+                            uevs.add(use)
 
             defs.add(instr.definition)
 
@@ -265,9 +289,7 @@ class BasicBlock:
     # For each instruction computes sets of live-in and
     # live-out variables (before and after the instruction)
     def perform_instr_liveness_analysis(self):
-        current_live_set = set()
-        for pred_id in self.preds.keys():
-            current_live_set |= self.live_in_edge[pred_id].copy()
+        current_live_set = self.live_in.copy()
             
         for instr in self.instructions:
             instr.live_in = current_live_set
@@ -312,9 +334,7 @@ class Function:
         # Entry basic block
         self.entry_bblock = None
 
-        # Dictionary mapping llvm names of basic blocks to their ids. 
-        self.llvm_name2id = {}
-
+        # Dictionary mapping llvm names of basic blocks to their ids
         # List of loops in this function
         self.loops = []
 
@@ -378,6 +398,9 @@ class Function:
         
         return v
 
+    def temp_variable(self):
+        return self.get_or_create_variable("v0")
+
     # Assumes there exists a varialbe with given id in the function's dictionary and returns
     # this variable.
     def get_variable(self, vid):
@@ -407,7 +430,7 @@ class Function:
         # initialize sets
         for bb in ordered_bbs:
             assert bb.defs is not None and bb.uevs is not None
-            bb.live_in_edge = {pred_id: set() for pred_id in bb.preds.keys()}
+            bb.live_in = set()
             bb.live_out = set()
 
         change = True
@@ -418,32 +441,23 @@ class Function:
             for bb in ordered_bbs:
                 live_out_size = len(bb.live_out)
                 for succ in bb.succs.values():
-                    # To the current basic block's live-out set we add all 
-                    # variables that are live on the edge to this successor.
-                    bb.live_out |= succ.live_in_edge[bb.id]
+                    bb.live_out |= (succ.live_in)
+                    # We add to the live-out set these input variables of phi instructions,
+                    # that were upward exposed in the successor block.
+                    for phi in succ.phis:
+                        bb.live_out.add(phi.uses[bb.id])
                 
-                if len(bb.live_out) > live_out_size:
-                    change = True
+                live_in_size = len(bb.live_in)
+                # Variable is in live-in set if
+                # - it is upword-exposed in bb (i.e. used before any redefinition)
+                # - or is live on the exit from bb and not defined in this block.
+                bb.live_in = (bb.uevs | (bb.live_out - bb.defs))
 
-                # Live-in set of the basic block consists of all variables
-                # that are upword-exposed or live-out but not defined in this block.
-                for pred_id in bb.preds.keys():
-                    live_in_size = len(bb.live_in_edge[pred_id])
-                    # Main part of the algorithm - updating live-in set.
-                    # Variable is in live on the edge between blocks (p --> bb)
-                    # if it is upword-exposed in bb (i.e. used before any redefinition)
-                    # or is live on the exit from bb and not defined in this block.
-                    bb.live_in_edge[pred_id] = (bb.uevs[pred_id] | (bb.live_out - bb.defs))
-                    if len(bb.live_in_edge[pred_id]) > live_in_size:
-                        change = True
+                if len(bb.live_in) > live_in_size or len(bb.live_out) > live_out_size:
+                    change = True
 
         for bb in ordered_bbs:
             bb.perform_instr_liveness_analysis() # updates liveness for each instr
-
-        for bb in ordered_bbs:
-            bb.live_in = set()
-            for l in bb.live_in_edge.values():
-                bb.live_in |= l
 
 
         print "Liveness analysis done, #iterations = ", iterations
@@ -528,6 +542,11 @@ class Function:
 
         self.loops = loops
 
+    def perform_full_analysis(self):
+        self.compute_defs_and_uevs()
+        self.perform_liveness_analysis()
+        self.perform_dominance_analysis()
+        self.perform_loop_analysis()
             
 class Module:
     def __init__(self, cfg_json):

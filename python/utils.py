@@ -11,7 +11,7 @@ SEPARATOR = "/" # Should be the same as in cfgextractor in C++
 def extract_num_from_id(id_):
     res = re.findall(r'\d+', id_)
     if len(res) > 0:
-        return res[0]
+        return int(res[0])
     return None
 
 # Often Variable or BasicBlock names are of the form var_id/llvm_name
@@ -21,17 +21,32 @@ def extract_id(full_name):
 
 # Checks if the given name is the name of proper (allocable) Variable
 def is_varname(name):
+    if name is None:
+        return False
     return re.match('v[0-9]+', name) is not None
 
 # Checks if the given name is the name of a BasicBlock.
 def is_bbname(name):
+    if name is None:
+        return False
     return re.match('bb[0-9]+', name) is not None
 
 # Checks if the given name is the name of a register
 def is_regname(name):
+    if name is None:
+        return False
     return re.match('reg[0-9]+', name) is not None
 
+def is_slotname(name):
+    if name is None:
+        return False
+    return re.match('mem\(v[0-9]+\)', name) is not None
 
+def slot(var):
+    return "mem("+var.id+")"
+
+def scratch_reg():
+    return "reg0"
 #########################################################################
 ########################### GRAPH OPERATIONS ############################
 #########################################################################
@@ -130,21 +145,32 @@ class RegisterSet:
 # save_to_file - name of the file where the plot should be saved. If None, the plot is shown
 #                in the pop-up window.
 def draw_intervals(intervals, save_to_file=None):
+    vid_max = 0
     for (vid, ivlist) in intervals.iteritems():
         x = []
         y = []
-        num = extract_num_from_id(vid)
+        id_num = int(extract_num_from_id(vid))
+        vid_max = id_num if id_num > vid_max else vid_max
+        
         for iv in ivlist:
             # None at the end guarantees that line is not continuous all the time and
             # there are holes in the plot in proper moments.
             x.extend([iv.fr.num, iv.to.num, None])
-            y.extend([num, num, None])
-        plt.plot(x,y, label=str(vid))
+            y.extend([id_num, id_num, None])
+
+        plt.plot(x,y,label=str(vid))
+
+    plt.title('Lifetime Intervals')
+    plt.xlabel('Instruction numbers')
+    plt.ylabel('Variable ids')
+    plt.margins(0.05)
+    plt.yticks(range(1, 1+vid_max))
 
     if save_to_file:
         plt.savefig(save_to_file)
     else:
         plt.show()
+    plt.close()
 
 
 def update_alloc(intervals):
@@ -154,3 +180,4 @@ def update_alloc(intervals):
             siv.defn.alloc[iv.var.id] = iv.reg
             for use in siv.uses:
                 use.alloc[iv.var.id] = iv.reg
+

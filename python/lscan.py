@@ -1,36 +1,33 @@
 import utils
 import cfg
-import cfg_pretty_printer as cfgprinter
+import cfgprinter
 from sortedcontainers import SortedSet
 
-
 class Interval:
-
     class SubInterval:
         def __init__(self, fr, to, parent):
             self.fr = fr
             self.to = to
-            # Parent interval.
-            self.parent = parent
+            self.parent = parent # Parent interval.
 
-    def __init__(self, var, fr=None, to=None, reg=None, defn=None, uses=None):
+    def __init__(self, var, fr=None, to=None, alloc=None, defn=None, uses=None):
         # Variable this interval represents
         self.var = var
         # Instructions this interval starts and ends with.
         self.fr = fr
         self.to = to
-        # Allocated register
-        self.reg = reg
+        # Allocated allocister
+        self.alloc = alloc
         # Note that it doesn't always need to be the same as self.fr.
         self.defn = defn
         # List of instructions which use self.var in this interval.
         self.uses = [] if uses is None else uses
         # Stack (list) of subintervals.
         self.subintervals = []
-        # Dictionary {instruction-id: reg} denoting what
-        # register the variable was allocated to in the
+        # Dictionary {instruction-id: alloc} denoting what
+        # allocister the variable was allocated to in the
         # given instruction.
-        self.instr_to_reg = {}
+        self.instr_to_alloc = {}
 
     def add_subinterval(self, fr, to):
         siv = Interval.SubInterval(fr, to, self)
@@ -45,16 +42,22 @@ class Interval:
             return None
         return self.subintervals[-1]
 
-    # Rewrites list of intervals skipping all marked to be deleted.
-    def batch_delete(self):
-        new_subintervals = []
-        for siv in self.subintervals:
-            if not siv.delete:
-                new_subintervals.append(siv)
+    def update_variables(self, alloc):
+        if self.defn is not None:
+            self.var.alloc[self.defn.id] = alloc
+        for use in self.uses:
+            self.var.alloc[use.id] = alloc
 
-        self.subintervals = new_subintervals
+    def allocate(self, alloc):
+        self.alloc = alloc
+        self.update_variables(alloc)
 
-        
+    def spill(self):
+        print "spill variable", self.var.id
+        self.alloc = utils.slot(self.var)
+        self.update_variables(self.alloc)
+
+
 class BasicLinearScan:
     def __init__(self, f, bbs_list = None):
         self.f = f
@@ -71,7 +74,7 @@ class BasicLinearScan:
             # b first. 
             self.bbs = utils.reverse_postorder(f)
 
-        self.num_to_instr = utils.number_instructions(self.bbs)
+        utils.number_instructions(self.bbs)
 
 
     # Returns dictionary {variable-id: Interval}
@@ -93,62 +96,33 @@ class BasicLinearScan:
                 iv.defn = instr
                 
                 # Uses.
-                for use in instr.uses:
-                    iv = intervals[use.id]
-                    update(iv, instr, instr) # Try extend interval on both sides.
-                    iv.uses.append(instr)
+                if instr.is_phi():
+                    for (bid, use) in instr.uses.iteritems():
+                        iv = intervals[use.id]
+                        pred = self.f.bblocks[bid]
+                        update(iv, pred.last_instr(), pred.last_instr())
+                        # We update interval only to the end of the predecessor block,
+                        # not including the current phi instruction. However, we record
+                        # that the variable was used here to insert spill instructions
+                        # properly later.
+                        iv.uses.append(instr)
+                else:
+                    for use in instr.uses:
+                        iv = intervals[use.id]
+                        update(iv, instr, instr) # Try extend interval on both sides.
+                        iv.uses.append(instr)
 
 
             # If the current basic block is a loop header, for all variables that are in 
             # its live-in set we must extend their interval for the whole loop.
             if bb.is_loop_header():
-                start = bb.loop.header.instructions[0]
-                end = bb.loop.tail.instructions[-1]
+                start = bb.loop.header.first_instr()
+                end = bb.loop.tail.last_instr()
                 for v in bb.live_in:
                     update(intervals[v.id], start, end)
         
         # For generality:
         return {vid: [iv] for (vid,iv) in intervals.iteritems() if not iv.empty()}
-                    
-    """
-    def split_interval(self, iv, fr, to):
-        rev_sivs = iv.subintervals[::-1]
-        
-        siv_start = None
-        siv_end = None
-        take = []
-        stay_start = []
-        stay_end = []
-        for siv in rev_sivs:
-            if siv.fr.num < fr.num and fr.num <= siv.to.num:
-                siv_start = siv
-            elif fr.num <= siv.fr.num and siv.to.num <= to.num:
-                take.append(siv)
-            elif siv.fr.num <= to.num and to.num < siv.to.num:
-                siv_end = siv
-            elif siv.to.num < fr.num:
-                stay_start.append(siv)
-            elif siv.fr.num > to.num:
-                stay_end.append(siv)
-
-        prev = self.num_to_instr[fr.num-1]
-        nxt = self.num_to_instr[to.num+1]
-        sivs_stay = []
-        sivs_stay.extend(sivs_stay_start)
-        if siv_start:
-            # new subintervals: a = [siv_start.fr, prev], b =[fr, siv_start.to] 
-            uses_a = []
-            uses_b = []
-            for use in siv_start.uses:
-                if use.num <= prev.num:
-                    uses_a.append(use)
-                else:
-                    uses_b.append(use)
-            
-    
-            if siv_start is siv_end:
-                # [3, 10] -> [5,8]
-    """
 
     def allocate_registers(self, intervals, regcount):
         sorted_intervals = sorted([ivl[0] for ivl in intervals.values()], key = lambda iv: iv.fr.num)
@@ -160,70 +134,64 @@ class BasicLinearScan:
                 if iv.to.num > current.fr.num:
                     return
                 active.remove(iv)
-                regset.set_free(iv.reg)
+                regset.set_free(iv.alloc)
 
         def spill_at_interval(current):
             spilled = active[-1] # Active interval with furthest endpoint.
             if spilled.to.num > current.to.num:
-                current.reg = spilled.reg
-                spilled.reg = None
+                current.allocate(spilled.alloc)
+                spilled.spill()
                 active.remove(spilled)
                 active.add(current)
-            # else: we do nothing, current.reg is not assigned a register so
-            # it means it will be spilled.
-        
+            else: 
+                current.spill()
+
         # LinearScan main loop.
         for iv in sorted_intervals:
             expire_old_intervals(iv)
             reg = regset.get_free()
             if reg:
-                iv.reg = reg
+                iv.allocate(reg)
                 active.add(iv)
             else:
                 spill_at_interval(iv)
 
-
+    # Checks all intervals that were spilled (don't have register assigned),
+    # and inserts load and store instructions in appropriate places of the program.
+    # IMPORTANT: it doesn't insert spill code for variables in phi instructions.
+    #            it is done separately in phi elimination phase.
+    # WARNING: it breaks uevs, defs and liveness sets and loop information.
     def insert_spill_code(self, intervals):
-        dummy_store_def = self.f.get_or_create_variable()
+        dummy_def = self.f.get_or_create_variable()
         insert_after = {iid: [] for iid in range(self.f.instr_counter)}
         insert_before = {iid: [] for iid in range(self.f.instr_counter)}
+        update_endpoint = []
         for vid in intervals.keys():
             iv = intervals[vid][0]
-            if iv.reg is None:
+            if utils.is_slotname(iv.alloc):
                 # We divide iv into several small of the form: [def, store] and [load, use]
                 ivlist = []
                 
-                if iv.defn:
-                    store = cfg.Instruction(
-                                self.f.get_free_iid(),
-                                iv.defn.bb,
-                                dummy_store_def,
-                                cfg.Instruction.STORE,
-                                [iv.var],
-                                uses_debug=[iv.var.id])
+                slot = iv.alloc
+                if iv.defn and not iv.defn.is_phi():
+                    store = cfg.Instruction(iv.defn.bb, None, cfg.Instruction.STORE,
+                                [iv.var], [slot, iv.var])
                     
                     insert_after[iv.defn.id].append(store)
-                    # TODO: reg?
+                    iv.var.alloc[iv.defn.id] = utils.scratch_reg()
+                    iv.var.alloc[store.id] = utils.scratch_reg()
                     ivlist.append(Interval(iv.var, iv.defn, store, None, iv.defn, [store]))
                     
-                for use in iv.uses:
-                    load = cfg.Instruction(
-                                self.f.get_free_iid(),
-                                use.bb,
-                                iv.var,
-                                cfg.Instruction.LOAD,
-                                [], uses_debug=["const_addr"])
+                for instr in iv.uses:
+                    if not instr.is_phi():
+                        load = cfg.Instruction(instr.bb, iv.var, cfg.Instruction.LOAD, [], 
+                                [slot])
+                        iv.var.alloc[instr.id] = utils.scratch_reg()
+                        iv.var.alloc[load.id] = utils.scratch_reg()
+                        insert_before[instr.id].append(load)
 
-                    if use.is_phi():
-                        # insert at the end of the predecessor block
-                        pred_id = use.phi_preds[iv.var.id]
-                        pred = use.bb.preds[pred_id]
-                        insert_after[pred.instructions[-1].id].append(load)
-                    else:
-                        insert_before[use.id].append(load)
-
-                    # TODO: reg?
-                    ivlist.append(Interval(iv.var, load, use, None, load, [use]))
+                        new_iv = Interval(iv.var, load, instr, None, load, [instr])
+                        ivlist.append(new_iv)
                 
                 intervals[vid] = ivlist
         
@@ -239,18 +207,19 @@ class BasicLinearScan:
 
             bb.set_instructions(new_instructions)
 
+        for (iv, pred) in update_endpoint:
+            iv.to = pred.last_instr()
 
         # Because new instructions were inserted we have to renumber
-        # all instructions and recompute liveness sets.
+        # all instructions.
         utils.number_instructions(self.bbs)
-        self.f.compute_defs_and_uevs()
-        self.f.perform_liveness_analysis()
 
-    """
+        
+"""
     def allocate_registers(self, intervals, register_count):
         # We reserve two registers for spilling.
         regset = utils.RegisterSet(register_count-2)
-        dummy_store_def = self.f.get_or_create_variable()
+        dummy_def = self.f.get_or_create_variable()
 
         class Action:
             START = 1
@@ -317,31 +286,6 @@ class BasicLinearScan:
         # Return allocated intervals.
         return intervals
     """
-# When we spill variables, we need to insert stores and loads in some parts
-# of the program. Similarly, we may need to add moves to get rid of SSA form
-# at the end etc. Instead of inserting those instructions immediately, we record
-# them in the dictionaries in order to rewrite the whole program at the end.
-# It is more efficient because insertion to the list is linear and in case of
-# many insertions it will take a lot of time.
-# These are dictionaries {instruction-id: list of Instructions} and denote
-# list of new instructions to insert before or after specific instruction.
-
-
-# If there is no free register, we need to spill variable on this
-# interval (not the whole program). It boils down to inserting 'store' 
-# after variable's definition and 'loads' before each use. Because of
-# new instructions, We also have to replace the current interval with new, 
-# small intervals: [definition, store] and [load, use] for each use.
-#
-# Important thing to notice is that loads generate new definitions and
-# we reuse the same variable in all theses definitions, which breaks SSA form.
-# However, we insert the stores and loads only after register allocation, 
-# and then we already don't care about SSA.
-#
-# Moreover, we use a dummy variable for store instruction deifinition.
-# This variable will not be used anywhere and will not generate any intervals,
-# so will not have to be granted any register.
-
 '''
 elif instr.definition in instr.live_out:
                     # It may happen that we will come across the variable's definition before
@@ -350,3 +294,83 @@ elif instr.definition in instr.live_out:
                     siv = intervals[instr.definition.id].add_subinterval(instr, instr)
                     siv.defn = instr
 '''
+"""
+    def split_interval(self, iv, fr, to):
+        rev_sivs = iv.subintervals[::-1]
+        
+        siv_start = None
+        siv_end = None
+        take = []
+        stay_start = []
+        stay_end = []
+        for siv in rev_sivs:
+            if siv.fr.num < fr.num and fr.num <= siv.to.num:
+                siv_start = siv
+            elif fr.num <= siv.fr.num and siv.to.num <= to.num:
+                take.append(siv)
+            elif siv.fr.num <= to.num and to.num < siv.to.num:
+                siv_end = siv
+            elif siv.to.num < fr.num:
+                stay_start.append(siv)
+            elif siv.fr.num > to.num:
+                stay_end.append(siv)
+
+        prev = self.num_to_instr[fr.num-1]
+        nxt = self.num_to_instr[to.num+1]
+        sivs_stay = []
+        sivs_stay.extend(sivs_stay_start)
+        if siv_start:
+            # new subintervals: a = [siv_start.fr, prev], b =[fr, siv_start.to] 
+            uses_a = []
+            uses_b = []
+            for use in siv_start.uses:
+                if use.num <= prev.num:
+                    uses_a.append(use)
+                else:
+                    uses_b.append(use)
+            
+    
+            if siv_start is siv_end:
+                # [3, 10] -> [5,8]
+"""
+                   
+"""
+    def split_interval(self, iv, fr, to):
+        rev_sivs = iv.subintervals[::-1]
+        
+        siv_start = None
+        siv_end = None
+        take = []
+        stay_start = []
+        stay_end = []
+        for siv in rev_sivs:
+            if siv.fr.num < fr.num and fr.num <= siv.to.num:
+                siv_start = siv
+            elif fr.num <= siv.fr.num and siv.to.num <= to.num:
+                take.append(siv)
+            elif siv.fr.num <= to.num and to.num < siv.to.num:
+                siv_end = siv
+            elif siv.to.num < fr.num:
+                stay_start.append(siv)
+            elif siv.fr.num > to.num:
+                stay_end.append(siv)
+
+        prev = self.num_to_instr[fr.num-1]
+        nxt = self.num_to_instr[to.num+1]
+        sivs_stay = []
+        sivs_stay.extend(sivs_stay_start)
+        if siv_start:
+            # new subintervals: a = [siv_start.fr, prev], b =[fr, siv_start.to] 
+            uses_a = []
+            uses_b = []
+            for use in siv_start.uses:
+                if use.num <= prev.num:
+                    uses_a.append(use)
+                else:
+                    uses_b.append(use)
+            
+    
+            if siv_start is siv_end:
+                # [3, 10] -> [5,8]
+"""
+
