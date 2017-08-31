@@ -1,4 +1,5 @@
 import utils
+from copy import deepcopy
 
 #########################################################################
 ############################### CFG MODEL ###############################
@@ -10,21 +11,7 @@ import utils
 # but do not need to reside in registers.
 # Variable names are of the form id/llvm_name. The llvm_name may be empty.
 class Variable:
-    def __init__(self, name, f):
-        # The Function we operate in.
-        self.f = f
-       
-        # Dictionary of instructions the variable is defined in. It may be empty for some
-        # variables that are defined outside the function body (e.g. its
-        # arguments). We rather operate on SSA form so the variable should have
-        # only one definition but we keep dictionary for possible experiments.
-        # {iid: Instruction}
-        self.defs = {}
-
-        # Dictionary of instructions the variable is used in.
-        # {iid: Instruction}
-        self.uses = {}
-
+    def __init__(self, name):
         vinfo = name.split(utils.SEPARATOR)
         self.id = vinfo[0]
 
@@ -87,9 +74,6 @@ class Instruction:
 
         # Variable defined by this instruction.
         self.definition = defn
-        # By the way we update the variable's defs dictionary.
-        if defn:
-            defn.defs[self.id] = self
 
         # Operation name e.g. alloc, add, br, phi.
         self.opname = opname
@@ -97,26 +81,11 @@ class Instruction:
         # Variables that are used by this instruction. It doesn't include constants, labels
         # or any other values that are not interesting for register allocator. All values
         # are hold in self.uses_debug (see below).
-        self.uses = uses
+        self.uses = uses if uses else []
 
         # TODO: finish descr.
         self.phi_preds = None
 
-        if opname == Instruction.PHI:
-            phi_uses = {}
-            self.phi_preds = {}
-            for (bid, var) in uses:
-                phi_uses[bid] = var
-                self.phi_preds[var.id] = bid
-                var.uses[self.id] = self
-
-            self.uses = phi_uses
-        else:
-            for var in uses:
-                var.uses[self.id] = self
-
-        # Dicitonary {variable id: register}
-        self.alloc = {}
 
         # Lists of all values (not only allocable Variables) used by the instruction in
         # string format. These are e.g. labels (basic block ids) or constants and are useful
@@ -127,11 +96,58 @@ class Instruction:
         self.live_in = None
         self.live_out = None
 
+        if opname == Instruction.PHI:
+            phi_uses = {}
+            self.phi_preds = {}
+            for (bid, var) in uses:
+                phi_uses[bid] = var
+                self.phi_preds[var.id] = bid
+            
+            self.uses = phi_uses
+            phi_uses = {}
+            for (bid, val) in uses_debug:
+                phi_uses[bid] = val
+
+            self.uses_debug = phi_uses
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.id == other.id
             
         return False
+
+    # Create a copy of the instruction inside Basic Block cbb.
+    # Assumes that cbb.f has already all variable regsitered in f.vars.
+    def copy(self, cbb):
+        cuses = []
+        cuses_debug = []
+        cf = cbb.f
+        if self.is_phi():
+            cuses = [(bid, cf.vars[v.id]) for (bid,v) in self.uses.iteritems()]
+            for (bid, val) in self.uses_debug.iteritems():
+                if isinstance(val, Variable):
+                    cuses_debug.append((bid, cf.vars[val.id]))
+                else:
+                    cuses_debug.append((bid, val))
+            
+        else:
+            cuses = [cf.vars[v.id] for v in self.uses]
+            for val in self.uses_debug:
+                if isinstance(val, Variable):
+                    cuses_debug.append(cf.vars[val.id])
+                else:
+                    cuses_debug.append(val)
+
+      
+        cdefn = cf.vars[self.definition.id] if self.definition else None
+        ci = Instruction(cbb, cdefn, self.opname, cuses, cuses_debug)
+
+        ci.num = self.num
+        ci.live_in = set([cf.vars[v.id] for v in self.live_in])
+        ci.live_out = set([cf.vars[v.id] for v in self.live_out])
+
+        return ci
+
 
     @classmethod
     def from_json(cls, instruction_json, bb):
@@ -236,6 +252,12 @@ class BasicBlock:
 
         return bb
 
+    def dominates(self, another):
+        return self in another.dominators
+
+    def strictly_dominates(self, another):
+        return self in another.dominators and self.id != another.id
+
     def set_instructions(self, new_instructions):
         self.instructions = new_instructions
         self.phis = []
@@ -279,9 +301,10 @@ class BasicBlock:
                 for use in instr.uses:
                     # Each use add to each edge
                     if use not in defs:
-                            uevs.add(use)
-
+                        uevs.add(use)
+                            
             defs.add(instr.definition)
+            
 
         self.defs = defs
         self.uevs = uevs
@@ -313,9 +336,10 @@ class Loop:
         self.body = body
         self.parent = None
         self.depth = None
+        self.id = (header.id, tail.id)
 
     def inner_of(self, another):
-        return another.header in self.header.dominators and self.header in another.tail.dominators
+        return another.header.strictly_dominates(self.header) and self.header.strictly_dominates(another.tail)
 
 
 class Function:
@@ -334,7 +358,6 @@ class Function:
         # Entry basic block
         self.entry_bblock = None
 
-        # Dictionary mapping llvm names of basic blocks to their ids
         # List of loops in this function
         self.loops = []
 
@@ -364,6 +387,55 @@ class Function:
         f.set_bblocks(bblocks, entry_bblock)
         return f
 
+    # Deepcopy of the function.
+    def copy(self):
+        cf = Function(self.name)
+        cf.vars = {vid: deepcopy(var) for (vid, var) in self.vars.iteritems()}
+        cf.instr_counter = self.instr_counter
+
+        for (bid, bb) in self.bblocks.iteritems():
+            cbb = BasicBlock(bid, cf, bb.llvm_name)
+            cf.bblocks[bid] = cbb
+
+        cf.entry_bblock = cf.bblocks[self.entry_bblock.id]
+
+        # Copy basic blocks.
+        for (bid, bb) in self.bblocks.iteritems():
+            cbb = cf.bblocks[bid] # copy
+            cbb.preds = {k: cf.bblocks[k] for k in bb.preds.keys()}
+            cbb.succs = {k: cf.bblocks[k] for k in bb.succs.keys()}
+            cbb.dominators = set([cf.bblocks[dom.id] for dom in bb.dominators])
+            cbb.uevs = set([cf.get_or_create_variable(v.id) for v in bb.uevs])
+            cbb.defs = set([cf.get_or_create_variable(v.id) for v in bb.defs])
+            cbb.live_in = set([cf.get_or_create_variable(v.id) for v in bb.live_in])
+            cbb.live_out = set([cf.get_or_create_variable(v.id) for v in bb.live_out])
+
+            #instructions:
+            for instr in bb.instructions:
+                ci = instr.copy(cbb)
+                if ci.is_phi():
+                    cbb.phis.append(ci)
+                cbb.instructions.append(ci)
+
+        # Loops.
+        cloopsmap = {}
+        for loop in self.loops:
+            cheader = cf.bblocks[loop.header.id]
+            ctail = cf.bblocks[loop.tail.id]
+            cbody = [cf.bblocks[bb.id] for bb in loop.body]
+            cloop = Loop(cheader, ctail, cbody)
+            cloop.depth = loop.depth
+            cloopsmap[cloop.id] = cloop
+            cf.loops.append(cloop)
+
+        # Loop parents.
+        for loop in self.loops:
+            if loop.parent is not None:
+                cloopsmap[loop.id].parent = cloopsmap[loop.parent.id]
+
+        return cf 
+
+
     def set_bblocks(self, bbs_dict, entrybb):
         self.entry_bblock = entrybb
         self.bblocks = bbs_dict
@@ -380,7 +452,7 @@ class Function:
         if name is None:
             free_num = len(self.vars) + 1
             vid = "v"+str(free_num)
-            v = Variable(vid, self)
+            v = Variable(vid)
             self.vars[vid] = v
             return v
 
@@ -393,7 +465,7 @@ class Function:
         if vid in self.vars:
             v = self.vars[vid]
         else:
-            v = Variable(name, self)
+            v = Variable(name)
             self.vars[vid] = v
         
         return v
@@ -445,7 +517,8 @@ class Function:
                     # We add to the live-out set these input variables of phi instructions,
                     # that were upward exposed in the successor block.
                     for phi in succ.phis:
-                        bb.live_out.add(phi.uses[bb.id])
+                        if bb.id in phi.uses: # it may not be in there if the used value is not Variable.
+                            bb.live_out.add(phi.uses[bb.id])
                 
                 live_in_size = len(bb.live_in)
                 # Variable is in live-in set if
@@ -460,7 +533,6 @@ class Function:
             bb.perform_instr_liveness_analysis() # updates liveness for each instr
 
 
-        print "Liveness analysis done, #iterations = ", iterations
 
     # Performs dominance analysis by updating bb.dominators for each
     # basic block in this function. The bb.dominators is set of basic blocks
@@ -543,12 +615,26 @@ class Function:
         self.loops = loops
 
     def perform_full_analysis(self):
+        utils.number_instructions(utils.reverse_postorder(self))
         self.compute_defs_and_uevs()
         self.perform_liveness_analysis()
         self.perform_dominance_analysis()
         self.perform_loop_analysis()
             
 class Module:
-    def __init__(self, cfg_json):
-        self.functions = [Function(f) for f in cfg_json]
+    def __init__(self, functions):
+        self.functions = {f.name: f for f in functions}
+
+    @classmethod
+    def from_json(cls, json):
+        functions = [Function.from_json(f_json) for f_json in json]
+        return cls(functions)
+
+    def perform_full_analysis(self):
+        for f in self.functions.values():
+            f.perform_full_analysis()
+
+    def copy(self):
+        copies = [f.copy() for f in self.functions.values()]
+        return Module(copies)
 

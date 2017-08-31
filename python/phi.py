@@ -9,6 +9,11 @@ class Alloc:
 
 # loclist of defs and uses wrapped together with corresponding registers.
 def order_moves(loclist):
+    # Skip all moves that include not allocable uses such as const.
+    # They have alloc = None. We will put them to the end of the result list.
+    fin = [(d,u) for (d,u) in loclist if u.alloc is None]
+    loclist = [(d,u) for (d,u) in loclist if u.alloc is not None]
+
     results = []
 
     # Building graph.
@@ -69,7 +74,7 @@ def order_moves(loclist):
             results.extend([(e.d, e.u) for e in l[1:]])
             results.append((l[0].d, None))
 
-    return results
+    return results + fin
 
 # Inserts given moves at the end of the basic block.
 # Moves is a list of pairs (Alloc(def), Alloc(use))
@@ -83,16 +88,26 @@ def insert_moves(bb, moves):
         if u is None:
             u = Alloc(bb.f.temp_variable(), utils.scratch_reg())
 
-        # There are four cases
-        if utils.is_regname(d.alloc) and utils.is_regname(u.alloc):
-            # 1) Both d and u are in registers => produce "d = u"
+        if utils.is_regname(d.alloc) and u.alloc is None:
+            # d is in register, u.val is const or another not-allocable value.
+            instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [], [u.val])
+            instructions.append(instr)
+            d.val.alloc[instr.id] = d.alloc
+
+        elif utils.is_slotname(d.alloc) and u.alloc is None:
+            # d is in memory, u.val is const or another not-allocable value.
+            instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [], [d.alloc, u.val])
+            instructions.append(instr)
+
+        elif utils.is_regname(d.alloc) and utils.is_regname(u.alloc):
+            # Both d and u are in registers => produce "d = u"
             instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
             instructions.append(instr)
             d.val.alloc[instr.id] = d.alloc
             u.val.alloc[instr.id] = u.alloc
 
         elif utils.is_slotname(d.alloc) and utils.is_slotname(u.alloc):
-            # 2) Both are in memory slot => produce:
+            # Both are in memory slot => produce:
             # temp = load slot(u)
             # store slot(d) <- temp
             tvar = bb.f.temp_variable()
@@ -101,17 +116,19 @@ def insert_moves(bb, moves):
             instructions.extend([load, store])
 
         elif utils.is_slotname(d.alloc) and utils.is_regname(u.alloc):
-            # 3) d is in memory slot, u in register => produce "store slot(d) <- u"
-
+            # d is in memory slot, u in register => produce "store slot(d) <- u"
             instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [u.val], [d.alloc, u.val])
             instructions.append(instr)
             u.val.alloc[instr.id] = u.alloc
 
-        else:
-            # 4) d is in register, u is in memory slot => produce "d = load slot(u)"
+        elif utils.is_regname(d.alloc) and utils.is_slotname(u.alloc):
+            # d is in register, u is in memory slot => produce "d = load slot(u)"
             instr = cfg.Instruction(bb, d.val, cfg.Instruction.LOAD, [], [u.alloc])
             instructions.append(instr)
             d.val.alloc[instr.id] = d.alloc
+
+        else:
+            assert False
 
        
     bb.instructions.extend(instructions)
@@ -129,7 +146,9 @@ def eliminate_phi_in_bb(bb):
         moves = []
         for phi in bb.phis:
             d = Alloc(phi.definition, phi.definition.alloc[phi.id])
-            u = Alloc(phi.uses[pred.id], phi.uses[pred.id].alloc[phi.id])
+            u = Alloc(phi.uses_debug[pred.id], None) # in case of "const"
+            if pred.id in phi.uses:
+                u = Alloc(phi.uses[pred.id], phi.uses[pred.id].alloc[phi.id])
             moves.append((d,u))
 
         moves = order_moves(moves)

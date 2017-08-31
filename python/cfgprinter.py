@@ -78,7 +78,7 @@ class InstrPrinter:
     def uses(self):
         res = ""
         if self.instr.is_phi():
-            for (bid, var) in self.instr.uses_debug:
+            for (bid, var) in self.instr.uses_debug.iteritems():
                 if isinstance(var, cfg.Variable):
                     vstr = colored(var, 'yellow')
                     alloc = var.alloc[self.instr.id] if self.instr.id in var.alloc else None

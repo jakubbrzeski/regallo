@@ -1,0 +1,5741 @@
+[
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v1/retval",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v2/a",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v3/b",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v4",
+                        "opname": "bitcast",
+                        "use": [
+                            "v2/a"
+                        ]
+                    },
+                    {
+                        "def": "v5",
+                        "opname": "store",
+                        "use": [
+                            "v6/a.coerce",
+                            "v4"
+                        ]
+                    },
+                    {
+                        "def": "v7",
+                        "opname": "bitcast",
+                        "use": [
+                            "v3/b"
+                        ]
+                    },
+                    {
+                        "def": "v8",
+                        "opname": "store",
+                        "use": [
+                            "v9/b.coerce",
+                            "v7"
+                        ]
+                    },
+                    {
+                        "def": "v10/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v3/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v11",
+                        "opname": "load",
+                        "use": [
+                            "v10/x"
+                        ]
+                    },
+                    {
+                        "def": "v12/x1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v2/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v13",
+                        "opname": "load",
+                        "use": [
+                            "v12/x1"
+                        ]
+                    },
+                    {
+                        "def": "v14/sub",
+                        "opname": "fsub",
+                        "use": [
+                            "v13",
+                            "v11"
+                        ]
+                    },
+                    {
+                        "def": "v15",
+                        "opname": "store",
+                        "use": [
+                            "v14/sub",
+                            "v12/x1"
+                        ]
+                    },
+                    {
+                        "def": "v16/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v3/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v17",
+                        "opname": "load",
+                        "use": [
+                            "v16/y"
+                        ]
+                    },
+                    {
+                        "def": "v18/y2",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v2/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v19",
+                        "opname": "load",
+                        "use": [
+                            "v18/y2"
+                        ]
+                    },
+                    {
+                        "def": "v20/sub3",
+                        "opname": "fsub",
+                        "use": [
+                            "v19",
+                            "v17"
+                        ]
+                    },
+                    {
+                        "def": "v21",
+                        "opname": "store",
+                        "use": [
+                            "v20/sub3",
+                            "v18/y2"
+                        ]
+                    },
+                    {
+                        "def": "v22",
+                        "opname": "bitcast",
+                        "use": [
+                            "v1/retval"
+                        ]
+                    },
+                    {
+                        "def": "v23",
+                        "opname": "bitcast",
+                        "use": [
+                            "v2/a"
+                        ]
+                    },
+                    {
+                        "def": "v24",
+                        "opname": "call",
+                        "use": [
+                            "v22",
+                            "v23",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v25",
+                        "opname": "bitcast",
+                        "use": [
+                            "v1/retval"
+                        ]
+                    },
+                    {
+                        "def": "v26",
+                        "opname": "load",
+                        "use": [
+                            "v25"
+                        ]
+                    },
+                    {
+                        "def": "v27",
+                        "opname": "ret",
+                        "use": [
+                            "v26"
+                        ]
+                    }
+                ],
+                "name": "bb1/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb1/entry",
+        "name": "subtract"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v28/retval",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v29/v",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v30",
+                        "opname": "bitcast",
+                        "use": [
+                            "v29/v"
+                        ]
+                    },
+                    {
+                        "def": "v31",
+                        "opname": "store",
+                        "use": [
+                            "v32/v.coerce",
+                            "v30"
+                        ]
+                    },
+                    {
+                        "def": "v33/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v29/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v34",
+                        "opname": "load",
+                        "use": [
+                            "v33/x"
+                        ]
+                    },
+                    {
+                        "def": "v35/sub",
+                        "opname": "fsub",
+                        "use": [
+                            "const",
+                            "v34"
+                        ]
+                    },
+                    {
+                        "def": "v36/x1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v29/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v37",
+                        "opname": "store",
+                        "use": [
+                            "v35/sub",
+                            "v36/x1"
+                        ]
+                    },
+                    {
+                        "def": "v38/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v29/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v39",
+                        "opname": "load",
+                        "use": [
+                            "v38/y"
+                        ]
+                    },
+                    {
+                        "def": "v40/sub2",
+                        "opname": "fsub",
+                        "use": [
+                            "const",
+                            "v39"
+                        ]
+                    },
+                    {
+                        "def": "v41/y3",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v29/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v42",
+                        "opname": "store",
+                        "use": [
+                            "v40/sub2",
+                            "v41/y3"
+                        ]
+                    },
+                    {
+                        "def": "v43",
+                        "opname": "bitcast",
+                        "use": [
+                            "v28/retval"
+                        ]
+                    },
+                    {
+                        "def": "v44",
+                        "opname": "bitcast",
+                        "use": [
+                            "v29/v"
+                        ]
+                    },
+                    {
+                        "def": "v45",
+                        "opname": "call",
+                        "use": [
+                            "v43",
+                            "v44",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v46",
+                        "opname": "bitcast",
+                        "use": [
+                            "v28/retval"
+                        ]
+                    },
+                    {
+                        "def": "v47",
+                        "opname": "load",
+                        "use": [
+                            "v46"
+                        ]
+                    },
+                    {
+                        "def": "v48",
+                        "opname": "ret",
+                        "use": [
+                            "v47"
+                        ]
+                    }
+                ],
+                "name": "bb2/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb2/entry",
+        "name": "negate"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v49/retval",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v50/v",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v51/p",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v52",
+                        "opname": "bitcast",
+                        "use": [
+                            "v50/v"
+                        ]
+                    },
+                    {
+                        "def": "v53",
+                        "opname": "store",
+                        "use": [
+                            "v54/v.coerce",
+                            "v52"
+                        ]
+                    },
+                    {
+                        "def": "v55/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v51/p",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v56/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v50/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v57",
+                        "opname": "load",
+                        "use": [
+                            "v56/y"
+                        ]
+                    },
+                    {
+                        "def": "v58",
+                        "opname": "store",
+                        "use": [
+                            "v57",
+                            "v55/x"
+                        ]
+                    },
+                    {
+                        "def": "v59/y1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v51/p",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v60/x2",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v50/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v61",
+                        "opname": "load",
+                        "use": [
+                            "v60/x2"
+                        ]
+                    },
+                    {
+                        "def": "v62/sub",
+                        "opname": "fsub",
+                        "use": [
+                            "const",
+                            "v61"
+                        ]
+                    },
+                    {
+                        "def": "v63",
+                        "opname": "store",
+                        "use": [
+                            "v62/sub",
+                            "v59/y1"
+                        ]
+                    },
+                    {
+                        "def": "v64",
+                        "opname": "bitcast",
+                        "use": [
+                            "v49/retval"
+                        ]
+                    },
+                    {
+                        "def": "v65",
+                        "opname": "bitcast",
+                        "use": [
+                            "v51/p"
+                        ]
+                    },
+                    {
+                        "def": "v66",
+                        "opname": "call",
+                        "use": [
+                            "v64",
+                            "v65",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v67",
+                        "opname": "bitcast",
+                        "use": [
+                            "v49/retval"
+                        ]
+                    },
+                    {
+                        "def": "v68",
+                        "opname": "load",
+                        "use": [
+                            "v67"
+                        ]
+                    },
+                    {
+                        "def": "v69",
+                        "opname": "ret",
+                        "use": [
+                            "v68"
+                        ]
+                    }
+                ],
+                "name": "bb3/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb3/entry",
+        "name": "perpendicular"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v70/a",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v71/b",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v72",
+                        "opname": "bitcast",
+                        "use": [
+                            "v70/a"
+                        ]
+                    },
+                    {
+                        "def": "v73",
+                        "opname": "store",
+                        "use": [
+                            "v74/a.coerce",
+                            "v72"
+                        ]
+                    },
+                    {
+                        "def": "v75",
+                        "opname": "bitcast",
+                        "use": [
+                            "v71/b"
+                        ]
+                    },
+                    {
+                        "def": "v76",
+                        "opname": "store",
+                        "use": [
+                            "v77/b.coerce",
+                            "v75"
+                        ]
+                    },
+                    {
+                        "def": "v78/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v70/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v79",
+                        "opname": "load",
+                        "use": [
+                            "v78/x"
+                        ]
+                    },
+                    {
+                        "def": "v80/x1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v71/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v81",
+                        "opname": "load",
+                        "use": [
+                            "v80/x1"
+                        ]
+                    },
+                    {
+                        "def": "v82/mul",
+                        "opname": "fmul",
+                        "use": [
+                            "v79",
+                            "v81"
+                        ]
+                    },
+                    {
+                        "def": "v83/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v70/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v84",
+                        "opname": "load",
+                        "use": [
+                            "v83/y"
+                        ]
+                    },
+                    {
+                        "def": "v85/y2",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v71/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v86",
+                        "opname": "load",
+                        "use": [
+                            "v85/y2"
+                        ]
+                    },
+                    {
+                        "def": "v87/mul3",
+                        "opname": "fmul",
+                        "use": [
+                            "v84",
+                            "v86"
+                        ]
+                    },
+                    {
+                        "def": "v88/add",
+                        "opname": "fadd",
+                        "use": [
+                            "v82/mul",
+                            "v87/mul3"
+                        ]
+                    },
+                    {
+                        "def": "v89",
+                        "opname": "ret",
+                        "use": [
+                            "v88/add"
+                        ]
+                    }
+                ],
+                "name": "bb4/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb4/entry",
+        "name": "dotProduct"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v90/v",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v91",
+                        "opname": "bitcast",
+                        "use": [
+                            "v90/v"
+                        ]
+                    },
+                    {
+                        "def": "v92",
+                        "opname": "store",
+                        "use": [
+                            "v93/v.coerce",
+                            "v91"
+                        ]
+                    },
+                    {
+                        "def": "v94/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v90/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v95",
+                        "opname": "load",
+                        "use": [
+                            "v94/x"
+                        ]
+                    },
+                    {
+                        "def": "v96/x1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v90/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v97",
+                        "opname": "load",
+                        "use": [
+                            "v96/x1"
+                        ]
+                    },
+                    {
+                        "def": "v98/mul",
+                        "opname": "fmul",
+                        "use": [
+                            "v95",
+                            "v97"
+                        ]
+                    },
+                    {
+                        "def": "v99/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v90/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v100",
+                        "opname": "load",
+                        "use": [
+                            "v99/y"
+                        ]
+                    },
+                    {
+                        "def": "v101/y2",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v90/v",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v102",
+                        "opname": "load",
+                        "use": [
+                            "v101/y2"
+                        ]
+                    },
+                    {
+                        "def": "v103/mul3",
+                        "opname": "fmul",
+                        "use": [
+                            "v100",
+                            "v102"
+                        ]
+                    },
+                    {
+                        "def": "v104/add",
+                        "opname": "fadd",
+                        "use": [
+                            "v98/mul",
+                            "v103/mul3"
+                        ]
+                    },
+                    {
+                        "def": "v105",
+                        "opname": "ret",
+                        "use": [
+                            "v104/add"
+                        ]
+                    }
+                ],
+                "name": "bb5/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb5/entry",
+        "name": "lengthSquared"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v106/retval",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v107/a",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v108/b",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v109/c",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v110/r",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v111",
+                        "opname": "bitcast",
+                        "use": [
+                            "v107/a"
+                        ]
+                    },
+                    {
+                        "def": "v112",
+                        "opname": "store",
+                        "use": [
+                            "v113/a.coerce",
+                            "v111"
+                        ]
+                    },
+                    {
+                        "def": "v114",
+                        "opname": "bitcast",
+                        "use": [
+                            "v108/b"
+                        ]
+                    },
+                    {
+                        "def": "v115",
+                        "opname": "store",
+                        "use": [
+                            "v116/b.coerce",
+                            "v114"
+                        ]
+                    },
+                    {
+                        "def": "v117",
+                        "opname": "bitcast",
+                        "use": [
+                            "v109/c"
+                        ]
+                    },
+                    {
+                        "def": "v118",
+                        "opname": "store",
+                        "use": [
+                            "v119/c.coerce",
+                            "v117"
+                        ]
+                    },
+                    {
+                        "def": "v120/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v107/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v121",
+                        "opname": "load",
+                        "use": [
+                            "v120/x"
+                        ]
+                    },
+                    {
+                        "def": "v122/x1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v109/c",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v123",
+                        "opname": "load",
+                        "use": [
+                            "v122/x1"
+                        ]
+                    },
+                    {
+                        "def": "v124/mul",
+                        "opname": "fmul",
+                        "use": [
+                            "v121",
+                            "v123"
+                        ]
+                    },
+                    {
+                        "def": "v125/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v107/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v126",
+                        "opname": "load",
+                        "use": [
+                            "v125/y"
+                        ]
+                    },
+                    {
+                        "def": "v127/y2",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v109/c",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v128",
+                        "opname": "load",
+                        "use": [
+                            "v127/y2"
+                        ]
+                    },
+                    {
+                        "def": "v129/mul3",
+                        "opname": "fmul",
+                        "use": [
+                            "v126",
+                            "v128"
+                        ]
+                    },
+                    {
+                        "def": "v130/add",
+                        "opname": "fadd",
+                        "use": [
+                            "v124/mul",
+                            "v129/mul3"
+                        ]
+                    },
+                    {
+                        "def": "v131/x4",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v108/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v132",
+                        "opname": "load",
+                        "use": [
+                            "v131/x4"
+                        ]
+                    },
+                    {
+                        "def": "v133/x5",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v109/c",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v134",
+                        "opname": "load",
+                        "use": [
+                            "v133/x5"
+                        ]
+                    },
+                    {
+                        "def": "v135/mul6",
+                        "opname": "fmul",
+                        "use": [
+                            "v132",
+                            "v134"
+                        ]
+                    },
+                    {
+                        "def": "v136/y7",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v108/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v137",
+                        "opname": "load",
+                        "use": [
+                            "v136/y7"
+                        ]
+                    },
+                    {
+                        "def": "v138/y8",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v109/c",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v139",
+                        "opname": "load",
+                        "use": [
+                            "v138/y8"
+                        ]
+                    },
+                    {
+                        "def": "v140/mul9",
+                        "opname": "fmul",
+                        "use": [
+                            "v137",
+                            "v139"
+                        ]
+                    },
+                    {
+                        "def": "v141/add10",
+                        "opname": "fadd",
+                        "use": [
+                            "v135/mul6",
+                            "v140/mul9"
+                        ]
+                    },
+                    {
+                        "def": "v142/x11",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v108/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v143",
+                        "opname": "load",
+                        "use": [
+                            "v142/x11"
+                        ]
+                    },
+                    {
+                        "def": "v144/mul12",
+                        "opname": "fmul",
+                        "use": [
+                            "v143",
+                            "v130/add"
+                        ]
+                    },
+                    {
+                        "def": "v145/x13",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v107/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v146",
+                        "opname": "load",
+                        "use": [
+                            "v145/x13"
+                        ]
+                    },
+                    {
+                        "def": "v147/mul14",
+                        "opname": "fmul",
+                        "use": [
+                            "v146",
+                            "v141/add10"
+                        ]
+                    },
+                    {
+                        "def": "v148/sub",
+                        "opname": "fsub",
+                        "use": [
+                            "v144/mul12",
+                            "v147/mul14"
+                        ]
+                    },
+                    {
+                        "def": "v149/x15",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v110/r",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v150",
+                        "opname": "store",
+                        "use": [
+                            "v148/sub",
+                            "v149/x15"
+                        ]
+                    },
+                    {
+                        "def": "v151/y16",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v108/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v152",
+                        "opname": "load",
+                        "use": [
+                            "v151/y16"
+                        ]
+                    },
+                    {
+                        "def": "v153/mul17",
+                        "opname": "fmul",
+                        "use": [
+                            "v152",
+                            "v130/add"
+                        ]
+                    },
+                    {
+                        "def": "v154/y18",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v107/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v155",
+                        "opname": "load",
+                        "use": [
+                            "v154/y18"
+                        ]
+                    },
+                    {
+                        "def": "v156/mul19",
+                        "opname": "fmul",
+                        "use": [
+                            "v155",
+                            "v141/add10"
+                        ]
+                    },
+                    {
+                        "def": "v157/sub20",
+                        "opname": "fsub",
+                        "use": [
+                            "v153/mul17",
+                            "v156/mul19"
+                        ]
+                    },
+                    {
+                        "def": "v158/y21",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v110/r",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v159",
+                        "opname": "store",
+                        "use": [
+                            "v157/sub20",
+                            "v158/y21"
+                        ]
+                    },
+                    {
+                        "def": "v160",
+                        "opname": "bitcast",
+                        "use": [
+                            "v106/retval"
+                        ]
+                    },
+                    {
+                        "def": "v161",
+                        "opname": "bitcast",
+                        "use": [
+                            "v110/r"
+                        ]
+                    },
+                    {
+                        "def": "v162",
+                        "opname": "call",
+                        "use": [
+                            "v160",
+                            "v161",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v163",
+                        "opname": "bitcast",
+                        "use": [
+                            "v106/retval"
+                        ]
+                    },
+                    {
+                        "def": "v164",
+                        "opname": "load",
+                        "use": [
+                            "v163"
+                        ]
+                    },
+                    {
+                        "def": "v165",
+                        "opname": "ret",
+                        "use": [
+                            "v164"
+                        ]
+                    }
+                ],
+                "name": "bb6/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb6/entry",
+        "name": "tripleProduct"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v166/retval",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v167/avg",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v168",
+                        "opname": "bitcast",
+                        "use": [
+                            "v167/avg"
+                        ]
+                    },
+                    {
+                        "def": "v169",
+                        "opname": "call",
+                        "use": [
+                            "v168",
+                            "const",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v170",
+                        "opname": "br",
+                        "use": [
+                            "bb8/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb7/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb8/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v171/i.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb7/entry",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb9/for.inc",
+                                "val": "v172/inc"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v173/cmp",
+                        "opname": "icmp",
+                        "use": [
+                            "v171/i.0",
+                            "v174/count"
+                        ]
+                    },
+                    {
+                        "def": "v175",
+                        "opname": "br",
+                        "use": [
+                            "v173/cmp",
+                            "bb11/for.end",
+                            "bb10/for.body"
+                        ]
+                    }
+                ],
+                "name": "bb8/for.cond",
+                "predecessors": [
+                    "bb9/for.inc",
+                    "bb7/entry"
+                ],
+                "successors": [
+                    "bb10/for.body",
+                    "bb11/for.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v176/arrayidx",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v177/vertices",
+                            "v171/i.0"
+                        ]
+                    },
+                    {
+                        "def": "v178/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v176/arrayidx",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v179",
+                        "opname": "load",
+                        "use": [
+                            "v178/x"
+                        ]
+                    },
+                    {
+                        "def": "v180/x1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v167/avg",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v181",
+                        "opname": "load",
+                        "use": [
+                            "v180/x1"
+                        ]
+                    },
+                    {
+                        "def": "v182/add",
+                        "opname": "fadd",
+                        "use": [
+                            "v181",
+                            "v179"
+                        ]
+                    },
+                    {
+                        "def": "v183",
+                        "opname": "store",
+                        "use": [
+                            "v182/add",
+                            "v180/x1"
+                        ]
+                    },
+                    {
+                        "def": "v184/arrayidx2",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v177/vertices",
+                            "v171/i.0"
+                        ]
+                    },
+                    {
+                        "def": "v185/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v184/arrayidx2",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v186",
+                        "opname": "load",
+                        "use": [
+                            "v185/y"
+                        ]
+                    },
+                    {
+                        "def": "v187/y3",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v167/avg",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v188",
+                        "opname": "load",
+                        "use": [
+                            "v187/y3"
+                        ]
+                    },
+                    {
+                        "def": "v189/add4",
+                        "opname": "fadd",
+                        "use": [
+                            "v188",
+                            "v186"
+                        ]
+                    },
+                    {
+                        "def": "v190",
+                        "opname": "store",
+                        "use": [
+                            "v189/add4",
+                            "v187/y3"
+                        ]
+                    },
+                    {
+                        "def": "v191",
+                        "opname": "br",
+                        "use": [
+                            "bb9/for.inc"
+                        ]
+                    }
+                ],
+                "name": "bb10/for.body",
+                "predecessors": [
+                    "bb8/for.cond"
+                ],
+                "successors": [
+                    "bb9/for.inc"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v172/inc",
+                        "opname": "add",
+                        "use": [
+                            "v171/i.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v192",
+                        "opname": "br",
+                        "use": [
+                            "bb8/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb9/for.inc",
+                "predecessors": [
+                    "bb10/for.body"
+                ],
+                "successors": [
+                    "bb8/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v193/conv",
+                        "opname": "uitofp",
+                        "use": [
+                            "v174/count"
+                        ]
+                    },
+                    {
+                        "def": "v194/x5",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v167/avg",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v195",
+                        "opname": "load",
+                        "use": [
+                            "v194/x5"
+                        ]
+                    },
+                    {
+                        "def": "v196/div",
+                        "opname": "fdiv",
+                        "use": [
+                            "v195",
+                            "v193/conv"
+                        ]
+                    },
+                    {
+                        "def": "v197",
+                        "opname": "store",
+                        "use": [
+                            "v196/div",
+                            "v194/x5"
+                        ]
+                    },
+                    {
+                        "def": "v198/conv6",
+                        "opname": "uitofp",
+                        "use": [
+                            "v174/count"
+                        ]
+                    },
+                    {
+                        "def": "v199/y7",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v167/avg",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v200",
+                        "opname": "load",
+                        "use": [
+                            "v199/y7"
+                        ]
+                    },
+                    {
+                        "def": "v201/div8",
+                        "opname": "fdiv",
+                        "use": [
+                            "v200",
+                            "v198/conv6"
+                        ]
+                    },
+                    {
+                        "def": "v202",
+                        "opname": "store",
+                        "use": [
+                            "v201/div8",
+                            "v199/y7"
+                        ]
+                    },
+                    {
+                        "def": "v203",
+                        "opname": "bitcast",
+                        "use": [
+                            "v166/retval"
+                        ]
+                    },
+                    {
+                        "def": "v204",
+                        "opname": "bitcast",
+                        "use": [
+                            "v167/avg"
+                        ]
+                    },
+                    {
+                        "def": "v205",
+                        "opname": "call",
+                        "use": [
+                            "v203",
+                            "v204",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v206",
+                        "opname": "bitcast",
+                        "use": [
+                            "v166/retval"
+                        ]
+                    },
+                    {
+                        "def": "v207",
+                        "opname": "load",
+                        "use": [
+                            "v206"
+                        ]
+                    },
+                    {
+                        "def": "v208",
+                        "opname": "ret",
+                        "use": [
+                            "v207"
+                        ]
+                    }
+                ],
+                "name": "bb11/for.end",
+                "predecessors": [
+                    "bb8/for.cond"
+                ],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb7/entry",
+        "name": "averagePoint"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v209/d",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v210",
+                        "opname": "bitcast",
+                        "use": [
+                            "v209/d"
+                        ]
+                    },
+                    {
+                        "def": "v211",
+                        "opname": "store",
+                        "use": [
+                            "v212/d.coerce",
+                            "v210"
+                        ]
+                    },
+                    {
+                        "def": "v213/arrayidx",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v214/vertices",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v215",
+                        "opname": "bitcast",
+                        "use": [
+                            "v209/d"
+                        ]
+                    },
+                    {
+                        "def": "v216",
+                        "opname": "load",
+                        "use": [
+                            "v215"
+                        ]
+                    },
+                    {
+                        "def": "v217",
+                        "opname": "bitcast",
+                        "use": [
+                            "v213/arrayidx"
+                        ]
+                    },
+                    {
+                        "def": "v218",
+                        "opname": "load",
+                        "use": [
+                            "v217"
+                        ]
+                    },
+                    {
+                        "def": "v219/call",
+                        "opname": "call",
+                        "use": [
+                            "v216",
+                            "v218",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v220",
+                        "opname": "br",
+                        "use": [
+                            "bb13/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb12/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb13/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v221/maxProduct.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb12/entry",
+                                "val": "v219/call"
+                            },
+                            {
+                                "bb": "bb14/for.inc",
+                                "val": "v222/maxProduct.1"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v223/index.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb12/entry",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb14/for.inc",
+                                "val": "v224/index.1"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v225/i.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb12/entry",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb14/for.inc",
+                                "val": "v226/inc"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v227/cmp",
+                        "opname": "icmp",
+                        "use": [
+                            "v225/i.0",
+                            "v228/count"
+                        ]
+                    },
+                    {
+                        "def": "v229",
+                        "opname": "br",
+                        "use": [
+                            "v227/cmp",
+                            "bb16/for.end",
+                            "bb15/for.body"
+                        ]
+                    }
+                ],
+                "name": "bb13/for.cond",
+                "predecessors": [
+                    "bb14/for.inc",
+                    "bb12/entry"
+                ],
+                "successors": [
+                    "bb15/for.body",
+                    "bb16/for.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v230/arrayidx1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v214/vertices",
+                            "v225/i.0"
+                        ]
+                    },
+                    {
+                        "def": "v231",
+                        "opname": "bitcast",
+                        "use": [
+                            "v209/d"
+                        ]
+                    },
+                    {
+                        "def": "v232",
+                        "opname": "load",
+                        "use": [
+                            "v231"
+                        ]
+                    },
+                    {
+                        "def": "v233",
+                        "opname": "bitcast",
+                        "use": [
+                            "v230/arrayidx1"
+                        ]
+                    },
+                    {
+                        "def": "v234",
+                        "opname": "load",
+                        "use": [
+                            "v233"
+                        ]
+                    },
+                    {
+                        "def": "v235/call2",
+                        "opname": "call",
+                        "use": [
+                            "v232",
+                            "v234",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v236/cmp3",
+                        "opname": "fcmp",
+                        "use": [
+                            "v235/call2",
+                            "v221/maxProduct.0"
+                        ]
+                    },
+                    {
+                        "def": "v237",
+                        "opname": "br",
+                        "use": [
+                            "v236/cmp3",
+                            "bb18/if.end",
+                            "bb17/if.then"
+                        ]
+                    }
+                ],
+                "name": "bb15/for.body",
+                "predecessors": [
+                    "bb13/for.cond"
+                ],
+                "successors": [
+                    "bb17/if.then",
+                    "bb18/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v238",
+                        "opname": "br",
+                        "use": [
+                            "bb18/if.end"
+                        ]
+                    }
+                ],
+                "name": "bb17/if.then",
+                "predecessors": [
+                    "bb15/for.body"
+                ],
+                "successors": [
+                    "bb18/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v222/maxProduct.1",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb17/if.then",
+                                "val": "v235/call2"
+                            },
+                            {
+                                "bb": "bb15/for.body",
+                                "val": "v221/maxProduct.0"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v224/index.1",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb17/if.then",
+                                "val": "v225/i.0"
+                            },
+                            {
+                                "bb": "bb15/for.body",
+                                "val": "v223/index.0"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v239",
+                        "opname": "br",
+                        "use": [
+                            "bb14/for.inc"
+                        ]
+                    }
+                ],
+                "name": "bb18/if.end",
+                "predecessors": [
+                    "bb17/if.then",
+                    "bb15/for.body"
+                ],
+                "successors": [
+                    "bb14/for.inc"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v226/inc",
+                        "opname": "add",
+                        "use": [
+                            "v225/i.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v240",
+                        "opname": "br",
+                        "use": [
+                            "bb13/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb14/for.inc",
+                "predecessors": [
+                    "bb18/if.end"
+                ],
+                "successors": [
+                    "bb13/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v241",
+                        "opname": "ret",
+                        "use": [
+                            "v223/index.0"
+                        ]
+                    }
+                ],
+                "name": "bb16/for.end",
+                "predecessors": [
+                    "bb13/for.cond"
+                ],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb12/entry",
+        "name": "indexOfFurthestPoint"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v242/retval",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v243/d",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v244/agg.tmp",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v245",
+                        "opname": "bitcast",
+                        "use": [
+                            "v243/d"
+                        ]
+                    },
+                    {
+                        "def": "v246",
+                        "opname": "store",
+                        "use": [
+                            "v247/d.coerce",
+                            "v245"
+                        ]
+                    },
+                    {
+                        "def": "v248",
+                        "opname": "bitcast",
+                        "use": [
+                            "v243/d"
+                        ]
+                    },
+                    {
+                        "def": "v249",
+                        "opname": "load",
+                        "use": [
+                            "v248"
+                        ]
+                    },
+                    {
+                        "def": "v250/call",
+                        "opname": "call",
+                        "use": [
+                            "v251/vertices1",
+                            "v252/count1",
+                            "v249",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v253",
+                        "opname": "bitcast",
+                        "use": [
+                            "v243/d"
+                        ]
+                    },
+                    {
+                        "def": "v254",
+                        "opname": "load",
+                        "use": [
+                            "v253"
+                        ]
+                    },
+                    {
+                        "def": "v255/call1",
+                        "opname": "call",
+                        "use": [
+                            "v254",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v256",
+                        "opname": "bitcast",
+                        "use": [
+                            "v244/agg.tmp"
+                        ]
+                    },
+                    {
+                        "def": "v257",
+                        "opname": "store",
+                        "use": [
+                            "v255/call1",
+                            "v256"
+                        ]
+                    },
+                    {
+                        "def": "v258",
+                        "opname": "bitcast",
+                        "use": [
+                            "v244/agg.tmp"
+                        ]
+                    },
+                    {
+                        "def": "v259",
+                        "opname": "load",
+                        "use": [
+                            "v258"
+                        ]
+                    },
+                    {
+                        "def": "v260/call2",
+                        "opname": "call",
+                        "use": [
+                            "v261/vertices2",
+                            "v262/count2",
+                            "v259",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v263/arrayidx",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v251/vertices1",
+                            "v250/call"
+                        ]
+                    },
+                    {
+                        "def": "v264/arrayidx3",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v261/vertices2",
+                            "v260/call2"
+                        ]
+                    },
+                    {
+                        "def": "v265",
+                        "opname": "bitcast",
+                        "use": [
+                            "v263/arrayidx"
+                        ]
+                    },
+                    {
+                        "def": "v266",
+                        "opname": "load",
+                        "use": [
+                            "v265"
+                        ]
+                    },
+                    {
+                        "def": "v267",
+                        "opname": "bitcast",
+                        "use": [
+                            "v264/arrayidx3"
+                        ]
+                    },
+                    {
+                        "def": "v268",
+                        "opname": "load",
+                        "use": [
+                            "v267"
+                        ]
+                    },
+                    {
+                        "def": "v269/call4",
+                        "opname": "call",
+                        "use": [
+                            "v266",
+                            "v268",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v270",
+                        "opname": "bitcast",
+                        "use": [
+                            "v242/retval"
+                        ]
+                    },
+                    {
+                        "def": "v271",
+                        "opname": "store",
+                        "use": [
+                            "v269/call4",
+                            "v270"
+                        ]
+                    },
+                    {
+                        "def": "v272",
+                        "opname": "bitcast",
+                        "use": [
+                            "v242/retval"
+                        ]
+                    },
+                    {
+                        "def": "v273",
+                        "opname": "load",
+                        "use": [
+                            "v272"
+                        ]
+                    },
+                    {
+                        "def": "v274",
+                        "opname": "ret",
+                        "use": [
+                            "v273"
+                        ]
+                    }
+                ],
+                "name": "bb19/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb19/entry",
+        "name": "support"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v275/a",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v276/b",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v277/c",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v278/d",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v279/ao",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v280/ab",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v281/ac",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v282/abperp",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v283/acperp",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v284/simplex",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v285/position1",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v286/position2",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v287/coerce",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v288/coerce6",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v289/coerce12",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v290/coerce16",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v291/coerce22",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v292/coerce27",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v293/coerce29",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v294/coerce34",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v295/coerce40",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v296/coerce42",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v297/coerce44",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v298/coerce49",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v299/call",
+                        "opname": "call",
+                        "use": [
+                            "v300/vertices1",
+                            "v301/count1",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v302",
+                        "opname": "bitcast",
+                        "use": [
+                            "v285/position1"
+                        ]
+                    },
+                    {
+                        "def": "v303",
+                        "opname": "store",
+                        "use": [
+                            "v299/call",
+                            "v302"
+                        ]
+                    },
+                    {
+                        "def": "v304/call1",
+                        "opname": "call",
+                        "use": [
+                            "v305/vertices2",
+                            "v306/count2",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v307",
+                        "opname": "bitcast",
+                        "use": [
+                            "v286/position2"
+                        ]
+                    },
+                    {
+                        "def": "v308",
+                        "opname": "store",
+                        "use": [
+                            "v304/call1",
+                            "v307"
+                        ]
+                    },
+                    {
+                        "def": "v309",
+                        "opname": "bitcast",
+                        "use": [
+                            "v285/position1"
+                        ]
+                    },
+                    {
+                        "def": "v310",
+                        "opname": "load",
+                        "use": [
+                            "v309"
+                        ]
+                    },
+                    {
+                        "def": "v311",
+                        "opname": "bitcast",
+                        "use": [
+                            "v286/position2"
+                        ]
+                    },
+                    {
+                        "def": "v312",
+                        "opname": "load",
+                        "use": [
+                            "v311"
+                        ]
+                    },
+                    {
+                        "def": "v313/call2",
+                        "opname": "call",
+                        "use": [
+                            "v310",
+                            "v312",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v314",
+                        "opname": "bitcast",
+                        "use": [
+                            "v287/coerce"
+                        ]
+                    },
+                    {
+                        "def": "v315",
+                        "opname": "store",
+                        "use": [
+                            "v313/call2",
+                            "v314"
+                        ]
+                    },
+                    {
+                        "def": "v316",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v317",
+                        "opname": "bitcast",
+                        "use": [
+                            "v287/coerce"
+                        ]
+                    },
+                    {
+                        "def": "v318",
+                        "opname": "call",
+                        "use": [
+                            "v316",
+                            "v317",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v319/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v278/d",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v320",
+                        "opname": "load",
+                        "use": [
+                            "v319/x"
+                        ]
+                    },
+                    {
+                        "def": "v321/cmp",
+                        "opname": "fcmp",
+                        "use": [
+                            "v320",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v322",
+                        "opname": "br",
+                        "use": [
+                            "v321/cmp",
+                            "bb22/if.end",
+                            "bb21/land.lhs.true"
+                        ]
+                    }
+                ],
+                "name": "bb20/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb21/land.lhs.true",
+                    "bb22/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v323/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v278/d",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v324",
+                        "opname": "load",
+                        "use": [
+                            "v323/y"
+                        ]
+                    },
+                    {
+                        "def": "v325/cmp3",
+                        "opname": "fcmp",
+                        "use": [
+                            "v324",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v326",
+                        "opname": "br",
+                        "use": [
+                            "v325/cmp3",
+                            "bb22/if.end",
+                            "bb23/if.then"
+                        ]
+                    }
+                ],
+                "name": "bb21/land.lhs.true",
+                "predecessors": [
+                    "bb20/entry"
+                ],
+                "successors": [
+                    "bb23/if.then",
+                    "bb22/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v327/x4",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v278/d",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v328",
+                        "opname": "store",
+                        "use": [
+                            "const",
+                            "v327/x4"
+                        ]
+                    },
+                    {
+                        "def": "v329",
+                        "opname": "br",
+                        "use": [
+                            "bb22/if.end"
+                        ]
+                    }
+                ],
+                "name": "bb23/if.then",
+                "predecessors": [
+                    "bb21/land.lhs.true"
+                ],
+                "successors": [
+                    "bb22/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v330/arrayidx",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v331",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v332",
+                        "opname": "load",
+                        "use": [
+                            "v331"
+                        ]
+                    },
+                    {
+                        "def": "v333/call5",
+                        "opname": "call",
+                        "use": [
+                            "v300/vertices1",
+                            "v301/count1",
+                            "v305/vertices2",
+                            "v306/count2",
+                            "v332",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v334",
+                        "opname": "bitcast",
+                        "use": [
+                            "v288/coerce6"
+                        ]
+                    },
+                    {
+                        "def": "v335",
+                        "opname": "store",
+                        "use": [
+                            "v333/call5",
+                            "v334"
+                        ]
+                    },
+                    {
+                        "def": "v336",
+                        "opname": "bitcast",
+                        "use": [
+                            "v330/arrayidx"
+                        ]
+                    },
+                    {
+                        "def": "v337",
+                        "opname": "bitcast",
+                        "use": [
+                            "v288/coerce6"
+                        ]
+                    },
+                    {
+                        "def": "v338",
+                        "opname": "call",
+                        "use": [
+                            "v336",
+                            "v337",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v339",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v340",
+                        "opname": "bitcast",
+                        "use": [
+                            "v330/arrayidx"
+                        ]
+                    },
+                    {
+                        "def": "v341",
+                        "opname": "call",
+                        "use": [
+                            "v339",
+                            "v340",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v342",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v343",
+                        "opname": "load",
+                        "use": [
+                            "v342"
+                        ]
+                    },
+                    {
+                        "def": "v344",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v345",
+                        "opname": "load",
+                        "use": [
+                            "v344"
+                        ]
+                    },
+                    {
+                        "def": "v346/call7",
+                        "opname": "call",
+                        "use": [
+                            "v343",
+                            "v345",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v347/cmp8",
+                        "opname": "fcmp",
+                        "use": [
+                            "v346/call7",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v348",
+                        "opname": "br",
+                        "use": [
+                            "v347/cmp8",
+                            "bb25/if.end10",
+                            "bb24/if.then9"
+                        ]
+                    }
+                ],
+                "name": "bb22/if.end",
+                "predecessors": [
+                    "bb23/if.then",
+                    "bb21/land.lhs.true",
+                    "bb20/entry"
+                ],
+                "successors": [
+                    "bb24/if.then9",
+                    "bb25/if.end10"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v349",
+                        "opname": "br",
+                        "use": [
+                            "bb26/return"
+                        ]
+                    }
+                ],
+                "name": "bb24/if.then9",
+                "predecessors": [
+                    "bb22/if.end"
+                ],
+                "successors": [
+                    "bb26/return"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v350",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v351",
+                        "opname": "load",
+                        "use": [
+                            "v350"
+                        ]
+                    },
+                    {
+                        "def": "v352/call11",
+                        "opname": "call",
+                        "use": [
+                            "v351",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v353",
+                        "opname": "bitcast",
+                        "use": [
+                            "v289/coerce12"
+                        ]
+                    },
+                    {
+                        "def": "v354",
+                        "opname": "store",
+                        "use": [
+                            "v352/call11",
+                            "v353"
+                        ]
+                    },
+                    {
+                        "def": "v355",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v356",
+                        "opname": "bitcast",
+                        "use": [
+                            "v289/coerce12"
+                        ]
+                    },
+                    {
+                        "def": "v357",
+                        "opname": "call",
+                        "use": [
+                            "v355",
+                            "v356",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v358",
+                        "opname": "br",
+                        "use": [
+                            "bb27/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb25/if.end10",
+                "predecessors": [
+                    "bb22/if.end"
+                ],
+                "successors": [
+                    "bb27/while.body"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v359/index.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb25/if.end10",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb29/if.end35",
+                                "val": "v360/inc13"
+                            },
+                            {
+                                "bb": "bb28/if.end56",
+                                "val": "v361/dec"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v362",
+                        "opname": "load",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v363/inc",
+                        "opname": "add",
+                        "use": [
+                            "v362",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v364",
+                        "opname": "store",
+                        "use": [
+                            "v363/inc",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v360/inc13",
+                        "opname": "add",
+                        "use": [
+                            "v359/index.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v365/arrayidx14",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "v360/inc13"
+                        ]
+                    },
+                    {
+                        "def": "v366",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v367",
+                        "opname": "load",
+                        "use": [
+                            "v366"
+                        ]
+                    },
+                    {
+                        "def": "v368/call15",
+                        "opname": "call",
+                        "use": [
+                            "v300/vertices1",
+                            "v301/count1",
+                            "v305/vertices2",
+                            "v306/count2",
+                            "v367",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v369",
+                        "opname": "bitcast",
+                        "use": [
+                            "v290/coerce16"
+                        ]
+                    },
+                    {
+                        "def": "v370",
+                        "opname": "store",
+                        "use": [
+                            "v368/call15",
+                            "v369"
+                        ]
+                    },
+                    {
+                        "def": "v371",
+                        "opname": "bitcast",
+                        "use": [
+                            "v365/arrayidx14"
+                        ]
+                    },
+                    {
+                        "def": "v372",
+                        "opname": "bitcast",
+                        "use": [
+                            "v290/coerce16"
+                        ]
+                    },
+                    {
+                        "def": "v373",
+                        "opname": "call",
+                        "use": [
+                            "v371",
+                            "v372",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v374",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v375",
+                        "opname": "bitcast",
+                        "use": [
+                            "v365/arrayidx14"
+                        ]
+                    },
+                    {
+                        "def": "v376",
+                        "opname": "call",
+                        "use": [
+                            "v374",
+                            "v375",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v377",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v378",
+                        "opname": "load",
+                        "use": [
+                            "v377"
+                        ]
+                    },
+                    {
+                        "def": "v379",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v380",
+                        "opname": "load",
+                        "use": [
+                            "v379"
+                        ]
+                    },
+                    {
+                        "def": "v381/call17",
+                        "opname": "call",
+                        "use": [
+                            "v378",
+                            "v380",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v382/cmp18",
+                        "opname": "fcmp",
+                        "use": [
+                            "v381/call17",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v383",
+                        "opname": "br",
+                        "use": [
+                            "v382/cmp18",
+                            "bb31/if.end20",
+                            "bb30/if.then19"
+                        ]
+                    }
+                ],
+                "name": "bb27/while.body",
+                "predecessors": [
+                    "bb28/if.end56",
+                    "bb29/if.end35",
+                    "bb25/if.end10"
+                ],
+                "successors": [
+                    "bb30/if.then19",
+                    "bb31/if.end20"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v384",
+                        "opname": "br",
+                        "use": [
+                            "bb26/return"
+                        ]
+                    }
+                ],
+                "name": "bb30/if.then19",
+                "predecessors": [
+                    "bb27/while.body"
+                ],
+                "successors": [
+                    "bb26/return"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v385",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v386",
+                        "opname": "load",
+                        "use": [
+                            "v385"
+                        ]
+                    },
+                    {
+                        "def": "v387/call21",
+                        "opname": "call",
+                        "use": [
+                            "v386",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v388",
+                        "opname": "bitcast",
+                        "use": [
+                            "v291/coerce22"
+                        ]
+                    },
+                    {
+                        "def": "v389",
+                        "opname": "store",
+                        "use": [
+                            "v387/call21",
+                            "v388"
+                        ]
+                    },
+                    {
+                        "def": "v390",
+                        "opname": "bitcast",
+                        "use": [
+                            "v279/ao"
+                        ]
+                    },
+                    {
+                        "def": "v391",
+                        "opname": "bitcast",
+                        "use": [
+                            "v291/coerce22"
+                        ]
+                    },
+                    {
+                        "def": "v392",
+                        "opname": "call",
+                        "use": [
+                            "v390",
+                            "v391",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v393/cmp23",
+                        "opname": "icmp",
+                        "use": [
+                            "v360/inc13",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v394",
+                        "opname": "br",
+                        "use": [
+                            "v393/cmp23",
+                            "bb33/if.end36",
+                            "bb32/if.then24"
+                        ]
+                    }
+                ],
+                "name": "bb31/if.end20",
+                "predecessors": [
+                    "bb27/while.body"
+                ],
+                "successors": [
+                    "bb32/if.then24",
+                    "bb33/if.end36"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v395/arrayidx25",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v396",
+                        "opname": "bitcast",
+                        "use": [
+                            "v276/b"
+                        ]
+                    },
+                    {
+                        "def": "v397",
+                        "opname": "bitcast",
+                        "use": [
+                            "v395/arrayidx25"
+                        ]
+                    },
+                    {
+                        "def": "v398",
+                        "opname": "call",
+                        "use": [
+                            "v396",
+                            "v397",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v399",
+                        "opname": "bitcast",
+                        "use": [
+                            "v276/b"
+                        ]
+                    },
+                    {
+                        "def": "v400",
+                        "opname": "load",
+                        "use": [
+                            "v399"
+                        ]
+                    },
+                    {
+                        "def": "v401",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v402",
+                        "opname": "load",
+                        "use": [
+                            "v401"
+                        ]
+                    },
+                    {
+                        "def": "v403/call26",
+                        "opname": "call",
+                        "use": [
+                            "v400",
+                            "v402",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v404",
+                        "opname": "bitcast",
+                        "use": [
+                            "v292/coerce27"
+                        ]
+                    },
+                    {
+                        "def": "v405",
+                        "opname": "store",
+                        "use": [
+                            "v403/call26",
+                            "v404"
+                        ]
+                    },
+                    {
+                        "def": "v406",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v407",
+                        "opname": "bitcast",
+                        "use": [
+                            "v292/coerce27"
+                        ]
+                    },
+                    {
+                        "def": "v408",
+                        "opname": "call",
+                        "use": [
+                            "v406",
+                            "v407",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v409",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v410",
+                        "opname": "load",
+                        "use": [
+                            "v409"
+                        ]
+                    },
+                    {
+                        "def": "v411",
+                        "opname": "bitcast",
+                        "use": [
+                            "v279/ao"
+                        ]
+                    },
+                    {
+                        "def": "v412",
+                        "opname": "load",
+                        "use": [
+                            "v411"
+                        ]
+                    },
+                    {
+                        "def": "v413",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v414",
+                        "opname": "load",
+                        "use": [
+                            "v413"
+                        ]
+                    },
+                    {
+                        "def": "v415/call28",
+                        "opname": "call",
+                        "use": [
+                            "v410",
+                            "v412",
+                            "v414",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v416",
+                        "opname": "bitcast",
+                        "use": [
+                            "v293/coerce29"
+                        ]
+                    },
+                    {
+                        "def": "v417",
+                        "opname": "store",
+                        "use": [
+                            "v415/call28",
+                            "v416"
+                        ]
+                    },
+                    {
+                        "def": "v418",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v419",
+                        "opname": "bitcast",
+                        "use": [
+                            "v293/coerce29"
+                        ]
+                    },
+                    {
+                        "def": "v420",
+                        "opname": "call",
+                        "use": [
+                            "v418",
+                            "v419",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v421",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v422",
+                        "opname": "load",
+                        "use": [
+                            "v421"
+                        ]
+                    },
+                    {
+                        "def": "v423/call30",
+                        "opname": "call",
+                        "use": [
+                            "v422",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v424/cmp31",
+                        "opname": "fcmp",
+                        "use": [
+                            "v423/call30",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v425",
+                        "opname": "br",
+                        "use": [
+                            "v424/cmp31",
+                            "bb29/if.end35",
+                            "bb34/if.then32"
+                        ]
+                    }
+                ],
+                "name": "bb32/if.then24",
+                "predecessors": [
+                    "bb31/if.end20"
+                ],
+                "successors": [
+                    "bb34/if.then32",
+                    "bb29/if.end35"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v426",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v427",
+                        "opname": "load",
+                        "use": [
+                            "v426"
+                        ]
+                    },
+                    {
+                        "def": "v428/call33",
+                        "opname": "call",
+                        "use": [
+                            "v427",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v429",
+                        "opname": "bitcast",
+                        "use": [
+                            "v294/coerce34"
+                        ]
+                    },
+                    {
+                        "def": "v430",
+                        "opname": "store",
+                        "use": [
+                            "v428/call33",
+                            "v429"
+                        ]
+                    },
+                    {
+                        "def": "v431",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v432",
+                        "opname": "bitcast",
+                        "use": [
+                            "v294/coerce34"
+                        ]
+                    },
+                    {
+                        "def": "v433",
+                        "opname": "call",
+                        "use": [
+                            "v431",
+                            "v432",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v434",
+                        "opname": "br",
+                        "use": [
+                            "bb29/if.end35"
+                        ]
+                    }
+                ],
+                "name": "bb34/if.then32",
+                "predecessors": [
+                    "bb32/if.then24"
+                ],
+                "successors": [
+                    "bb29/if.end35"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v435",
+                        "opname": "br",
+                        "use": [
+                            "bb27/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb29/if.end35",
+                "predecessors": [
+                    "bb34/if.then32",
+                    "bb32/if.then24"
+                ],
+                "successors": [
+                    "bb27/while.body"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v436/arrayidx37",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v437",
+                        "opname": "bitcast",
+                        "use": [
+                            "v276/b"
+                        ]
+                    },
+                    {
+                        "def": "v438",
+                        "opname": "bitcast",
+                        "use": [
+                            "v436/arrayidx37"
+                        ]
+                    },
+                    {
+                        "def": "v439",
+                        "opname": "call",
+                        "use": [
+                            "v437",
+                            "v438",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v440/arrayidx38",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v441",
+                        "opname": "bitcast",
+                        "use": [
+                            "v277/c"
+                        ]
+                    },
+                    {
+                        "def": "v442",
+                        "opname": "bitcast",
+                        "use": [
+                            "v440/arrayidx38"
+                        ]
+                    },
+                    {
+                        "def": "v443",
+                        "opname": "call",
+                        "use": [
+                            "v441",
+                            "v442",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v444",
+                        "opname": "bitcast",
+                        "use": [
+                            "v276/b"
+                        ]
+                    },
+                    {
+                        "def": "v445",
+                        "opname": "load",
+                        "use": [
+                            "v444"
+                        ]
+                    },
+                    {
+                        "def": "v446",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v447",
+                        "opname": "load",
+                        "use": [
+                            "v446"
+                        ]
+                    },
+                    {
+                        "def": "v448/call39",
+                        "opname": "call",
+                        "use": [
+                            "v445",
+                            "v447",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v449",
+                        "opname": "bitcast",
+                        "use": [
+                            "v295/coerce40"
+                        ]
+                    },
+                    {
+                        "def": "v450",
+                        "opname": "store",
+                        "use": [
+                            "v448/call39",
+                            "v449"
+                        ]
+                    },
+                    {
+                        "def": "v451",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v452",
+                        "opname": "bitcast",
+                        "use": [
+                            "v295/coerce40"
+                        ]
+                    },
+                    {
+                        "def": "v453",
+                        "opname": "call",
+                        "use": [
+                            "v451",
+                            "v452",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v454",
+                        "opname": "bitcast",
+                        "use": [
+                            "v277/c"
+                        ]
+                    },
+                    {
+                        "def": "v455",
+                        "opname": "load",
+                        "use": [
+                            "v454"
+                        ]
+                    },
+                    {
+                        "def": "v456",
+                        "opname": "bitcast",
+                        "use": [
+                            "v275/a"
+                        ]
+                    },
+                    {
+                        "def": "v457",
+                        "opname": "load",
+                        "use": [
+                            "v456"
+                        ]
+                    },
+                    {
+                        "def": "v458/call41",
+                        "opname": "call",
+                        "use": [
+                            "v455",
+                            "v457",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v459",
+                        "opname": "bitcast",
+                        "use": [
+                            "v296/coerce42"
+                        ]
+                    },
+                    {
+                        "def": "v460",
+                        "opname": "store",
+                        "use": [
+                            "v458/call41",
+                            "v459"
+                        ]
+                    },
+                    {
+                        "def": "v461",
+                        "opname": "bitcast",
+                        "use": [
+                            "v281/ac"
+                        ]
+                    },
+                    {
+                        "def": "v462",
+                        "opname": "bitcast",
+                        "use": [
+                            "v296/coerce42"
+                        ]
+                    },
+                    {
+                        "def": "v463",
+                        "opname": "call",
+                        "use": [
+                            "v461",
+                            "v462",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v464",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v465",
+                        "opname": "load",
+                        "use": [
+                            "v464"
+                        ]
+                    },
+                    {
+                        "def": "v466",
+                        "opname": "bitcast",
+                        "use": [
+                            "v281/ac"
+                        ]
+                    },
+                    {
+                        "def": "v467",
+                        "opname": "load",
+                        "use": [
+                            "v466"
+                        ]
+                    },
+                    {
+                        "def": "v468",
+                        "opname": "bitcast",
+                        "use": [
+                            "v281/ac"
+                        ]
+                    },
+                    {
+                        "def": "v469",
+                        "opname": "load",
+                        "use": [
+                            "v468"
+                        ]
+                    },
+                    {
+                        "def": "v470/call43",
+                        "opname": "call",
+                        "use": [
+                            "v465",
+                            "v467",
+                            "v469",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v471",
+                        "opname": "bitcast",
+                        "use": [
+                            "v297/coerce44"
+                        ]
+                    },
+                    {
+                        "def": "v472",
+                        "opname": "store",
+                        "use": [
+                            "v470/call43",
+                            "v471"
+                        ]
+                    },
+                    {
+                        "def": "v473",
+                        "opname": "bitcast",
+                        "use": [
+                            "v283/acperp"
+                        ]
+                    },
+                    {
+                        "def": "v474",
+                        "opname": "bitcast",
+                        "use": [
+                            "v297/coerce44"
+                        ]
+                    },
+                    {
+                        "def": "v475",
+                        "opname": "call",
+                        "use": [
+                            "v473",
+                            "v474",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v476",
+                        "opname": "bitcast",
+                        "use": [
+                            "v283/acperp"
+                        ]
+                    },
+                    {
+                        "def": "v477",
+                        "opname": "load",
+                        "use": [
+                            "v476"
+                        ]
+                    },
+                    {
+                        "def": "v478",
+                        "opname": "bitcast",
+                        "use": [
+                            "v279/ao"
+                        ]
+                    },
+                    {
+                        "def": "v479",
+                        "opname": "load",
+                        "use": [
+                            "v478"
+                        ]
+                    },
+                    {
+                        "def": "v480/call45",
+                        "opname": "call",
+                        "use": [
+                            "v477",
+                            "v479",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v481/cmp46",
+                        "opname": "fcmp",
+                        "use": [
+                            "v480/call45",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v482",
+                        "opname": "br",
+                        "use": [
+                            "v481/cmp46",
+                            "bb36/if.else",
+                            "bb35/if.then47"
+                        ]
+                    }
+                ],
+                "name": "bb33/if.end36",
+                "predecessors": [
+                    "bb31/if.end20"
+                ],
+                "successors": [
+                    "bb35/if.then47",
+                    "bb36/if.else"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v483",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v484",
+                        "opname": "bitcast",
+                        "use": [
+                            "v283/acperp"
+                        ]
+                    },
+                    {
+                        "def": "v485",
+                        "opname": "call",
+                        "use": [
+                            "v483",
+                            "v484",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v486",
+                        "opname": "br",
+                        "use": [
+                            "bb28/if.end56"
+                        ]
+                    }
+                ],
+                "name": "bb35/if.then47",
+                "predecessors": [
+                    "bb33/if.end36"
+                ],
+                "successors": [
+                    "bb28/if.end56"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v487",
+                        "opname": "bitcast",
+                        "use": [
+                            "v281/ac"
+                        ]
+                    },
+                    {
+                        "def": "v488",
+                        "opname": "load",
+                        "use": [
+                            "v487"
+                        ]
+                    },
+                    {
+                        "def": "v489",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v490",
+                        "opname": "load",
+                        "use": [
+                            "v489"
+                        ]
+                    },
+                    {
+                        "def": "v491",
+                        "opname": "bitcast",
+                        "use": [
+                            "v280/ab"
+                        ]
+                    },
+                    {
+                        "def": "v492",
+                        "opname": "load",
+                        "use": [
+                            "v491"
+                        ]
+                    },
+                    {
+                        "def": "v493/call48",
+                        "opname": "call",
+                        "use": [
+                            "v488",
+                            "v490",
+                            "v492",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v494",
+                        "opname": "bitcast",
+                        "use": [
+                            "v298/coerce49"
+                        ]
+                    },
+                    {
+                        "def": "v495",
+                        "opname": "store",
+                        "use": [
+                            "v493/call48",
+                            "v494"
+                        ]
+                    },
+                    {
+                        "def": "v496",
+                        "opname": "bitcast",
+                        "use": [
+                            "v282/abperp"
+                        ]
+                    },
+                    {
+                        "def": "v497",
+                        "opname": "bitcast",
+                        "use": [
+                            "v298/coerce49"
+                        ]
+                    },
+                    {
+                        "def": "v498",
+                        "opname": "call",
+                        "use": [
+                            "v496",
+                            "v497",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v499",
+                        "opname": "bitcast",
+                        "use": [
+                            "v282/abperp"
+                        ]
+                    },
+                    {
+                        "def": "v500",
+                        "opname": "load",
+                        "use": [
+                            "v499"
+                        ]
+                    },
+                    {
+                        "def": "v501",
+                        "opname": "bitcast",
+                        "use": [
+                            "v279/ao"
+                        ]
+                    },
+                    {
+                        "def": "v502",
+                        "opname": "load",
+                        "use": [
+                            "v501"
+                        ]
+                    },
+                    {
+                        "def": "v503/call50",
+                        "opname": "call",
+                        "use": [
+                            "v500",
+                            "v502",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v504/cmp51",
+                        "opname": "fcmp",
+                        "use": [
+                            "v503/call50",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v505",
+                        "opname": "br",
+                        "use": [
+                            "v504/cmp51",
+                            "bb38/if.end53",
+                            "bb37/if.then52"
+                        ]
+                    }
+                ],
+                "name": "bb36/if.else",
+                "predecessors": [
+                    "bb33/if.end36"
+                ],
+                "successors": [
+                    "bb37/if.then52",
+                    "bb38/if.end53"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v506",
+                        "opname": "br",
+                        "use": [
+                            "bb26/return"
+                        ]
+                    }
+                ],
+                "name": "bb37/if.then52",
+                "predecessors": [
+                    "bb36/if.else"
+                ],
+                "successors": [
+                    "bb26/return"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v507/arrayidx54",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v508/arrayidx55",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v509",
+                        "opname": "bitcast",
+                        "use": [
+                            "v507/arrayidx54"
+                        ]
+                    },
+                    {
+                        "def": "v510",
+                        "opname": "bitcast",
+                        "use": [
+                            "v508/arrayidx55"
+                        ]
+                    },
+                    {
+                        "def": "v511",
+                        "opname": "call",
+                        "use": [
+                            "v509",
+                            "v510",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v512",
+                        "opname": "bitcast",
+                        "use": [
+                            "v278/d"
+                        ]
+                    },
+                    {
+                        "def": "v513",
+                        "opname": "bitcast",
+                        "use": [
+                            "v282/abperp"
+                        ]
+                    },
+                    {
+                        "def": "v514",
+                        "opname": "call",
+                        "use": [
+                            "v512",
+                            "v513",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v515",
+                        "opname": "br",
+                        "use": [
+                            "bb28/if.end56"
+                        ]
+                    }
+                ],
+                "name": "bb38/if.end53",
+                "predecessors": [
+                    "bb36/if.else"
+                ],
+                "successors": [
+                    "bb28/if.end56"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v516/arrayidx57",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v517/arrayidx58",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v284/simplex",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v518",
+                        "opname": "bitcast",
+                        "use": [
+                            "v516/arrayidx57"
+                        ]
+                    },
+                    {
+                        "def": "v519",
+                        "opname": "bitcast",
+                        "use": [
+                            "v517/arrayidx58"
+                        ]
+                    },
+                    {
+                        "def": "v520",
+                        "opname": "call",
+                        "use": [
+                            "v518",
+                            "v519",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v361/dec",
+                        "opname": "add",
+                        "use": [
+                            "v360/inc13",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v521",
+                        "opname": "br",
+                        "use": [
+                            "bb27/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb28/if.end56",
+                "predecessors": [
+                    "bb38/if.end53",
+                    "bb35/if.then47"
+                ],
+                "successors": [
+                    "bb27/while.body"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v522/retval.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb24/if.then9",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb30/if.then19",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb37/if.then52",
+                                "val": "const"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v523",
+                        "opname": "ret",
+                        "use": [
+                            "v522/retval.0"
+                        ]
+                    }
+                ],
+                "name": "bb26/return",
+                "predecessors": [
+                    "bb37/if.then52",
+                    "bb30/if.then19",
+                    "bb24/if.then9"
+                ],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb20/entry",
+        "name": "gjk"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v524/call",
+                        "opname": "call",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v525/conv",
+                        "opname": "sitofp",
+                        "use": [
+                            "v524/call"
+                        ]
+                    },
+                    {
+                        "def": "v526/div",
+                        "opname": "fdiv",
+                        "use": [
+                            "v525/conv",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v527/mul",
+                        "opname": "fmul",
+                        "use": [
+                            "v526/div",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v528/mul1",
+                        "opname": "fmul",
+                        "use": [
+                            "v527/mul",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v529/call2",
+                        "opname": "call",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v530/rem",
+                        "opname": "srem",
+                        "use": [
+                            "v529/call2",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v531/tobool",
+                        "opname": "icmp",
+                        "use": [
+                            "v530/rem",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v532/cond",
+                        "opname": "select",
+                        "use": [
+                            "v531/tobool",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v533/mul3",
+                        "opname": "fmul",
+                        "use": [
+                            "v528/mul1",
+                            "v532/cond"
+                        ]
+                    },
+                    {
+                        "def": "v534",
+                        "opname": "ret",
+                        "use": [
+                            "v533/mul3"
+                        ]
+                    }
+                ],
+                "name": "bb39/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb39/entry",
+        "name": "Perturbation"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v535/retval",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v536/a",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v537/b",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v538",
+                        "opname": "bitcast",
+                        "use": [
+                            "v536/a"
+                        ]
+                    },
+                    {
+                        "def": "v539",
+                        "opname": "store",
+                        "use": [
+                            "v540/a.coerce",
+                            "v538"
+                        ]
+                    },
+                    {
+                        "def": "v541/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v536/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v542",
+                        "opname": "load",
+                        "use": [
+                            "v541/x"
+                        ]
+                    },
+                    {
+                        "def": "v543/call",
+                        "opname": "call",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v544/add",
+                        "opname": "fadd",
+                        "use": [
+                            "v542",
+                            "v543/call"
+                        ]
+                    },
+                    {
+                        "def": "v545/x1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v537/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v546",
+                        "opname": "store",
+                        "use": [
+                            "v544/add",
+                            "v545/x1"
+                        ]
+                    },
+                    {
+                        "def": "v547/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v536/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v548",
+                        "opname": "load",
+                        "use": [
+                            "v547/y"
+                        ]
+                    },
+                    {
+                        "def": "v549/call2",
+                        "opname": "call",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v550/add3",
+                        "opname": "fadd",
+                        "use": [
+                            "v548",
+                            "v549/call2"
+                        ]
+                    },
+                    {
+                        "def": "v551/y4",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v537/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v552",
+                        "opname": "store",
+                        "use": [
+                            "v550/add3",
+                            "v551/y4"
+                        ]
+                    },
+                    {
+                        "def": "v553",
+                        "opname": "bitcast",
+                        "use": [
+                            "v535/retval"
+                        ]
+                    },
+                    {
+                        "def": "v554",
+                        "opname": "bitcast",
+                        "use": [
+                            "v537/b"
+                        ]
+                    },
+                    {
+                        "def": "v555",
+                        "opname": "call",
+                        "use": [
+                            "v553",
+                            "v554",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v556",
+                        "opname": "bitcast",
+                        "use": [
+                            "v535/retval"
+                        ]
+                    },
+                    {
+                        "def": "v557",
+                        "opname": "load",
+                        "use": [
+                            "v556"
+                        ]
+                    },
+                    {
+                        "def": "v558",
+                        "opname": "ret",
+                        "use": [
+                            "v557"
+                        ]
+                    }
+                ],
+                "name": "bb40/entry",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb40/entry",
+        "name": "Jostle"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v559/vertices1",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v560/vertices2",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v561/a",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v562/b",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v563/coerce",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v564/coerce9",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v565",
+                        "opname": "bitcast",
+                        "use": [
+                            "v559/vertices1"
+                        ]
+                    },
+                    {
+                        "def": "v566",
+                        "opname": "call",
+                        "use": [
+                            "v565",
+                            "const",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v567",
+                        "opname": "bitcast",
+                        "use": [
+                            "v560/vertices2"
+                        ]
+                    },
+                    {
+                        "def": "v568",
+                        "opname": "call",
+                        "use": [
+                            "v567",
+                            "const",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v569",
+                        "opname": "br",
+                        "use": [
+                            "bb42/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb41/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb42/while.body"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v570",
+                        "opname": "br",
+                        "use": [
+                            "bb44/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb42/while.body",
+                "predecessors": [
+                    "bb43/if.end",
+                    "bb41/entry"
+                ],
+                "successors": [
+                    "bb44/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v571/i.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb42/while.body",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb45/for.inc",
+                                "val": "v572/inc"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v573/cmp",
+                        "opname": "icmp",
+                        "use": [
+                            "v571/i.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v574",
+                        "opname": "br",
+                        "use": [
+                            "v573/cmp",
+                            "bb47/for.end",
+                            "bb46/for.body"
+                        ]
+                    }
+                ],
+                "name": "bb44/for.cond",
+                "predecessors": [
+                    "bb45/for.inc",
+                    "bb42/while.body"
+                ],
+                "successors": [
+                    "bb46/for.body",
+                    "bb47/for.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v575/arrayidx",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "v571/i.0"
+                        ]
+                    },
+                    {
+                        "def": "v576/arrayidx1",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v559/vertices1",
+                            "const",
+                            "v571/i.0"
+                        ]
+                    },
+                    {
+                        "def": "v577",
+                        "opname": "bitcast",
+                        "use": [
+                            "v576/arrayidx1"
+                        ]
+                    },
+                    {
+                        "def": "v578",
+                        "opname": "load",
+                        "use": [
+                            "v577"
+                        ]
+                    },
+                    {
+                        "def": "v579/call",
+                        "opname": "call",
+                        "use": [
+                            "v578",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v580",
+                        "opname": "bitcast",
+                        "use": [
+                            "v563/coerce"
+                        ]
+                    },
+                    {
+                        "def": "v581",
+                        "opname": "store",
+                        "use": [
+                            "v579/call",
+                            "v580"
+                        ]
+                    },
+                    {
+                        "def": "v582",
+                        "opname": "bitcast",
+                        "use": [
+                            "v575/arrayidx"
+                        ]
+                    },
+                    {
+                        "def": "v583",
+                        "opname": "bitcast",
+                        "use": [
+                            "v563/coerce"
+                        ]
+                    },
+                    {
+                        "def": "v584",
+                        "opname": "call",
+                        "use": [
+                            "v582",
+                            "v583",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v585",
+                        "opname": "br",
+                        "use": [
+                            "bb45/for.inc"
+                        ]
+                    }
+                ],
+                "name": "bb46/for.body",
+                "predecessors": [
+                    "bb44/for.cond"
+                ],
+                "successors": [
+                    "bb45/for.inc"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v572/inc",
+                        "opname": "add",
+                        "use": [
+                            "v571/i.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v586",
+                        "opname": "br",
+                        "use": [
+                            "bb44/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb45/for.inc",
+                "predecessors": [
+                    "bb46/for.body"
+                ],
+                "successors": [
+                    "bb44/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v587",
+                        "opname": "br",
+                        "use": [
+                            "bb48/for.cond3"
+                        ]
+                    }
+                ],
+                "name": "bb47/for.end",
+                "predecessors": [
+                    "bb44/for.cond"
+                ],
+                "successors": [
+                    "bb48/for.cond3"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v588/i2.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb47/for.end",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb49/for.inc10",
+                                "val": "v589/inc11"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v590/cmp4",
+                        "opname": "icmp",
+                        "use": [
+                            "v588/i2.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v591",
+                        "opname": "br",
+                        "use": [
+                            "v590/cmp4",
+                            "bb51/for.end12",
+                            "bb50/for.body5"
+                        ]
+                    }
+                ],
+                "name": "bb48/for.cond3",
+                "predecessors": [
+                    "bb49/for.inc10",
+                    "bb47/for.end"
+                ],
+                "successors": [
+                    "bb50/for.body5",
+                    "bb51/for.end12"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v592/arrayidx6",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "v588/i2.0"
+                        ]
+                    },
+                    {
+                        "def": "v593/arrayidx7",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v560/vertices2",
+                            "const",
+                            "v588/i2.0"
+                        ]
+                    },
+                    {
+                        "def": "v594",
+                        "opname": "bitcast",
+                        "use": [
+                            "v593/arrayidx7"
+                        ]
+                    },
+                    {
+                        "def": "v595",
+                        "opname": "load",
+                        "use": [
+                            "v594"
+                        ]
+                    },
+                    {
+                        "def": "v596/call8",
+                        "opname": "call",
+                        "use": [
+                            "v595",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v597",
+                        "opname": "bitcast",
+                        "use": [
+                            "v564/coerce9"
+                        ]
+                    },
+                    {
+                        "def": "v598",
+                        "opname": "store",
+                        "use": [
+                            "v596/call8",
+                            "v597"
+                        ]
+                    },
+                    {
+                        "def": "v599",
+                        "opname": "bitcast",
+                        "use": [
+                            "v592/arrayidx6"
+                        ]
+                    },
+                    {
+                        "def": "v600",
+                        "opname": "bitcast",
+                        "use": [
+                            "v564/coerce9"
+                        ]
+                    },
+                    {
+                        "def": "v601",
+                        "opname": "call",
+                        "use": [
+                            "v599",
+                            "v600",
+                            "const",
+                            "const",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v602",
+                        "opname": "br",
+                        "use": [
+                            "bb49/for.inc10"
+                        ]
+                    }
+                ],
+                "name": "bb50/for.body5",
+                "predecessors": [
+                    "bb48/for.cond3"
+                ],
+                "successors": [
+                    "bb49/for.inc10"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v589/inc11",
+                        "opname": "add",
+                        "use": [
+                            "v588/i2.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v603",
+                        "opname": "br",
+                        "use": [
+                            "bb48/for.cond3"
+                        ]
+                    }
+                ],
+                "name": "bb49/for.inc10",
+                "predecessors": [
+                    "bb50/for.body5"
+                ],
+                "successors": [
+                    "bb48/for.cond3"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v604/arraydecay",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v605/arraydecay13",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v606/call14",
+                        "opname": "call",
+                        "use": [
+                            "v604/arraydecay",
+                            "const",
+                            "v605/arraydecay13",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v607/tobool",
+                        "opname": "icmp",
+                        "use": [
+                            "v606/call14",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v608",
+                        "opname": "br",
+                        "use": [
+                            "v607/tobool",
+                            "bb53/if.then",
+                            "bb52/if.else"
+                        ]
+                    }
+                ],
+                "name": "bb51/for.end12",
+                "predecessors": [
+                    "bb48/for.cond3"
+                ],
+                "successors": [
+                    "bb52/if.else",
+                    "bb53/if.then"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v609/arrayidx15",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v610/x",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v609/arrayidx15",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v611",
+                        "opname": "load",
+                        "use": [
+                            "v610/x"
+                        ]
+                    },
+                    {
+                        "def": "v612/conv",
+                        "opname": "fpext",
+                        "use": [
+                            "v611"
+                        ]
+                    },
+                    {
+                        "def": "v613/arrayidx16",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v614/y",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v613/arrayidx16",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v615",
+                        "opname": "load",
+                        "use": [
+                            "v614/y"
+                        ]
+                    },
+                    {
+                        "def": "v616/conv17",
+                        "opname": "fpext",
+                        "use": [
+                            "v615"
+                        ]
+                    },
+                    {
+                        "def": "v617/arrayidx18",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v618/x19",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v617/arrayidx18",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v619",
+                        "opname": "load",
+                        "use": [
+                            "v618/x19"
+                        ]
+                    },
+                    {
+                        "def": "v620/conv20",
+                        "opname": "fpext",
+                        "use": [
+                            "v619"
+                        ]
+                    },
+                    {
+                        "def": "v621/arrayidx21",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v622/y22",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v621/arrayidx21",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v623",
+                        "opname": "load",
+                        "use": [
+                            "v622/y22"
+                        ]
+                    },
+                    {
+                        "def": "v624/conv23",
+                        "opname": "fpext",
+                        "use": [
+                            "v623"
+                        ]
+                    },
+                    {
+                        "def": "v625/arrayidx24",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v626/x25",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v625/arrayidx24",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v627",
+                        "opname": "load",
+                        "use": [
+                            "v626/x25"
+                        ]
+                    },
+                    {
+                        "def": "v628/conv26",
+                        "opname": "fpext",
+                        "use": [
+                            "v627"
+                        ]
+                    },
+                    {
+                        "def": "v629/arrayidx27",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v561/a",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v630/y28",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v629/arrayidx27",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v631",
+                        "opname": "load",
+                        "use": [
+                            "v630/y28"
+                        ]
+                    },
+                    {
+                        "def": "v632/conv29",
+                        "opname": "fpext",
+                        "use": [
+                            "v631"
+                        ]
+                    },
+                    {
+                        "def": "v633/arrayidx30",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v634/x31",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v633/arrayidx30",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v635",
+                        "opname": "load",
+                        "use": [
+                            "v634/x31"
+                        ]
+                    },
+                    {
+                        "def": "v636/conv32",
+                        "opname": "fpext",
+                        "use": [
+                            "v635"
+                        ]
+                    },
+                    {
+                        "def": "v637/arrayidx33",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v638/y34",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v637/arrayidx33",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v639",
+                        "opname": "load",
+                        "use": [
+                            "v638/y34"
+                        ]
+                    },
+                    {
+                        "def": "v640/conv35",
+                        "opname": "fpext",
+                        "use": [
+                            "v639"
+                        ]
+                    },
+                    {
+                        "def": "v641/arrayidx36",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v642/x37",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v641/arrayidx36",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v643",
+                        "opname": "load",
+                        "use": [
+                            "v642/x37"
+                        ]
+                    },
+                    {
+                        "def": "v644/conv38",
+                        "opname": "fpext",
+                        "use": [
+                            "v643"
+                        ]
+                    },
+                    {
+                        "def": "v645/arrayidx39",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v646/y40",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v645/arrayidx39",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v647",
+                        "opname": "load",
+                        "use": [
+                            "v646/y40"
+                        ]
+                    },
+                    {
+                        "def": "v648/conv41",
+                        "opname": "fpext",
+                        "use": [
+                            "v647"
+                        ]
+                    },
+                    {
+                        "def": "v649/arrayidx42",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v650/x43",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v649/arrayidx42",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v651",
+                        "opname": "load",
+                        "use": [
+                            "v650/x43"
+                        ]
+                    },
+                    {
+                        "def": "v652/conv44",
+                        "opname": "fpext",
+                        "use": [
+                            "v651"
+                        ]
+                    },
+                    {
+                        "def": "v653/arrayidx45",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v562/b",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v654/y46",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v653/arrayidx45",
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v655",
+                        "opname": "load",
+                        "use": [
+                            "v654/y46"
+                        ]
+                    },
+                    {
+                        "def": "v656/conv47",
+                        "opname": "fpext",
+                        "use": [
+                            "v655"
+                        ]
+                    },
+                    {
+                        "def": "v657/call48",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "v612/conv",
+                            "v616/conv17",
+                            "v620/conv20",
+                            "v624/conv23",
+                            "v628/conv26",
+                            "v632/conv29",
+                            "v636/conv32",
+                            "v640/conv35",
+                            "v644/conv38",
+                            "v648/conv41",
+                            "v652/conv44",
+                            "v656/conv47",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v658",
+                        "opname": "br",
+                        "use": [
+                            "bb43/if.end"
+                        ]
+                    }
+                ],
+                "name": "bb53/if.then",
+                "predecessors": [
+                    "bb51/for.end12"
+                ],
+                "successors": [
+                    "bb43/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v659/call49",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v660",
+                        "opname": "br",
+                        "use": [
+                            "bb43/if.end"
+                        ]
+                    }
+                ],
+                "name": "bb52/if.else",
+                "predecessors": [
+                    "bb51/for.end12"
+                ],
+                "successors": [
+                    "bb43/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v661",
+                        "opname": "store",
+                        "use": [
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v662",
+                        "opname": "br",
+                        "use": [
+                            "bb42/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb43/if.end",
+                "predecessors": [
+                    "bb52/if.else",
+                    "bb53/if.then"
+                ],
+                "successors": [
+                    "bb42/while.body"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v663",
+                        "opname": "ret",
+                        "use": [
+                            "const"
+                        ]
+                    }
+                ],
+                "name": "bb54/return",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb41/entry",
+        "name": "main"
+    }
+]

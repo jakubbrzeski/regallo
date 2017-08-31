@@ -1,4 +1,5 @@
 import re
+from dashtable import data2rst
 from matplotlib import pyplot as plt
 
 SEPARATOR = "/" # Should be the same as in cfgextractor in C++
@@ -47,6 +48,7 @@ def slot(var):
 
 def scratch_reg():
     return "reg0"
+
 #########################################################################
 ########################### GRAPH OPERATIONS ############################
 #########################################################################
@@ -144,8 +146,9 @@ class RegisterSet:
 # with Y coordinate equal to numerical sufix of corresponding variable id.
 # save_to_file - name of the file where the plot should be saved. If None, the plot is shown
 #                in the pop-up window.
-def draw_intervals(intervals, save_to_file=None):
+def draw_intervals(intervals, save_to_file=None, figsize=None):
     vid_max = 0
+    plt.figure(figsize=figsize)
     for (vid, ivlist) in intervals.iteritems():
         x = []
         y = []
@@ -165,7 +168,6 @@ def draw_intervals(intervals, save_to_file=None):
     plt.ylabel('Variable ids')
     plt.margins(0.05)
     plt.yticks(range(1, 1+vid_max))
-
     if save_to_file:
         plt.savefig(save_to_file)
     else:
@@ -181,3 +183,85 @@ def update_alloc(intervals):
             for use in siv.uses:
                 use.alloc[iv.var.id] = iv.reg
 
+# Returns mapping: functions -> allocators -> list of (calculator, cost)
+# functions - list of Functions
+# recounts - list of ints denoting number of registers
+# allocators - list of allocator class names
+# cost_calculators - list of CostCalculators
+def compute_full_results(functions, regcounts, allocators, cost_calculators, analysis=False):
+    results = {f.name: {regc: {alcls.NAME: {} for alcls in allocators} for regc in regcounts} for f in functions}
+    for f in functions:
+        for regc in regcounts:
+            for alcls in allocators:
+                g = f.copy()
+                if analysis:
+                    g.perform_full_analysis()
+                
+                al = alcls(g)
+                al.full_register_allocation(regc)
+                for cc in cost_calculators:
+                    res = cc.function_cost(g)
+                    results[f.name][regc][alcls.NAME][cc.NAME] = res
+
+    return results
+                
+# Computes a table with span lists that we can print out to the
+# console using dashtable.data2rst.
+# d - dictionary of results {fname: {regcount: {allocator_name: {cost_calc_name: value}}}}
+# allocator and cost_calc_names must be the same as in d.
+def compute_result_table(d, allocator_names, cost_calc_names):
+    spans = [[[0,0],[0,1]]]
+    table = []
+    # Zero row: Allocators
+    row0 = ["", ""]
+    col = 2
+    for al in allocator_names:
+        row0.append(al)
+        for c in range(len(cost_calc_names)-1):
+            row0.append("")
+
+        # Don't add one-element spans.
+        if len(cost_calc_names) > 1:
+            span = [[0,col+el] for el in range(len(cost_calc_names))]
+            col += len(cost_calc_names)
+            spans.append(span)
+
+    table.append(row0)
+
+    # First row: Costs
+    row1 = ["Functions", "Registers"]
+    for al in allocator_names:
+        row1.extend(cost_calc_names)
+    table.append(row1)
+
+    # Remaining rows
+    row = 2
+    for fname, regdict in d.iteritems():
+        regcount = len(regdict)
+
+        # Don't add one-element spans.
+        if regcount > 1:
+            span = [[row+el,0] for el in range(regcount)]
+            spans.append(span)
+            row += regcount
+
+        first = True
+        for reg, allocators in regdict.iteritems():
+            rowN = [""]
+            if first:
+                rowN = [fname]
+                first = False
+            rowN.append(reg)
+            for alname in allocator_names:
+                costdict = allocators[alname]
+                for cname in cost_calc_names:
+                    val = costdict[cname]
+                    rowN.append(val)
+
+            table.append(rowN)
+            
+    return table, spans
+
+def print_result_table(d, allocator_names, cost_calc_names):
+    table, spans = compute_result_table(d, allocator_names, cost_calc_names)
+    print(data2rst(table, spans=spans, use_headers=True))

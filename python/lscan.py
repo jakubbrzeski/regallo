@@ -1,6 +1,7 @@
 import utils
 import cfg
 import cfgprinter
+import phi
 from sortedcontainers import SortedSet
 
 class Interval:
@@ -16,7 +17,7 @@ class Interval:
         # Instructions this interval starts and ends with.
         self.fr = fr
         self.to = to
-        # Allocated allocister
+        # Allocated register or memory slot.
         self.alloc = alloc
         # Note that it doesn't always need to be the same as self.fr.
         self.defn = defn
@@ -24,10 +25,6 @@ class Interval:
         self.uses = [] if uses is None else uses
         # Stack (list) of subintervals.
         self.subintervals = []
-        # Dictionary {instruction-id: alloc} denoting what
-        # allocister the variable was allocated to in the
-        # given instruction.
-        self.instr_to_alloc = {}
 
     def add_subinterval(self, fr, to):
         siv = Interval.SubInterval(fr, to, self)
@@ -53,12 +50,13 @@ class Interval:
         self.update_variables(alloc)
 
     def spill(self):
-        print "spill variable", self.var.id
         self.alloc = utils.slot(self.var)
         self.update_variables(self.alloc)
 
 
 class BasicLinearScan:
+    NAME = "Basic Linaear Scan"
+
     def __init__(self, f, bbs_list = None):
         self.f = f
 
@@ -137,14 +135,16 @@ class BasicLinearScan:
                 regset.set_free(iv.alloc)
 
         def spill_at_interval(current):
-            spilled = active[-1] # Active interval with furthest endpoint.
-            if spilled.to.num > current.to.num:
-                current.allocate(spilled.alloc)
-                spilled.spill()
-                active.remove(spilled)
-                active.add(current)
-            else: 
-                current.spill()
+            if active:
+                spilled = active[-1] # Active interval with furthest endpoint.
+                if spilled.to.num > current.to.num:
+                    current.allocate(spilled.alloc)
+                    spilled.spill()
+                    active.remove(spilled)
+                    active.add(current)
+                    return
+                
+            current.spill()
 
         # LinearScan main loop.
         for iv in sorted_intervals:
@@ -213,6 +213,13 @@ class BasicLinearScan:
         # Because new instructions were inserted we have to renumber
         # all instructions.
         utils.number_instructions(self.bbs)
+
+    def full_register_allocation(self, regcount):
+        intervals = self.compute_intervals()
+        self.allocate_registers(intervals, regcount)
+        self.insert_spill_code(intervals)
+        phi.eliminate_phi(self.f)
+        self.f.perform_full_analysis()
 
         
 """

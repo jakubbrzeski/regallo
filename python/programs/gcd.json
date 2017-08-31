@@ -1,0 +1,335 @@
+[
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v1/cmp",
+                        "opname": "icmp",
+                        "use": [
+                            "v2/a",
+                            "v3/b"
+                        ]
+                    },
+                    {
+                        "def": "v4",
+                        "opname": "br",
+                        "use": [
+                            "v1/cmp",
+                            "bb3/if.end",
+                            "bb2/if.then"
+                        ]
+                    }
+                ],
+                "name": "bb1/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb2/if.then",
+                    "bb3/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v5/xor",
+                        "opname": "xor",
+                        "use": [
+                            "v2/a",
+                            "v3/b"
+                        ]
+                    },
+                    {
+                        "def": "v6/xor1",
+                        "opname": "xor",
+                        "use": [
+                            "v3/b",
+                            "v5/xor"
+                        ]
+                    },
+                    {
+                        "def": "v7/xor2",
+                        "opname": "xor",
+                        "use": [
+                            "v5/xor",
+                            "v6/xor1"
+                        ]
+                    },
+                    {
+                        "def": "v8",
+                        "opname": "br",
+                        "use": [
+                            "bb3/if.end"
+                        ]
+                    }
+                ],
+                "name": "bb2/if.then",
+                "predecessors": [
+                    "bb1/entry"
+                ],
+                "successors": [
+                    "bb3/if.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v9/b.addr.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb2/if.then",
+                                "val": "v6/xor1"
+                            },
+                            {
+                                "bb": "bb1/entry",
+                                "val": "v3/b"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v10/a.addr.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb2/if.then",
+                                "val": "v7/xor2"
+                            },
+                            {
+                                "bb": "bb1/entry",
+                                "val": "v2/a"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v11",
+                        "opname": "br",
+                        "use": [
+                            "bb4/while.cond"
+                        ]
+                    }
+                ],
+                "name": "bb3/if.end",
+                "predecessors": [
+                    "bb2/if.then",
+                    "bb1/entry"
+                ],
+                "successors": [
+                    "bb4/while.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v12/b.addr.1",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb3/if.end",
+                                "val": "v9/b.addr.0"
+                            },
+                            {
+                                "bb": "bb5/while.body",
+                                "val": "v13/rem"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v14/a.addr.1",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb3/if.end",
+                                "val": "v10/a.addr.0"
+                            },
+                            {
+                                "bb": "bb5/while.body",
+                                "val": "v12/b.addr.1"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v15/cmp3",
+                        "opname": "icmp",
+                        "use": [
+                            "v12/b.addr.1",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v16",
+                        "opname": "br",
+                        "use": [
+                            "v15/cmp3",
+                            "bb6/while.end",
+                            "bb5/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb4/while.cond",
+                "predecessors": [
+                    "bb5/while.body",
+                    "bb3/if.end"
+                ],
+                "successors": [
+                    "bb5/while.body",
+                    "bb6/while.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v13/rem",
+                        "opname": "srem",
+                        "use": [
+                            "v14/a.addr.1",
+                            "v12/b.addr.1"
+                        ]
+                    },
+                    {
+                        "def": "v17",
+                        "opname": "br",
+                        "use": [
+                            "bb4/while.cond"
+                        ]
+                    }
+                ],
+                "name": "bb5/while.body",
+                "predecessors": [
+                    "bb4/while.cond"
+                ],
+                "successors": [
+                    "bb4/while.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v18",
+                        "opname": "ret",
+                        "use": [
+                            "v14/a.addr.1"
+                        ]
+                    }
+                ],
+                "name": "bb6/while.end",
+                "predecessors": [
+                    "bb4/while.cond"
+                ],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb1/entry",
+        "name": "gcd"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v19/a",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v20/b",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v21",
+                        "opname": "br",
+                        "use": [
+                            "bb8/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb7/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb8/while.body"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v22/call",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "v19/a",
+                            "v20/b",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v23",
+                        "opname": "load",
+                        "use": [
+                            "v19/a"
+                        ]
+                    },
+                    {
+                        "def": "v24",
+                        "opname": "load",
+                        "use": [
+                            "v20/b"
+                        ]
+                    },
+                    {
+                        "def": "v25/call1",
+                        "opname": "call",
+                        "use": [
+                            "v23",
+                            "v24",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v26/call2",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "v25/call1",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v27",
+                        "opname": "br",
+                        "use": [
+                            "bb8/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb8/while.body",
+                "predecessors": [
+                    "bb8/while.body",
+                    "bb7/entry"
+                ],
+                "successors": [
+                    "bb8/while.body"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v28",
+                        "opname": "ret",
+                        "use": [
+                            "const"
+                        ]
+                    }
+                ],
+                "name": "bb9/return",
+                "predecessors": [],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb7/entry",
+        "name": "main"
+    }
+]

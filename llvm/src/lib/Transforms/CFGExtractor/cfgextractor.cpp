@@ -24,7 +24,7 @@ using std::cout;
 using std::map;
 using std::endl;
 
-static cl::opt<std::string> ToJson("print-json-to-file", cl::desc("Expects a filename where the CFG as json will be printed."), cl::init(""));
+static cl::opt<std::string> ToJson("to-json", cl::desc("Expects a filename where the CFG as json will be printed."), cl::init(""));
 static cl::opt<bool> PrintOut("print-out", cl::desc("Prints the CFG to the stdout."), cl::init(false));
 
 namespace {
@@ -202,4 +202,4 @@ namespace {
 } // end of namespace
 
 char ControlFlowExtractor::ID = 0;
-static RegisterPass<ControlFlowExtractor> X("extract_cf", "Control Flow Extractor", false, false);
+static RegisterPass<ControlFlowExtractor> X("extract_cfg", "Control Flow Graph Extractor", false, false);
