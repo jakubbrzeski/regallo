@@ -3,7 +3,7 @@ import argparse
 from copy import deepcopy
 import cfg
 import utils
-from lscan import BasicLinearScan
+from lscan.basic import BasicLinearScan
 from cost import BasicCostCalculator, SpillRatioCalculator
 import phi
 from cfgprinter import FunctionPrinter, IntervalsPrinter, CostPrinter, PrintOptions as Opts
