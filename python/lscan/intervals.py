@@ -1,12 +1,5 @@
 import utils
 
-def update(iv, fr, to):
-    if iv.fr is None or iv.fr.num > fr.num:
-        iv.fr = fr
-    if iv.to is None or iv.to.num < to.num:
-        iv.to = to
-
-
 class Interval(object):
     def __init__(self, var, fr=None, to=None, alloc=None, defn=None, uses=None):
         # Variable this interval represents
@@ -23,6 +16,12 @@ class Interval(object):
 
     def empty(self):
         return self.fr == self.to
+    
+    def update(self, fr, to):
+        if self.fr is None or self.fr.num > fr.num:
+            self.fr = fr
+        if self.to is None or self.to.num < to.num:
+            self.to = to
 
     def update_variables(self, alloc):
         if self.defn is not None:
@@ -52,12 +51,12 @@ class AdvInterval(Interval):
         self.subintervals = []
 
     def add_subinterval(self, fr, to):
-        siv = SubInterval(fr, to, self)
+        siv = AdvInterval.SubInterval(fr, to, self)
         self.subintervals.append(siv)
         return siv
 
     def empty(self):
-        return self.subintervals
+        return len(self.subintervals) == 0
 
     def get_last_subinterval(self):
         if self.empty():
@@ -74,7 +73,7 @@ class AdvInterval(Interval):
         subs = sorted(self.subintervals, key = lambda sub: sub.fr.num)
         start, end = subs[0].fr, subs[0].to
         for sub in subs[1:]:
-            if sub.fr.num > end.num:
+            if sub.fr.num > end.num + 1:
                 new.append(AdvInterval.SubInterval(start, end, self))
                 start, end = sub.fr, sub.to
             elif sub.to.num > end.num:
@@ -82,5 +81,3 @@ class AdvInterval(Interval):
         new.append(AdvInterval.SubInterval(start, end, self))
         self.subintervals = new
         
-
-

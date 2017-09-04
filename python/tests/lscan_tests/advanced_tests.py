@@ -1,14 +1,12 @@
 import unittest
-from basic import BasicLinearScan
-import sys
-sys.path.append('..')
-import cfg
-import cfgmocks
+from tests.cfgmocks import GCDTest
+from lscan.intervals import AdvInterval
+from lscan.advanced import AdvLinearScan
 
-class AdvLinearScanTest(cfgmocks.GCDTest):
+class AdvLinearScanTest(GCDTest):
 
     def test_subintervals(self):
-        iv = lscan.AdvInterval(None)
+        iv = AdvInterval(None)
         class InstrMock:
             def __init__(self, num):
                 self.num = num
@@ -25,7 +23,7 @@ class AdvLinearScanTest(cfgmocks.GCDTest):
         i17 = InstrMock(17)
         i19 = InstrMock(19)
         
-        Sub = lscan.AdvInterval.SubInterval
+        Sub = AdvInterval.SubInterval
 
         subA = Sub(i1, i2, iv)
         subB = Sub(i3, i6, iv)
@@ -42,7 +40,20 @@ class AdvLinearScanTest(cfgmocks.GCDTest):
         def sub_equal(sub1, sub2):
             return sub1.fr.num == sub2.fr.num and sub1.to.num == sub2.to.num
 
-        self.assertEqual(len(iv.subintervals), 3)
-        self.assertTrue(sub_equal(iv.subintervals[0], subA))
-        self.assertTrue(sub_equal(iv.subintervals[1], Sub(i3, i15, iv)))
-        self.assertTrue(sub_equal(iv.subintervals[2], subF))
+        self.assertEqual(len(iv.subintervals), 2)
+        self.assertTrue(sub_equal(iv.subintervals[0], Sub(i1, i15, iv)))
+        self.assertTrue(sub_equal(iv.subintervals[1], subF))
+
+    def test_compute_intervals(self):
+        als = AdvLinearScan(self.f) 
+        intervals = als.compute_intervals()
+        self.assertIn("v14", intervals)
+        self.assertEqual(len(intervals["v14"]), 1)
+        self.assert_interval(intervals["v14"][0], 10, 15, 10, [13, 15], [(10, 13), (15, 15)])
+
+"""
+[9, 14]    v12         -   [9, 14]
+[10, 15]   v14         -   [10, 13] [15, 15]
+[11, 12]   v15         -   [11, 12]
+[13, 14]   v13         -   [13, 14]
+"""

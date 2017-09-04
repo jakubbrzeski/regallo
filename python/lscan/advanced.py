@@ -1,5 +1,5 @@
 from lscan import LinearScan
-from intervals import AdvInterval, update
+from intervals import AdvInterval
 
 class AdvLinearScan(LinearScan):
 
@@ -12,21 +12,31 @@ class AdvLinearScan(LinearScan):
 
             for instr in bb.instructions[::-1]:
                 if instr.definition:
-                    intervals[v.id].get_last_subinterval().fr = instr
-                    update(iv, instr, instr)
+                    iv = intervals[instr.definition.id]
+                    iv.defn = instr
+                    if iv.uses: # If this variable is ever used.
+                        iv.get_last_subinterval().fr = instr
+                    iv.update(instr, instr)
 
-                if not instr.is_phi():
+                if instr.is_phi():
+                    for (bid, v) in instr.uses.iteritems():
+                        iv = intervals[v.id]
+                        pred = self.f.bblocks[bid]
+                        iv.update(pred.last_instr(), pred.last_instr())
+                        iv.uses.append(instr)
+
+                else:
                     for v in instr.uses:
                         iv = intervals[v.id]
-                        iv.get_last_subinterval().to = instr
-                        update(iv, instr, instr)
+                        iv.add_subinterval(bb.first_instr(), instr)
+                        iv.update(instr, instr)
                         iv.uses.append(instr)
 
             if bb.is_loop_header():
                 start = bb.loop.header.first_instr()
                 end = bb.loop.header.last_instr()
                 for v in bb.live_in:
-                    update(intervals[v.id], start, end)
+                    intervals[v.id].update(start, end)
                     intervals[v.id].add_subinterval(start, end)
 
         for iv in intervals.values():

@@ -1,6 +1,6 @@
 from sortedcontainers import SortedSet
 from lscan import LinearScan
-from intervals import Interval, update
+from intervals import Interval
 import sys
 import utils
 import cfg
@@ -18,7 +18,7 @@ class BasicLinearScan(LinearScan):
             for instr in bb.instructions[::-1]:
                 # Definition.
                 iv = intervals[instr.definition.id]
-                update(iv, instr, instr)
+                iv.update(instr, instr)
                 iv.defn = instr
                 
                 # Uses.
@@ -26,7 +26,7 @@ class BasicLinearScan(LinearScan):
                     for (bid, use) in instr.uses.iteritems():
                         iv = intervals[use.id]
                         pred = self.f.bblocks[bid]
-                        update(iv, pred.last_instr(), pred.last_instr())
+                        iv.update(pred.last_instr(), pred.last_instr())
                         # We update interval only to the end of the predecessor block,
                         # not including the current phi instruction. However, we record
                         # that the variable was used here to insert spill instructions
@@ -35,7 +35,7 @@ class BasicLinearScan(LinearScan):
                 else:
                     for use in instr.uses:
                         iv = intervals[use.id]
-                        update(iv, instr, instr) # Try extend interval on both sides.
+                        iv.update(instr, instr) # Try extend interval on both sides.
                         iv.uses.append(instr)
 
 
@@ -45,10 +45,11 @@ class BasicLinearScan(LinearScan):
                 start = bb.loop.header.first_instr()
                 end = bb.loop.tail.last_instr()
                 for v in bb.live_in:
-                    update(intervals[v.id], start, end)
+                    iv.update(start, end)
         
         # For generality:
         return {vid: [iv] for (vid,iv) in intervals.iteritems() if not iv.empty()}
+
 
     def allocate_registers(self, intervals, regcount):
         sorted_intervals = sorted([ivl[0] for ivl in intervals.values()], key = lambda iv: iv.fr.num)

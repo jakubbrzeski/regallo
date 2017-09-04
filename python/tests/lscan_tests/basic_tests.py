@@ -43,13 +43,11 @@ class BasicLinearScanTest(cfgmocks.GCDTest):
         self.bls = BasicLinearScan(self.f)
         print "BasicLinearScanTest setup"
 
-    def test_intervals(self):
+    def test_compute_intervals(self):
         intervals = self.bls.compute_intervals()
 
         def assertInterval(vid, num_fr, num_to, num_def, num_uses):
             self.assertIn(vid, intervals)
-            # In basic linear scan each variable should have only one interval 
-            # with only one subinterval.
             self.assertEqual(len(intervals[vid]), 1)
             iv = intervals[vid][0]
             self.assertEqual(iv.fr.num, num_fr)

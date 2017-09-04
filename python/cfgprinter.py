@@ -13,11 +13,13 @@ class PrintOptions:
         self.liveness = options.get("liveness", False)
         self.dominance = options.get("dominance", False)
         self.intervals_verbose = options.get("intervals_verbose", False)
+        self.intervals_advanced = options.get("intervals_advanced", False)
         self.show_spilled = options.get("show_spilled", False)
         # Instead of variable names print allocs.
         self.alloc_only = options.get("alloc_only", False)
         # Besides variable names print allocs.
         self.with_alloc = options.get("with_alloc", False)
+
 
 # Here value is an object which has id and optional llvm_id
 class ValuePrinter:
@@ -215,6 +217,12 @@ class IntervalsPrinter:
         self.basic_pattern = "{:10s} {:10s}"
         self.reg_pattern = "{:^6s}"
         self.verbose_pattern = "{:10s} {:15s}"
+        self.subs_pattern = "{}"
+
+
+    def subinterval(self, subiv):
+        endpoints = "[" + str(subiv.fr.num) + ", " + str(subiv.to.num) + "]"
+        return endpoints
 
 
     def interval(self, iv):
@@ -222,13 +230,19 @@ class IntervalsPrinter:
         basic = self.basic_pattern.format(endpoints, ValuePrinter(iv.var, self.options))
         reg = self.reg_pattern.format(iv.alloc if utils.is_regname(iv.alloc) else "-")
 
+        res = [basic, reg]
         if self.options.intervals_verbose:
             defn = iv.defn.num if iv.defn else None
             uses = [use.num for use in iv.uses]
             verbose = self.verbose_pattern.format(str(defn), uses)
-            return basic + reg + verbose
+            res.append(verbose)
 
-        return basic + reg
+        if self.options.intervals_advanced:
+            subs = [self.subinterval(sub) for sub in iv.subintervals]
+            res.append(self.subs_pattern.format(' '.join(subs)))
+            
+
+        return ''.join(res)
 
     def full(self):
         ivs = []
@@ -240,6 +254,8 @@ class IntervalsPrinter:
         res = self.basic_pattern.format("INTERVAL", "VAR-ID") + self.reg_pattern.format("REG")
         if self.options.intervals_verbose:
             res += self.verbose_pattern.format("DEF", "USES")
+        if self.options.intervals_advanced:
+            res += self.subs_pattern.format("SUBINTERVALS")
         res += "\n"
 
         for iv in ivs:

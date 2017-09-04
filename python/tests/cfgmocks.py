@@ -1,7 +1,8 @@
 import unittest
+from testutils import CFGTestCase
 import cfg
 
-class GCDTest(unittest.TestCase):
+class GCDTest(CFGTestCase):
     def setUp(self):
         print "GCDTest setup"
         # Create gcd funtion based on llvm output.
@@ -53,7 +54,7 @@ class GCDTest(unittest.TestCase):
         bb5 = cfg.BasicBlock("bb5", f, "while.body")
         i13 = cfg.Instruction(bb5, var["v13"], "srem", [var["v14"], var["v12"]], 
                 uses_debug=["v14", "v12"])
-        i14 = cfg.Instruction(bb5, var["v14"], "br", [], uses_debug=["bb4"])
+        i14 = cfg.Instruction(bb5, var["v17"], "br", [], uses_debug=["bb4"])
         bb5.set_instructions([i13, i14])
 
         bb6 = cfg.BasicBlock("bb6", f, "while.end")
