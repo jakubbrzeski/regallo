@@ -146,28 +146,33 @@ class RegisterSet:
 # with Y coordinate equal to numerical sufix of corresponding variable id.
 # save_to_file - name of the file where the plot should be saved. If None, the plot is shown
 #                in the pop-up window.
-def draw_intervals(intervals, save_to_file=None, figsize=None):
-    vid_max = 0
+def draw_intervals(intervals, save_to_file=None, figsize=None, with_subintervals=False):
     plt.figure(figsize=figsize)
+    id_nums = []
     for (vid, ivlist) in intervals.iteritems():
         x = []
         y = []
         id_num = int(extract_num_from_id(vid))
-        vid_max = id_num if id_num > vid_max else vid_max
+        id_nums.append(id_num)
         
         for iv in ivlist:
-            # None at the end guarantees that line is not continuous all the time and
-            # there are holes in the plot in proper moments.
-            x.extend([iv.fr.num, iv.to.num, None])
-            y.extend([id_num, id_num, None])
-
+            if with_subintervals:
+                for sub in iv.subintervals:
+                    # None at the end guarantees that line is not continuous all the time and
+                    # there are holes in the plot in proper moments.
+                    x.extend([sub.fr.num-0.1, sub.to.num+0.1, None])
+                    y.extend([id_num, id_num, None])
+            else:
+                x.extend([iv.fr.num-0.1, iv.to.num+0.1, None])
+                y.extend([id_num, id_num, None])
+        
         plt.plot(x,y,label=str(vid))
 
     plt.title('Lifetime Intervals')
     plt.xlabel('Instruction numbers')
     plt.ylabel('Variable ids')
     plt.margins(0.05)
-    plt.yticks(range(1, 1+vid_max))
+#    plt.yticks(id_nums)
     if save_to_file:
         plt.savefig(save_to_file)
     else:
@@ -183,35 +188,92 @@ def update_alloc(intervals):
             for use in siv.uses:
                 use.alloc[iv.var.id] = iv.reg
 
-# Returns mapping: functions -> allocators -> list of (calculator, cost)
-# functions - list of Functions
-# recounts - list of ints denoting number of registers
-# allocators - list of allocator class names
+
+# A helper class for passing arguments for function
+# compute_full_results.
+class AllocatorWrap:
+    def __init__(self, name, alcls, **kwargs):
+        self.name = name
+        self.cls = alcls
+        self.kwargs = kwargs
+
+# A helper class for storing arguments for computing full results. 
+# functions - list of Functions.
+# regcounts - list of ints denoting number of registers.
+# allocators - list of triples (name, allocator_class, **kwargs)
 # cost_calculators - list of CostCalculators
-def compute_full_results(functions, regcounts, allocators, cost_calculators, analysis=False):
-    results = {f.name: {regc: {alcls.NAME: {} for alcls in allocators} for regc in regcounts} for f in functions}
-    for f in functions:
-        for regc in regcounts:
-            for alcls in allocators:
+class ResultCompSetting:
+    def __init__(self, functions, regcounts, allocators, cost_calculators):
+        self.functions = functions
+        self.regcounts = regcounts
+        self.allocators = allocators
+        self.cost_calculators = cost_calculators
+
+    def allocator_names(self):
+        return [name for (name, _, _) in self.allocators]
+
+    def cost_calc_names(self):
+        return [cc.NAME for cc in self.cost_calculators]
+
+
+# Returns mapping: list [(function_name, [(regcount, [(allocator_name, [(cost_name, RESULT)] )] )] )]
+# setting - a ResultCompSetting object.
+# analysis - whether to do full analysis for each function.
+def compute_full_results(setting, analysis=False):
+    results = []
+
+    if analysis:
+        for f in setting.functions:
+            f.perform_full_analysis()
+
+    for f in setting.functions:
+        # REGISTERS
+        reg_results = []
+        for regc in setting.regcounts:
+
+            # ALLOCATORS
+            alloc_results = []
+            for (name, cls, kwargs) in setting.allocators:
                 g = f.copy()
-                if analysis:
-                    g.perform_full_analysis()
-                
-                al = alcls(g)
+
+                al = cls(g, **kwargs)
                 al.full_register_allocation(regc)
-                for cc in cost_calculators:
+
+                # COSTS 
+                cost_results = []
+                for cc in setting.cost_calculators:
                     res = cc.function_cost(g)
-                    results[f.name][regc][alcls.NAME][cc.NAME] = res
+                    cost_results.append((cc.NAME, res))
+
+                alloc_results.append((name, cost_results))
+
+            reg_results.append((regc, alloc_results))
+
+        results.append((f.name, reg_results))
 
     return results
                 
 # Computes a table with span lists that we can print out to the
 # console using dashtable.data2rst.
-# d - dictionary of results {fname: {regcount: {allocator_name: {cost_calc_name: value}}}}
-# allocator and cost_calc_names must be the same as in d.
-def compute_result_table(d, allocator_names, cost_calc_names):
-    spans = [[[0,0],[0,1]]]
+# d - results computed by compute_full_results
+# setting - a ResultCompSetting object.
+# We assume that d is correctly computed result table and per
+# each function and regcount there is the same number of results.
+def compute_result_table(d, setting):
+    allocator_names = setting.allocator_names()
+    cost_calc_names = setting.cost_calc_names()
+
+    spans = [[[0,0],[0,1]]] # , [[1,0],[1,1]]]
     table = []
+
+    """
+    row00 = ["", "", "Algorithms & Costs"]
+    span = [ [0, 2+col] for col in range(len(allocator_names)*len(cost_calc_names))]
+    row00.extend(["" for _ in span[1:]])
+    table.append(row00)
+    spans.append(span)
+    """
+
     # Zero row: Allocators
     row0 = ["", ""]
     col = 2
@@ -228,6 +290,7 @@ def compute_result_table(d, allocator_names, cost_calc_names):
 
     table.append(row0)
 
+
     # First row: Costs
     row1 = ["Functions", "Registers"]
     for al in allocator_names:
@@ -236,8 +299,8 @@ def compute_result_table(d, allocator_names, cost_calc_names):
 
     # Remaining rows
     row = 2
-    for fname, regdict in d.iteritems():
-        regcount = len(regdict)
+    for fname, reg_results in d:
+        regcount = len(reg_results)
 
         # Don't add one-element spans.
         if regcount > 1:
@@ -246,22 +309,65 @@ def compute_result_table(d, allocator_names, cost_calc_names):
             row += regcount
 
         first = True
-        for reg, allocators in regdict.iteritems():
+        for reg, alloc_results in reg_results:
             rowN = [""]
             if first:
                 rowN = [fname]
                 first = False
             rowN.append(reg)
-            for alname in allocator_names:
-                costdict = allocators[alname]
-                for cname in cost_calc_names:
-                    val = costdict[cname]
-                    rowN.append(val)
+
+            for alname, cost_results in alloc_results:
+                for c, res in cost_results:
+                    rowN.append(res)
 
             table.append(rowN)
-            
+    
     return table, spans
 
-def print_result_table(d, allocator_names, cost_calc_names):
-    table, spans = compute_result_table(d, allocator_names, cost_calc_names)
+def print_result_table(d, setting):
+    table, spans = compute_result_table(d, setting)
     print(data2rst(table, spans=spans, use_headers=True))
+
+
+# For given function and cost calculator, draws
+# a plot (regcount -> result) for each algorithm
+# (i.e. one drawing but separate plots for each algorithm).
+# We assume that results contain numbers only for one function and cost calculator.
+def plot_reg_algorithm(results, setting, save_to_file=None, figsize=None):
+    assert len(results) == 1
+    d = {alname: [] for alname in setting.allocator_names()}
+    f, reg_results = results[0]
+
+    cname = setting.cost_calc_names()[0]
+    regcounts = [rc for (rc, _) in reg_results]
+
+    for regcount, alloc_results in reg_results:
+        for (alname, cost_results) in alloc_results:
+            assert len(cost_results) == 1
+            cname, cost = cost_results[0]
+            d[alname].append((regcount,cost))
+
+
+    plt.figure(figsize=figsize)
+    for alname, values in d.iteritems():
+        x = [rc for (rc, _) in values]
+        y = [val for (_, val) in values]
+
+        plt.plot(x, y, label=alname) # colors
+
+    plt.legend(loc='upper left')
+    plt.margins(0.05)
+    plt.xticks(regcounts)
+    plt.title("Results")
+    plt.ylabel("cost")
+    plt.xlabel("number of #registers")
+    if save_to_file:
+        plt.savefig(save_to_file)
+    else:
+        plt.show()
+    plt.close()
+
+
+        
+
+

@@ -406,7 +406,7 @@ class Function:
             cbb.succs = {k: cf.bblocks[k] for k in bb.succs.keys()}
             cbb.dominators = set([cf.bblocks[dom.id] for dom in bb.dominators])
             cbb.uevs = set([cf.get_or_create_variable(v.id) for v in bb.uevs])
-            cbb.defs = set([cf.get_or_create_variable(v.id) for v in bb.defs])
+            cbb.defs = set([cf.get_or_create_variable(v.id) for v in bb.defs if v is not None])
             cbb.live_in = set([cf.get_or_create_variable(v.id) for v in bb.live_in])
             cbb.live_out = set([cf.get_or_create_variable(v.id) for v in bb.live_out])
 

@@ -1,0 +1,820 @@
+[
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v1",
+                        "opname": "br",
+                        "use": [
+                            "bb2/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb1/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb2/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v2/i.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb1/entry",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb3/for.inc",
+                                "val": "v3/inc"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v4/cmp",
+                        "opname": "icmp",
+                        "use": [
+                            "v2/i.0",
+                            "v5/n"
+                        ]
+                    },
+                    {
+                        "def": "v6",
+                        "opname": "br",
+                        "use": [
+                            "v4/cmp",
+                            "bb5/for.end",
+                            "bb4/for.body"
+                        ]
+                    }
+                ],
+                "name": "bb2/for.cond",
+                "predecessors": [
+                    "bb3/for.inc",
+                    "bb1/entry"
+                ],
+                "successors": [
+                    "bb4/for.body",
+                    "bb5/for.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v7/sub",
+                        "opname": "sub",
+                        "use": [
+                            "v2/i.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v8",
+                        "opname": "br",
+                        "use": [
+                            "bb6/while.cond"
+                        ]
+                    }
+                ],
+                "name": "bb4/for.body",
+                "predecessors": [
+                    "bb2/for.cond"
+                ],
+                "successors": [
+                    "bb6/while.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v9/j.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb4/for.body",
+                                "val": "v7/sub"
+                            },
+                            {
+                                "bb": "bb7/while.body",
+                                "val": "v10/dec"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v11/cmp1",
+                        "opname": "icmp",
+                        "use": [
+                            "v9/j.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v12",
+                        "opname": "br",
+                        "use": [
+                            "v11/cmp1",
+                            "bb9/land.end",
+                            "bb8/land.rhs"
+                        ]
+                    }
+                ],
+                "name": "bb6/while.cond",
+                "predecessors": [
+                    "bb7/while.body",
+                    "bb4/for.body"
+                ],
+                "successors": [
+                    "bb8/land.rhs",
+                    "bb9/land.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v13/idxprom",
+                        "opname": "sext",
+                        "use": [
+                            "v9/j.0"
+                        ]
+                    },
+                    {
+                        "def": "v14/arrayidx",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v15/tab",
+                            "v13/idxprom"
+                        ]
+                    },
+                    {
+                        "def": "v16",
+                        "opname": "load",
+                        "use": [
+                            "v14/arrayidx"
+                        ]
+                    },
+                    {
+                        "def": "v17/add",
+                        "opname": "add",
+                        "use": [
+                            "v9/j.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v18/idxprom2",
+                        "opname": "sext",
+                        "use": [
+                            "v17/add"
+                        ]
+                    },
+                    {
+                        "def": "v19/arrayidx3",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v15/tab",
+                            "v18/idxprom2"
+                        ]
+                    },
+                    {
+                        "def": "v20",
+                        "opname": "load",
+                        "use": [
+                            "v19/arrayidx3"
+                        ]
+                    },
+                    {
+                        "def": "v21/cmp4",
+                        "opname": "icmp",
+                        "use": [
+                            "v16",
+                            "v20"
+                        ]
+                    },
+                    {
+                        "def": "v22",
+                        "opname": "br",
+                        "use": [
+                            "bb9/land.end"
+                        ]
+                    }
+                ],
+                "name": "bb8/land.rhs",
+                "predecessors": [
+                    "bb6/while.cond"
+                ],
+                "successors": [
+                    "bb9/land.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v23",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb6/while.cond",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb8/land.rhs",
+                                "val": "v21/cmp4"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v24",
+                        "opname": "br",
+                        "use": [
+                            "v23",
+                            "bb10/while.end",
+                            "bb7/while.body"
+                        ]
+                    }
+                ],
+                "name": "bb9/land.end",
+                "predecessors": [
+                    "bb8/land.rhs",
+                    "bb6/while.cond"
+                ],
+                "successors": [
+                    "bb7/while.body",
+                    "bb10/while.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v25/idxprom5",
+                        "opname": "sext",
+                        "use": [
+                            "v9/j.0"
+                        ]
+                    },
+                    {
+                        "def": "v26/arrayidx6",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v15/tab",
+                            "v25/idxprom5"
+                        ]
+                    },
+                    {
+                        "def": "v27",
+                        "opname": "load",
+                        "use": [
+                            "v26/arrayidx6"
+                        ]
+                    },
+                    {
+                        "def": "v28/add7",
+                        "opname": "add",
+                        "use": [
+                            "v9/j.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v29/idxprom8",
+                        "opname": "sext",
+                        "use": [
+                            "v28/add7"
+                        ]
+                    },
+                    {
+                        "def": "v30/arrayidx9",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v15/tab",
+                            "v29/idxprom8"
+                        ]
+                    },
+                    {
+                        "def": "v31",
+                        "opname": "load",
+                        "use": [
+                            "v30/arrayidx9"
+                        ]
+                    },
+                    {
+                        "def": "v32/idxprom10",
+                        "opname": "sext",
+                        "use": [
+                            "v9/j.0"
+                        ]
+                    },
+                    {
+                        "def": "v33/arrayidx11",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v15/tab",
+                            "v32/idxprom10"
+                        ]
+                    },
+                    {
+                        "def": "v34",
+                        "opname": "store",
+                        "use": [
+                            "v31",
+                            "v33/arrayidx11"
+                        ]
+                    },
+                    {
+                        "def": "v35/add12",
+                        "opname": "add",
+                        "use": [
+                            "v9/j.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v36/idxprom13",
+                        "opname": "sext",
+                        "use": [
+                            "v35/add12"
+                        ]
+                    },
+                    {
+                        "def": "v37/arrayidx14",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v15/tab",
+                            "v36/idxprom13"
+                        ]
+                    },
+                    {
+                        "def": "v38",
+                        "opname": "store",
+                        "use": [
+                            "v27",
+                            "v37/arrayidx14"
+                        ]
+                    },
+                    {
+                        "def": "v10/dec",
+                        "opname": "add",
+                        "use": [
+                            "v9/j.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v39",
+                        "opname": "br",
+                        "use": [
+                            "bb6/while.cond"
+                        ]
+                    }
+                ],
+                "name": "bb7/while.body",
+                "predecessors": [
+                    "bb9/land.end"
+                ],
+                "successors": [
+                    "bb6/while.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v40",
+                        "opname": "br",
+                        "use": [
+                            "bb3/for.inc"
+                        ]
+                    }
+                ],
+                "name": "bb10/while.end",
+                "predecessors": [
+                    "bb9/land.end"
+                ],
+                "successors": [
+                    "bb3/for.inc"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v3/inc",
+                        "opname": "add",
+                        "use": [
+                            "v2/i.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v41",
+                        "opname": "br",
+                        "use": [
+                            "bb2/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb3/for.inc",
+                "predecessors": [
+                    "bb10/while.end"
+                ],
+                "successors": [
+                    "bb2/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v42",
+                        "opname": "ret",
+                        "use": []
+                    }
+                ],
+                "name": "bb5/for.end",
+                "predecessors": [
+                    "bb2/for.cond"
+                ],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb1/entry",
+        "name": "sort"
+    },
+    {
+        "bblocks": [
+            {
+                "instructions": [
+                    {
+                        "def": "v43/n",
+                        "opname": "alloca",
+                        "use": [
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v44/call",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "v43/n",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v45",
+                        "opname": "load",
+                        "use": [
+                            "v43/n"
+                        ]
+                    },
+                    {
+                        "def": "v46/conv",
+                        "opname": "sext",
+                        "use": [
+                            "v45"
+                        ]
+                    },
+                    {
+                        "def": "v47/mul",
+                        "opname": "mul",
+                        "use": [
+                            "v46/conv",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v48/call1",
+                        "opname": "call",
+                        "use": [
+                            "v47/mul",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v49",
+                        "opname": "bitcast",
+                        "use": [
+                            "v48/call1"
+                        ]
+                    },
+                    {
+                        "def": "v50",
+                        "opname": "br",
+                        "use": [
+                            "bb12/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb11/entry",
+                "predecessors": [],
+                "successors": [
+                    "bb12/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v51/i.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb11/entry",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb13/for.inc",
+                                "val": "v52/inc"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v53",
+                        "opname": "load",
+                        "use": [
+                            "v43/n"
+                        ]
+                    },
+                    {
+                        "def": "v54/cmp",
+                        "opname": "icmp",
+                        "use": [
+                            "v51/i.0",
+                            "v53"
+                        ]
+                    },
+                    {
+                        "def": "v55",
+                        "opname": "br",
+                        "use": [
+                            "v54/cmp",
+                            "bb15/for.end",
+                            "bb14/for.body"
+                        ]
+                    }
+                ],
+                "name": "bb12/for.cond",
+                "predecessors": [
+                    "bb13/for.inc",
+                    "bb11/entry"
+                ],
+                "successors": [
+                    "bb14/for.body",
+                    "bb15/for.end"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v56/idxprom",
+                        "opname": "sext",
+                        "use": [
+                            "v51/i.0"
+                        ]
+                    },
+                    {
+                        "def": "v57/arrayidx",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v49",
+                            "v56/idxprom"
+                        ]
+                    },
+                    {
+                        "def": "v58/call3",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "v57/arrayidx",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v59",
+                        "opname": "br",
+                        "use": [
+                            "bb13/for.inc"
+                        ]
+                    }
+                ],
+                "name": "bb14/for.body",
+                "predecessors": [
+                    "bb12/for.cond"
+                ],
+                "successors": [
+                    "bb13/for.inc"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v52/inc",
+                        "opname": "add",
+                        "use": [
+                            "v51/i.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v60",
+                        "opname": "br",
+                        "use": [
+                            "bb12/for.cond"
+                        ]
+                    }
+                ],
+                "name": "bb13/for.inc",
+                "predecessors": [
+                    "bb14/for.body"
+                ],
+                "successors": [
+                    "bb12/for.cond"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v61",
+                        "opname": "load",
+                        "use": [
+                            "v43/n"
+                        ]
+                    },
+                    {
+                        "def": "v62",
+                        "opname": "call",
+                        "use": [
+                            "v49",
+                            "v61",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v63",
+                        "opname": "br",
+                        "use": [
+                            "bb16/for.cond5"
+                        ]
+                    }
+                ],
+                "name": "bb15/for.end",
+                "predecessors": [
+                    "bb12/for.cond"
+                ],
+                "successors": [
+                    "bb16/for.cond5"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v64/i4.0",
+                        "opname": "phi",
+                        "use": [
+                            {
+                                "bb": "bb15/for.end",
+                                "val": "const"
+                            },
+                            {
+                                "bb": "bb17/for.inc12",
+                                "val": "v65/inc13"
+                            }
+                        ]
+                    },
+                    {
+                        "def": "v66",
+                        "opname": "load",
+                        "use": [
+                            "v43/n"
+                        ]
+                    },
+                    {
+                        "def": "v67/cmp6",
+                        "opname": "icmp",
+                        "use": [
+                            "v64/i4.0",
+                            "v66"
+                        ]
+                    },
+                    {
+                        "def": "v68",
+                        "opname": "br",
+                        "use": [
+                            "v67/cmp6",
+                            "bb19/for.end14",
+                            "bb18/for.body8"
+                        ]
+                    }
+                ],
+                "name": "bb16/for.cond5",
+                "predecessors": [
+                    "bb17/for.inc12",
+                    "bb15/for.end"
+                ],
+                "successors": [
+                    "bb18/for.body8",
+                    "bb19/for.end14"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v69/idxprom9",
+                        "opname": "sext",
+                        "use": [
+                            "v64/i4.0"
+                        ]
+                    },
+                    {
+                        "def": "v70/arrayidx10",
+                        "opname": "getelementptr",
+                        "use": [
+                            "v49",
+                            "v69/idxprom9"
+                        ]
+                    },
+                    {
+                        "def": "v71",
+                        "opname": "load",
+                        "use": [
+                            "v70/arrayidx10"
+                        ]
+                    },
+                    {
+                        "def": "v72/call11",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "v71",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v73",
+                        "opname": "br",
+                        "use": [
+                            "bb17/for.inc12"
+                        ]
+                    }
+                ],
+                "name": "bb18/for.body8",
+                "predecessors": [
+                    "bb16/for.cond5"
+                ],
+                "successors": [
+                    "bb17/for.inc12"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v65/inc13",
+                        "opname": "add",
+                        "use": [
+                            "v64/i4.0",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v74",
+                        "opname": "br",
+                        "use": [
+                            "bb16/for.cond5"
+                        ]
+                    }
+                ],
+                "name": "bb17/for.inc12",
+                "predecessors": [
+                    "bb18/for.body8"
+                ],
+                "successors": [
+                    "bb16/for.cond5"
+                ]
+            },
+            {
+                "instructions": [
+                    {
+                        "def": "v75/call15",
+                        "opname": "call",
+                        "use": [
+                            "const",
+                            "const"
+                        ]
+                    },
+                    {
+                        "def": "v76",
+                        "opname": "ret",
+                        "use": [
+                            "const"
+                        ]
+                    }
+                ],
+                "name": "bb19/for.end14",
+                "predecessors": [
+                    "bb16/for.cond5"
+                ],
+                "successors": []
+            }
+        ],
+        "entry_block": "bb11/entry",
+        "name": "main"
+    }
+]

@@ -10,6 +10,15 @@ import phi
 class BasicLinearScan(LinearScan):
     NAME = "Basic Linaear Scan"
 
+    class SpillingStrategy(object):
+        FURTHEST_FIRST, CURRENT_FIRST, LESS_USED_FIRST = range(3)
+
+    def __init__(self, f, **kwargs):
+        super(BasicLinearScan, self).__init__(f)
+        self.spilling_strategy = kwargs.get("spilling_strategy", 
+                BasicLinearScan.SpillingStrategy.FURTHEST_FIRST)
+
+
     # Returns dictionary {variable-id: Interval}
     def compute_intervals(self):
         intervals = {v.id: Interval(v) for v in self.f.vars.values()}
@@ -18,7 +27,7 @@ class BasicLinearScan(LinearScan):
             for instr in bb.instructions[::-1]:
                 # Definition.
                 iv = intervals[instr.definition.id]
-                iv.update(instr, instr)
+                iv.update_endpoints(instr, instr)
                 iv.defn = instr
                 
                 # Uses.
@@ -26,7 +35,7 @@ class BasicLinearScan(LinearScan):
                     for (bid, use) in instr.uses.iteritems():
                         iv = intervals[use.id]
                         pred = self.f.bblocks[bid]
-                        iv.update(pred.last_instr(), pred.last_instr())
+                        iv.update_endpoints(pred.last_instr(), pred.last_instr())
                         # We update interval only to the end of the predecessor block,
                         # not including the current phi instruction. However, we record
                         # that the variable was used here to insert spill instructions
@@ -35,7 +44,7 @@ class BasicLinearScan(LinearScan):
                 else:
                     for use in instr.uses:
                         iv = intervals[use.id]
-                        iv.update(instr, instr) # Try extend interval on both sides.
+                        iv.update_endpoints(instr, instr) # Try extend interval on both sides.
                         iv.uses.append(instr)
 
 
@@ -45,11 +54,41 @@ class BasicLinearScan(LinearScan):
                 start = bb.loop.header.first_instr()
                 end = bb.loop.tail.last_instr()
                 for v in bb.live_in:
-                    iv.update(start, end)
+                    iv.update_endpoints(start, end)
         
         # For generality:
         return {vid: [iv] for (vid,iv) in intervals.iteritems() if not iv.empty()}
 
+    # Decides which interval should be spilled, based on chosen strategy.
+    def spill_at_interval(self, current, active):
+        if not active or self.spilling_strategy == self.SpillingStrategy.CURRENT_FIRST:
+            current.spill()
+            return
+        
+        elif self.spilling_strategy == self.SpillingStrategy.LESS_USED_FIRST:
+            spilled = current
+            for iv in active:
+                if len(iv.uses) < len(spilled.uses):
+                    spilled = iv
+
+            if spilled is not current:
+                current.allocate(spilled.alloc)
+                spilled.spill()
+                active.remove(spilled)
+                active.add(current)
+            else:
+                current.spill()
+
+        else: # Furthest first. 
+            spilled = active[-1] # Active interval with furthest endpoint.
+            if spilled.to.num > current.to.num:
+                current.allocate(spilled.alloc)
+                spilled.spill()
+                active.remove(spilled)
+                active.add(current)
+            else:
+                current.spill()
+                
 
     def allocate_registers(self, intervals, regcount):
         sorted_intervals = sorted([ivl[0] for ivl in intervals.values()], key = lambda iv: iv.fr.num)
@@ -63,18 +102,6 @@ class BasicLinearScan(LinearScan):
                 active.remove(iv)
                 regset.set_free(iv.alloc)
 
-        def spill_at_interval(current):
-            if active:
-                spilled = active[-1] # Active interval with furthest endpoint.
-                if spilled.to.num > current.to.num:
-                    current.allocate(spilled.alloc)
-                    spilled.spill()
-                    active.remove(spilled)
-                    active.add(current)
-                    return
-                
-            current.spill()
-
         # LinearScan main loop.
         for iv in sorted_intervals:
             expire_old_intervals(iv)
@@ -83,7 +110,7 @@ class BasicLinearScan(LinearScan):
                 iv.allocate(reg)
                 active.add(iv)
             else:
-                spill_at_interval(iv)
+                self.spill_at_interval(iv, active)
 
     # Checks all intervals that were spilled (don't have register assigned),
     # and inserts load and store instructions in appropriate places of the program.

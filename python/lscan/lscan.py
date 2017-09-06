@@ -1,6 +1,6 @@
 import utils
 
-class LinearScan: 
+class LinearScan(object): 
     def __init__(self, f):
         self.f = f
 

@@ -61,7 +61,7 @@ class SpillRatioCalculator(CostCalculator):
         
 
 class BasicCostCalculator(CostCalculator):
-    NAME = "BASIC"
+    NAME = "Default Cost"
     def instr_cost(self, instr):
         loop_depth = math.pow(10, instr.get_loop_depth())
         if instr.opname == cfg.Instruction.LOAD:
