@@ -160,10 +160,10 @@ def draw_intervals(intervals, save_to_file=None, figsize=None, with_subintervals
                 for sub in iv.subintervals:
                     # None at the end guarantees that line is not continuous all the time and
                     # there are holes in the plot in proper moments.
-                    x.extend([sub.fr.num-0.1, sub.to.num+0.1, None])
+                    x.extend([sub.fr, sub.to, None])
                     y.extend([id_num, id_num, None])
             else:
-                x.extend([iv.fr.num-0.1, iv.to.num+0.1, None])
+                x.extend([iv.fr, iv.to, None])
                 y.extend([id_num, id_num, None])
         
         plt.plot(x,y,label=str(vid))

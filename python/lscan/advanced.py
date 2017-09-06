@@ -2,7 +2,7 @@ from lscan import LinearScan
 from intervals import AdvInterval
 from sys import maxint
 
-class AdvLinearScan(LinearScan):
+class AdvLinearScan():
 
     def compute_intervals(self):
         intervals = {v.id: AdvInterval(v) for v in self.f.vars.values()}

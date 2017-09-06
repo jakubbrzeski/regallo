@@ -15,8 +15,9 @@ class Variable:
         vinfo = name.split(utils.SEPARATOR)
         self.id = vinfo[0]
 
-        # Mapping from instruction-id to register or None meaning
-        # where has this variable been allocated at the given instruction.
+        # Allocation computed by register allocator i.e. mapping
+        # from instruction-id where the variable is used or defined
+        # to register or memory slot.
         self.alloc = {}
         
         self.llvm_name = None
@@ -37,18 +38,10 @@ class Variable:
     def __repr__(self):
         return str(self.id)
 
-    # Adds the given Instruction to this Variable's record if it's not already there.
-    # Returns True if the instruction was added and False otherwise.
-    def maybe_add_use(self, instr):
-        if instr.id not in self.uses:
-            self.uses[instr.id] = instr
-            return True
-        return False
-
     def is_spilled_at(self, instr):
         if instr.id not in self.alloc:
             return False
-        return self.alloc[instr.id] is None
+        return utils.is_slotname(self.alloc[instr.id])
 
 class Instruction:
     PHI = "phi"
@@ -63,13 +56,10 @@ class Instruction:
         # Parent Function.
         self.f = bb.f 
 
-        # Instruction id.
+        # Instruction unique id.
         self.id = self.f.get_free_iid()
 
-        # Number of instruction. It's something different than id. Id is unique,
-        # but we can number the instruction multiple times. It is useful especially
-        # when dealing with linearized program , e.g. in linear scan register allocation. 
-        #TODO: finish description
+        # Number of instruction in linearized CFG.
         self.num = None
 
         # Variable defined by this instruction.
@@ -79,20 +69,20 @@ class Instruction:
         self.opname = opname
 
         # Variables that are used by this instruction. It doesn't include constants, labels
-        # or any other values that are not interesting for register allocator. All values
-        # are hold in self.uses_debug (see below).
+        # or any other values that are not interesting for register allocator. 
+        # All values (also constants and labels) are hold in self.uses_debug (see below).
+        # If this is PHI instruction, self.uses is turned into dictionary {pred block id: var}.
         self.uses = uses if uses else []
 
-        # TODO: finish descr.
+        # If this is PHI instruction, phi_preds maps variable id to corresponding
+        # predecessor block id.
         self.phi_preds = None
 
-
-        # Lists of all values (not only allocable Variables) used by the instruction in
-        # string format. These are e.g. labels (basic block ids) or constants and are useful
-        # for debugging purposes.
+        # List of all values (not only allocable Variables) used by the instruction.
+        # If this is PHI instruction, self.uses_debug is turned into dictionary {pred block if: value}
         self.uses_debug = uses_debug if uses_debug else []
       
-        # Set of variables live-in and live-out of this instruction.
+        # Set of variables live-in and live-out at this instruction.
         self.live_in = None
         self.live_out = None
 
@@ -116,7 +106,7 @@ class Instruction:
             
         return False
 
-    # Create a copy of the instruction inside Basic Block cbb.
+    # Create a deep copy of the instruction inside Basic Block cbb.
     # Assumes that cbb.f has already all variable regsitered in f.vars.
     def copy(self, cbb):
         cuses = []
@@ -149,6 +139,7 @@ class Instruction:
         return ci
 
 
+    # Creates new Instruction object from given json, in the Basic Block bb.
     @classmethod
     def from_json(cls, instruction_json, bb):
         opname = instruction_json['opname']
@@ -208,31 +199,31 @@ class BasicBlock:
         # BasicBlock consists of a list of instructions. 
         self.instructions = []
         
-        # Optional list of phi instructions.
+        # List of phi instructions if there are any in this block.
         self.phis = []
 
         # Dictionaries of predecessors and successors {bblock-id: BasicBlock}.
         self.preds = {}
         self.succs = {}
 
-        # The uevs set is a dictionary of sets of upword-exposed variables (variables that
-        # are used before any redefinition in this block) computed per incoming edge,
-        # i.e uevs = {predecessor_id: set of variables}. It is because of PHI functions,
-        # where the given variable is used depending on where the control flow comes from.
+        # uevs - set of upword-exposed variables i.e. such variables that
+        # are used before any redefinition in this block. 
+        # defs - set of variables defined in this block. 
         self.uevs = None
         self.defs = None
 
-        # TODO: descr.
+        # Sets of live-in and live-out variables in this block.
         self.live_in = set()
         self.live_out = set()
 
         # Set of dominators of this basic block.
         self.dominators = set()
 
-        # The smallest loop (in inclusion order) this bb belongs to or None if it's not
+        # The smallest Loop (in inclusion order) this block belongs to or None if it's not
         # inside any loop.
         self.loop = None
 
+    # Creates new Basic Block object from given json inside provided Function f.
     @classmethod
     def from_json(cls, bblock_json, f):
         bbinfo = bblock_json['name'].split(utils.SEPARATOR)
@@ -292,20 +283,17 @@ class BasicBlock:
     # defs - variables defined in the basic block
     # uevs - variables that are used before any redefinition.
     def compute_defs_and_uevs(self):
-        pred_ids = self.preds.keys()
         defs = set() 
         uevs = set()
     
         for instr in self.instructions:
             if not instr.is_phi():
                 for use in instr.uses:
-                    # Each use add to each edge
                     if use not in defs:
                         uevs.add(use)
                             
             defs.add(instr.definition)
             
-
         self.defs = defs
         self.uevs = uevs
 
@@ -327,7 +315,7 @@ class BasicBlock:
             instr.live_in |= current_live_set
 
 # Loop is a list of basic blocks, the first of which is a header and last - a tail.
-# Loops may be nested, so it has parent field which is the 'nearest' parent in the
+# Loops may be nested, so it has a parent field which is the 'nearest' parent in the
 # dominance order.
 class Loop:
     def __init__(self, header, tail, body):
@@ -346,7 +334,7 @@ class Function:
     def __init__(self, fname):
         self.name = fname
 
-        # Dictionary of all variables in this function {id: Variable}.
+        # Dictionary of all variables in this function {vid: Variable}.
         self.vars = {}
 
         # Counter of instruction ids.
@@ -620,7 +608,8 @@ class Function:
         self.perform_liveness_analysis()
         self.perform_dominance_analysis()
         self.perform_loop_analysis()
-            
+
+# Module represents a program and consists of list of functions.
 class Module:
     def __init__(self, functions):
         self.functions = {f.name: f for f in functions}

@@ -221,12 +221,12 @@ class IntervalsPrinter:
 
 
     def subinterval(self, subiv):
-        endpoints = "[" + str(subiv.fr.num) + ", " + str(subiv.to.num) + "]"
+        endpoints = "[" + str(subiv.fr) + ", " + str(subiv.to) + "]"
         return endpoints
 
 
     def interval(self, iv):
-        endpoints = "[" + str(iv.fr.num) + ", " + str(iv.to.num) + "]"
+        endpoints = "[" + str(iv.fr) + ", " + str(iv.to) + "]"
         basic = self.basic_pattern.format(endpoints, ValuePrinter(iv.var, self.options))
         reg = self.reg_pattern.format(iv.alloc if utils.is_regname(iv.alloc) else "-")
 
@@ -249,7 +249,7 @@ class IntervalsPrinter:
         for ivlist in self.intervals.values():
             ivs.extend(ivlist)
         
-        ivs = sorted(ivs, key=lambda iv: (iv.fr.num, iv.to.num))
+        ivs = sorted(ivs, key=lambda iv: (iv.fr, iv.to))
 
         res = self.basic_pattern.format("INTERVAL", "VAR-ID") + self.reg_pattern.format("REG")
         if self.options.intervals_verbose:

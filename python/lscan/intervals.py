@@ -18,9 +18,9 @@ class Interval(object):
         return self.fr == self.to
     
     def update_endpoints(self, fr, to):
-        if self.fr is None or self.fr.num > fr.num:
+        if self.fr is None or self.fr > fr:
             self.fr = fr
-        if self.to is None or self.to.num < to.num:
+        if self.to is None or self.to < to:
             self.to = to
 
     def update_variables(self, alloc):

@@ -186,3 +186,83 @@ def eliminate_phi(f):
 
     utils.number_instructions(utils.reverse_postorder(f))
 
+# It breaks liveness sets and loop information.
+def insert_spill_code(f):
+    # Dictionary of new instructions that will be inserted before
+    # of after some current instructions. We don't insert them
+    # immediately to avoid linear complexity of list insertion.
+    insert_before = {iid: [] for iid in range(f.instr_counter)}
+    insert_after  = {iid: [] for iid in range(f.instr_counter)}
+
+    for bb in f.bblocks.values():
+        for instr in bb.instructions:
+            if instr.definition.is_spilled_at(instr):
+                # Insert store after instr.
+                # [v1 = ...] -> [v2 = ... ; store mem(v1), v2]  
+                v = f.get_or_create_variable()
+                memslot = instr.definition.alloc[instr.id]
+                instr.definition = v
+                
+                store = cfg.Instruction(
+                        bb = instr.bb, 
+                        defn = None, 
+                        opname = cfg.Instruction.STORE,
+                        uses = [v], 
+                        uses_debug = [memslot, v])
+
+                insert_after[instr.id].append(store)
+
+            if instr.is_phi():
+                for (bid, var) in instr.uses.iteritems():
+                    if var.is_spilled_at(instr):
+                        # Insert load at the end of predecessor block.
+                        # bb:[... = v1] -> pred:[v2 = load mem(v1)] bb:[ ... = v2]
+                        pred = f.bblocks[bid]
+                        v = f.get_or_create_variable()
+                        memslot = var.alloc[instr.id]
+                        instr.uses[bid] = v
+                        instr.uses_debug[bid] = v
+
+                        load = cfg.Instruction(
+                                bb = pred,
+                                defn = v,
+                                opname = cfg.Instruction.LOAD,
+                                uses = [],
+                                uses_debug = [memslot])
+
+                        insert_after[pred.last_instr().id].append(load)
+
+            else:
+                for i, var in enumerate(instr.uses):
+                    if var.is_spilled_at(instr):
+                        # Insert load before the instruction.
+                        # [... = v1] -> [v2 = load mem(v1) ;  ... = v2]
+                        v = f.get_or_create_variable()
+                        memslot = var.alloc[instr.id]
+                        instr.uses[i] = v
+                        instr.uses_debug[instr.uses_debug.index(var)] = v
+                        
+                        load = cfg.Instruction(
+                                bb = instr.bb,
+                                defn = v,
+                                opname = cfg.Instruction.LOAD,
+                                uses = [],
+                                uses_debug = [memslot])
+
+                        insert_before[instr.id].append(load)
+
+
+    # Reewrite instructions.
+    for bb in f.bblocks.values():
+        new_instructions = []
+        for instr in bb.instructions:
+            for ib in insert_before[instr.id]:
+                new_instructions.append(ib)
+            new_instructions.append(instr)
+            for ia in insert_after[instr.id]:
+                new_instructions.append(ia)
+
+        bb.set_instructions(new_instructions)
+
+    
+
