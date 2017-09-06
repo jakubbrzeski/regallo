@@ -184,6 +184,11 @@ class Instruction:
             return 0
         return self.bb.loop.depth
 
+    def register_pressure_in(self):
+        return len(self.live_in)
+
+    def register_pressure_out(self):
+        return len(self.live_out)
 
 class BasicBlock:
     def __init__(self, bid, f, llvm_name = None):
@@ -279,6 +284,7 @@ class BasicBlock:
     def last_instr(self):
         return self.instructions[-1]
 
+
     # Computes variable sets (defs, uevs) for this basic block.
     # defs - variables defined in the basic block
     # uevs - variables that are used before any redefinition.
@@ -300,19 +306,13 @@ class BasicBlock:
     # For each instruction computes sets of live-in and
     # live-out variables (before and after the instruction)
     def perform_instr_liveness_analysis(self):
-        current_live_set = self.live_in.copy()
-            
-        for instr in self.instructions:
-            instr.live_in = current_live_set
-            current_live_set -= {instr.definition}
-            instr.live_out = current_live_set
-
-        # reverse
         current_live_set = self.live_out.copy()
         for instr in self.instructions[::-1]:
-            instr.live_out |= current_live_set
+            instr.live_out = current_live_set.copy()
             current_live_set -= {instr.definition}
-            instr.live_in |= current_live_set
+            if not instr.is_phi():
+                current_live_set |= set(instr.uses)
+            instr.live_in = current_live_set.copy()
 
 # Loop is a list of basic blocks, the first of which is a header and last - a tail.
 # Loops may be nested, so it has a parent field which is the 'nearest' parent in the
