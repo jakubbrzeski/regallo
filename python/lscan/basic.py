@@ -7,16 +7,14 @@ import cfg
 
 
 class BasicLinearScan(LinearScan):
-    NAME = "Basic Linaear Scan"
 
     class SpillingStrategy(object):
         FURTHEST_FIRST, CURRENT_FIRST, LESS_USED_FIRST = range(3)
 
 
-    def __init__(self, **kwargs):
-        super(BasicLinearScan, self).__init__()
-        self.spilling_strategy = kwargs.get("spilling_strategy", 
-                BasicLinearScan.SpillingStrategy.FURTHEST_FIRST)
+    def __init__(self, spilling_strategy=None, name="Basic Linear Scan"):
+        super(BasicLinearScan, self).__init__(name)
+        self.spilling_strategy = spilling_strategy if spilling_strategy else self.SpillingStrategy.FURTHEST_FIRST
 
 
     # Returns dictionary {variable-id: Interval}

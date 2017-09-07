@@ -20,11 +20,20 @@ with open(args.file) as f:
 m = cfg.Module.from_json(module_json)
 m.perform_full_analysis()
 print "Functions in the module: ", ", ".join(m.functions.keys())
-f = m.functions[args.function]
-print FunctionString(f)
+#f = m.functions[args.function]
+#print FunctionString(f)
 
-bls = BasicLinearScan()
+bls = BasicLinearScan(name="furthest first")
+bls_cf = BasicLinearScan(spilling_strategy=BasicLinearScan.SpillingStrategy.CURRENT_FIRST, name="current first")
+
+rcs = utils.ResultCompSetting(m.functions.values(), [1, 2, 3], [bls, bls_cf], [BasicCostCalculator()])
+res = utils.compute_full_results(rcs)
+utils.print_result_table(res, rcs)
+
+
+"""
 success = utils.full_register_allocation(f, bls, 5)
 print "success = ", success
 if success:
-    print FunctionString(f, Opts(with_alloc=True))
+    print FunctionString(f, Opts(with_alloc=False, predecessors=True, successors=True))
+"""

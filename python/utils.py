@@ -182,19 +182,11 @@ def draw_intervals(intervals, save_to_file=None, figsize=None, with_subintervals
     plt.close()
 
 
-# A helper class for passing arguments for function
-# compute_full_results.
-class AllocatorWrap:
-    def __init__(self, name, alcls, **kwargs):
-        self.name = name
-        self.cls = alcls
-        self.kwargs = kwargs
-
 # A helper class for storing arguments for computing full results. 
 # functions - list of Functions.
 # regcounts - list of ints denoting number of registers.
-# allocators - list of triples (name, allocator_class, **kwargs)
-# cost_calculators - list of CostCalculators
+# allocators - list of triples allocators.
+# cost_calculators - list of CostCalculators.
 class ResultCompSetting:
     def __init__(self, functions, regcounts, allocators, cost_calculators):
         self.functions = functions
@@ -203,10 +195,10 @@ class ResultCompSetting:
         self.cost_calculators = cost_calculators
 
     def allocator_names(self):
-        return [name for (name, _, _) in self.allocators]
+        return [al.name for al in self.allocators]
 
     def cost_calc_names(self):
-        return [cc.NAME for cc in self.cost_calculators]
+        return [cc.name for cc in self.cost_calculators]
 
 
 # Returns mapping: list [(function_name, [(regcount, [(allocator_name, [(cost_name, RESULT)] )] )] )]
@@ -226,19 +218,19 @@ def compute_full_results(setting, analysis=False):
 
             # ALLOCATORS
             alloc_results = []
-            for (name, cls, kwargs) in setting.allocators:
+            for al in setting.allocators:
                 g = f.copy()
+                success = full_register_allocation(g, al, regc)
 
-                al = cls(g, **kwargs)
-                al.full_register_allocation(regc)
+                cost_results = [(cc.name, -1) for cc in setting.cost_calculators]
+                if success:
+                    # COSTS 
+                    cost_results = []
+                    for cc in setting.cost_calculators:
+                        res = cc.function_cost(g)
+                        cost_results.append((cc.name, res))
 
-                # COSTS 
-                cost_results = []
-                for cc in setting.cost_calculators:
-                    res = cc.function_cost(g)
-                    cost_results.append((cc.NAME, res))
-
-                alloc_results.append((name, cost_results))
+                alloc_results.append((al.name, cost_results))
 
             reg_results.append((regc, alloc_results))
 
@@ -258,14 +250,6 @@ def compute_result_table(d, setting):
 
     spans = [[[0,0],[0,1]]] # , [[1,0],[1,1]]]
     table = []
-
-    """
-    row00 = ["", "", "Algorithms & Costs"]
-    span = [ [0, 2+col] for col in range(len(allocator_names)*len(cost_calc_names))]
-    row00.extend(["" for _ in span[1:]])
-    table.append(row00)
-    spans.append(span)
-    """
 
     # Zero row: Allocators
     row0 = ["", ""]
@@ -311,6 +295,8 @@ def compute_result_table(d, setting):
 
             for alname, cost_results in alloc_results:
                 for c, res in cost_results:
+                    if res == -1:
+                        res = "Failed"
                     rowN.append(res)
 
             table.append(rowN)

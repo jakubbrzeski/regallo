@@ -1,7 +1,8 @@
 import utils
 
 class LinearScan(object): 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         pass
 
     # Computes and returns intervals out of the given function.

@@ -395,7 +395,7 @@ class Function:
 
         # Dictionary of all variables in this function {vid: Variable}.
         self.vars = {}
-        self.free_vid = "v0"
+        self.free_vid = "v1"
 
         # Counter of instruction ids.
         self.instr_counter = 0

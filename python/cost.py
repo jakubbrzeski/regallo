@@ -4,6 +4,8 @@ import utils
 
 
 class CostCalculator():
+
+
     def instr_cost(self, instr):
         raise NotImplementedError()
 
@@ -15,7 +17,10 @@ class CostCalculator():
 
 # Only for programs after PHI elimination.
 class SpillRatioCalculator(CostCalculator):
-    NAME = "Spill Ratio"
+
+    def __init__(self, name="Spill Ratio"):
+        self.name = name
+
     def instr_cost(self, instr, percent=True):
         assert not instr.is_phi()
         total = 0
@@ -59,17 +64,27 @@ class SpillRatioCalculator(CostCalculator):
         return (total, spilled)
 
         
-
+# Sum of l^(loop_depth) * instruction_cost,
+# where instruction_cost = s if instruction is LOAD or SPILL
+#                        = n otherwise
 class BasicCostCalculator(CostCalculator):
-    NAME = "Default Cost"
-    def instr_cost(self, instr):
-        loop_depth = math.pow(10, instr.get_loop_depth())
-        if instr.opname == cfg.Instruction.LOAD:
-            return 2 * loop_depth
-        elif instr.opname == cfg.Instruction.STORE:
-            return 2 * loop_depth
+
+    def __init__(self, s=2, n=1, l=10, name=None):
+        self.s = s # spill
+        self.n = n # normal
+        self.l = l # loop
+        if name is None:
+            self.name = "Default ({}, {}, {})".format(s, n, l)
         else:
-            return loop_depth
+            self.name = name
+
+    def instr_cost(self, instr):
+        loop_depth = math.pow(self.l, instr.get_loop_depth())
+
+        if instr.opname == cfg.Instruction.LOAD or instr.opname == cfg.Instruction.STORE:
+            return self.s * loop_depth
+        
+        return self.n * loop_depth
 
     def bb_cost(self, bb):
         res = 0
@@ -85,7 +100,3 @@ class BasicCostCalculator(CostCalculator):
 
         return res
 
-
-
-#def compute(f, allocator, cost_calculator, regcount):
-#    allocator.full()
