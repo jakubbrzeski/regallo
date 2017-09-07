@@ -182,15 +182,6 @@ def draw_intervals(intervals, save_to_file=None, figsize=None, with_subintervals
     plt.close()
 
 
-def update_alloc(intervals):
-    for iv in intervals.values():
-        for siv in iv.subintervals:
-            print iv.var.id, iv.reg
-            siv.defn.alloc[iv.var.id] = iv.reg
-            for use in siv.uses:
-                use.alloc[iv.var.id] = iv.reg
-
-
 # A helper class for passing arguments for function
 # compute_full_results.
 class AllocatorWrap:

@@ -21,10 +21,10 @@ m = cfg.Module.from_json(module_json)
 m.perform_full_analysis()
 print "Functions in the module: ", ", ".join(m.functions.keys())
 f = m.functions[args.function]
-#print FunctionPrinter(f)
+print FunctionPrinter(f)
 
 bls = BasicLinearScan()
-success = utils.full_register_allocation(f, bls, 4)
+success = utils.full_register_allocation(f, bls, 5)
 print "success = ", success
-#if success:
-#    print FunctionPrinter(f, Opts(alloc_only=True))
+if success:
+    print FunctionPrinter(f, Opts(with_alloc=True))

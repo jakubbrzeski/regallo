@@ -35,8 +35,8 @@ class BasicLinearScan(LinearScan):
                 
                 # Uses.
                 if instr.is_phi():
-                    for (bid, use) in instr.uses.iteritems():
-                        iv = intervals[use.id]
+                    for (bid, var) in instr.uses.iteritems():
+                        iv = intervals[var.id]
                         pred = f.bblocks[bid]
                         iv.update_endpoints(pred.last_instr().num, pred.last_instr().num)
                         # We update interval only to the end of the predecessor block,
@@ -45,8 +45,8 @@ class BasicLinearScan(LinearScan):
                         # properly later.
                         iv.uses.append(instr)
                 else:
-                    for use in instr.uses:
-                        iv = intervals[use.id]
+                    for var in instr.uses:
+                        iv = intervals[var.id]
                         iv.update_endpoints(instr.num, instr.num)
                         iv.uses.append(instr)
 

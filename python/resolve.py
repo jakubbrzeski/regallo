@@ -197,7 +197,8 @@ def allocate_cycle(i1, i2, regcount=0):
         reg = free.pop()
         if reg:
             i1.definition.alloc[i1.id] = reg
-            i2.uses[0].alloc[i2.id] = reg
+
+            list(i2.uses)[0].alloc[i2.id] = reg
             return
 
     # There is no free register, we need to spill.
@@ -210,12 +211,12 @@ def allocate_cycle(i1, i2, regcount=0):
     # tmp = mov v2 -> store mem(tmp), v2
     i1.opname = cfg.Instruction.STORE
     i1.definition = None
-    i1.uses_debug = [slot, i1.uses[0]]
+    i1.uses_debug = [slot, list(i1.uses)[0]]
     # i1.uses stay the same.
 
     # v1 = mov tmp -> v1 = load mem(tmp)
     i2.opname = cfg.Instruction.LOAD
-    i2.uses = []
+    i2.uses = set()
     i2.uses_debug = [slot]
     # i2.definition stays the same
 
@@ -260,10 +261,6 @@ def eliminate_phi(f, regcount=0):
                 d = Alloc(phi.definition, phi.definition.alloc[phi.id])
                 u = None
                 if pred.id in phi.uses:
-                    
-                    if phi.id not in phi.uses[pred.id].alloc:
-                        print "DUPA", phi.uses[pred.id], phi.num
-
                     u = Alloc(phi.uses[pred.id], phi.uses[pred.id].alloc[phi.id])
                 else:
                     u = Alloc(phi.uses_debug[pred.id], None)
@@ -322,7 +319,7 @@ def insert_spill_code(f):
                         bb = instr.bb, 
                         defn = None, 
                         opname = cfg.Instruction.STORE,
-                        uses = [v], 
+                        uses = set([v]), 
                         uses_debug = [memslot, v])
 
                 insert_after[instr.id].append(store)
@@ -342,7 +339,7 @@ def insert_spill_code(f):
                                 bb = pred,
                                 defn = v,
                                 opname = cfg.Instruction.LOAD,
-                                uses = [],
+                                uses = set(),
                                 uses_debug = [memslot])
                         
                         insert_after[pred.last_instr().id].append(load)
@@ -350,14 +347,15 @@ def insert_spill_code(f):
                         # insert it before br.
 
             else:
-                for i, var in enumerate(instr.uses):
+                replace = []
+                for var in instr.uses:
                     if var.is_spilled_at(instr):
                         # Insert load before the instruction.
                         # [... = v1] -> [v2 = load mem(v1) ;  ... = v2]
                         v = f.get_or_create_variable()
                         memslot = var.alloc[instr.id]
-                        instr.uses[i] = v
-                        instr.uses_debug[instr.uses_debug.index(var)] = v
+                        replace.append((var, v))
+
                         
                         load = cfg.Instruction(
                                 bb = instr.bb,
@@ -367,6 +365,15 @@ def insert_spill_code(f):
                                 uses_debug = [memslot])
 
                         insert_before[instr.id].append(load)
+
+                for (a, b) in replace:
+                    instr.uses.remove(a)
+                    instr.uses.add(b)
+
+                    # Replace all occurrences in uses_debug.
+                    for j, vd in enumerate(instr.uses_debug):
+                        if vd == a:
+                            instr.uses_debug[j] = b
 
 
     # Reewrite instructions.

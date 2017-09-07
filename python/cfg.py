@@ -73,7 +73,8 @@ class Instruction:
         # or any other values that are not interesting for register allocator. 
         # All values (also constants and labels) are hold in self.uses_debug (see below).
         # If this is PHI instruction, self.uses is turned into dictionary {pred block id: var}.
-        self.uses = uses if uses else []
+        # TODO describe set
+        self.uses = uses if uses else set()
 
         # If this is PHI instruction, phi_preds maps variable id to corresponding
         # predecessor block id.
@@ -110,7 +111,7 @@ class Instruction:
     # Create a deep copy of the instruction inside Basic Block cbb.
     # Assumes that cbb.f has already all variable regsitered in f.vars.
     def copy(self, cbb):
-        cuses = []
+        cuses = set()
         cuses_debug = []
         cf = cbb.f
         if self.is_phi():
@@ -122,7 +123,7 @@ class Instruction:
                     cuses_debug.append((bid, val))
             
         else:
-            cuses = [cf.vars[v.id] for v in self.uses]
+            cuses = set([cf.vars[v.id] for v in self.uses])
             for val in self.uses_debug:
                 if isinstance(val, Variable):
                     cuses_debug.append(cf.vars[val.id])
@@ -146,7 +147,7 @@ class Instruction:
         opname = instruction_json['opname']
         defn = bb.f.get_or_create_variable(instruction_json['def'])
         is_phi = (opname == Instruction.PHI)
-        uses = []
+        uses = set()
         uses_debug = []
 
         # Setting up uses and phi predecessors.
@@ -157,10 +158,10 @@ class Instruction:
             if utils.is_varname(val_name):
                 v = bb.f.get_or_create_variable(val_name)
                 if is_phi:
-                    uses.append((bb_id, v))
+                    uses.add((bb_id, v))
                     uses_debug.append((bb_id, v))
                 else:
-                    uses.append(v)
+                    uses.add(v)
                     uses_debug.append(v)
 
             elif utils.is_bbname(val_name): # label, keep just id string.
