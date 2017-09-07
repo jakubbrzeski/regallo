@@ -2,11 +2,12 @@ import cfg
 from termcolor import colored
 import utils
 
-class PrintOptions:
+class Opts:
     def __init__(self, **options):
         self.colors = options.get("colors", True)
         self.llvm_names = options.get("llvm_names", False)
         self.nums = options.get("nums", True)
+        
         self.predecessors = options.get("predecessors", False)
         self.successors = options.get("successors", False)
         self.uevs_defs = options.get("uevs_defs", False)
@@ -14,18 +15,18 @@ class PrintOptions:
         self.liveness = options.get("liveness", False)
         self.reg_liveness = options.get("reg_liveness", False)
         self.dominance = options.get("dominance", False)
+        # Instead of variable names, print allocs.
+        self.alloc_only = options.get("alloc_only", False)
+        # Besides variable names, print allocs.
+        self.with_alloc = options.get("with_alloc", False)
+        
         self.intervals_verbose = options.get("intervals_verbose", False)
         self.intervals_advanced = options.get("intervals_advanced", False)
-        self.show_spilled = options.get("show_spilled", False)
-        # Instead of variable names print allocs.
-        self.alloc_only = options.get("alloc_only", False)
-        # Besides variable names print allocs.
-        self.with_alloc = options.get("with_alloc", False)
 
 
 # Here value is an object which has id and optional llvm_id
-class ValuePrinter:
-    def __init__(self, val, options=PrintOptions()):
+class ValueString:
+    def __init__(self, val, options=Opts()):
         self.val = val
         self.options = options 
 
@@ -57,8 +58,8 @@ def allocstr(alloc):
     else:
         return colored(alloc, 'green')
 
-class InstrPrinter:
-    def __init__(self, instr, options=PrintOptions()):
+class InstrString:
+    def __init__(self, instr, options=Opts()):
         self.instr = instr
         self.options = options
 
@@ -67,9 +68,9 @@ class InstrPrinter:
         if d is None:
             return None
         if self.options.llvm_names:
-            vstr = ValuePrinter(d, self.options).full_name()
+            vstr = ValueString(d, self.options).full_name()
         else:
-            vstr = ValuePrinter(d, self.options).vid()
+            vstr = ValueString(d, self.options).vid()
 
         if self.options.colors:
             vstr = colored(vstr, 'yellow', attrs=['bold'])
@@ -84,7 +85,8 @@ class InstrPrinter:
 
 
     def uses(self):
-        res = ""
+        res = []
+
         if self.instr.is_phi():
             for (bid, var) in self.instr.uses_debug.iteritems():
                 if isinstance(var, cfg.Variable):
@@ -102,7 +104,7 @@ class InstrPrinter:
                 else:
                     vstr = var
 
-                res += str(bid) + " -> " + vstr + " "
+                res.extend([str(bid), " -> ", vstr, " "])
         else:
             for var in self.instr.uses_debug:
                 if isinstance(var, cfg.Variable):
@@ -120,9 +122,9 @@ class InstrPrinter:
                 else:
                     vstr = var
 
-                res += vstr + " " 
+                res.extend([vstr, " "])
 
-        return res
+        return ''.join(res)
 
     def full(self):
         num = str(self.instr.num) + ":" if self.options.nums and self.instr.num is not None else ">"
@@ -141,102 +143,106 @@ class InstrPrinter:
                 opname,
                 self.uses())
 
-class BBPrinter:
-    def __init__(self, bb, options=PrintOptions()):
+    def __str__(self):
+        return self.full()
+
+class BBString:
+    def __init__(self, bb, options=Opts()):
         self.bb = bb
         self.options = options
         self.pattern = "{:>10}: {:>}"
 
     def instructions(self):
-        res = ""
+        res = []
         for instr in self.bb.instructions:
-            res += InstrPrinter(instr, self.options).full() + "\n"
+            res.append(InstrString(instr, self.options).full())
 
-        return res
+        return "\n".join(res)
 
     def predecessors(self):
-        preds = [ValuePrinter(pred, self.options) for pred in list(self.bb.preds.values())]
+        preds = [ValueString(pred, self.options) for pred in list(self.bb.preds.values())]
         return self.pattern.format("PREDS", preds) 
 
     def successors(self):
-        succs = [ValuePrinter(pred, self.options) for pred in list(self.bb.succs.values())]
+        succs = [ValueString(pred, self.options) for pred in list(self.bb.succs.values())]
         return self.pattern.format("SUCCS", succs)
 
     def uevs_defs(self):
         assert self.bb.uevs is not None and self.bb.defs is not None
-        uevs =  [ValuePrinter(uev, self.options) for uev in list(self.bb.uevs)]
-        defs = [ValuePrinter(defn, self.options) for defn in list(self.bb.defs)]
+        uevs =  [ValueString(uev, self.options) for uev in list(self.bb.uevs)]
+        defs = [ValueString(defn, self.options) for defn in list(self.bb.defs)]
        
         return self.pattern.format("UEVS", uevs) + "\n" + \
                self.pattern.format("DEFS", defs) 
 
     def reg_uevs_defs(self):
         assert self.bb.reg_uevs is not None and self.bb.reg_defs is not None
-        uevs =  [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_uevs)]
-        defs = [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_defs)]
+        uevs =  [ValueString(reg, self.options) for reg in list(self.bb.reg_uevs)]
+        defs = [ValueString(reg, self.options) for reg in list(self.bb.reg_defs)]
        
         return self.pattern.format("REG-UEVS", uevs) + "\n" + \
                self.pattern.format("REG-DEFS", defs) 
 
     def liveness(self):
         assert self.bb.live_in is not None and self.bb.live_out is not None
-        live_in = [ValuePrinter(var, self.options) for var in list(self.bb.live_in)]
-        live_out = [ValuePrinter(var, self.options) for var in list(self.bb.live_out)]
+        live_in = [ValueString(var, self.options) for var in list(self.bb.live_in)]
+        live_out = [ValueString(var, self.options) for var in list(self.bb.live_out)]
         
         return self.pattern.format("LIVE-IN", live_in) + "\n" + \
                self.pattern.format("LIVE-OUT", live_out) 
 
     def reg_liveness(self):
         assert self.bb.reg_live_in is not None and self.bb.reg_live_out is not None
-        live_in = [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_live_in)]
-        live_out = [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_live_out)]
+        live_in = [ValueString(reg, self.options) for reg in list(self.bb.reg_live_in)]
+        live_out = [ValueString(reg, self.options) for reg in list(self.bb.reg_live_out)]
         return self.pattern.format("REG-LIVE-IN", live_in) + "\n" + \
                self.pattern.format("REG-LIVE-OUT", live_out) 
 
     
     def dominance(self):
         assert self.bb.dominators is not None
-        dominators = [ValuePrinter(dom, self.options) for dom in list(self.bb.dominators)]
+        dominators = [ValueString(dom, self.options) for dom in list(self.bb.dominators)]
         return self.pattern.format("DOM", dominators) 
 
 
-class FunctionPrinter:
-    def __init__(self, f, options=PrintOptions()):
+class FunctionString:
+    def __init__(self, f, options=Opts()):
         self.f = f
         self.options = options
         
     def bbs(self):
-        res = ""
+        res = []
         bbs = utils.reverse_postorder(self.f)
         for bb in bbs:
-            printer = BBPrinter(bb, self.options)
+            printer = BBString(bb, self.options)
             bb_name = str(bb.id) + "(" + str(bb.llvm_name) + ")"
             bb_name = colored(bb_name, attrs=['underline'])
-            res += bb_name + "\n" + printer.instructions()
+            res.append(bb_name)
+            res.append(printer.instructions())
             if self.options.predecessors:
-                res += "\n" + printer.predecessors()
+                res.append(printer.predecessors())
             if self.options.successors:
-                res += "\n" + printer.successors()
+                res.append(printer.successors())
             if self.options.uevs_defs:
-                res += "\n" + printer.uevs_defs()
+                res.append(printer.uevs_defs())
             if self.options.reg_uevs_defs:
-                res += "\n" + printer.reg_uevs_defs()
+                res.append(printer.reg_uevs_defs())
             if self.options.liveness:
-                res += "\n" + printer.liveness()
+                res.append(printer.liveness())
             if self.options.dominance:
-                res += "\n" + printer.dominance()
+                res.append(printer.dominance())
             if self.options.reg_liveness:
-                res += "\n" + printer.reg_liveness()
+                res.append(printer.reg_liveness())
+            res.append("\n")
 
-            res += "\n\n"
-        return res
+        return "\n".join(res)
 
     def __str__(self):
         return self.bbs()
 
 
-class IntervalsPrinter:
-    def __init__(self, intervals, options=PrintOptions()):
+class IntervalsString:
+    def __init__(self, intervals, options=Opts()):
         self.intervals = intervals
         self.options = options
         self.basic_pattern = "{:10s} {:10s}"
@@ -252,7 +258,7 @@ class IntervalsPrinter:
 
     def interval(self, iv):
         endpoints = "[" + str(iv.fr) + ", " + str(iv.to) + "]"
-        basic = self.basic_pattern.format(endpoints, ValuePrinter(iv.var, self.options))
+        basic = self.basic_pattern.format(endpoints, ValueString(iv.var, self.options))
         reg = self.reg_pattern.format(iv.alloc if utils.is_regname(iv.alloc) else "-")
 
         res = [basic, reg]
@@ -276,21 +282,25 @@ class IntervalsPrinter:
         
         ivs = sorted(ivs, key=lambda iv: (iv.fr, iv.to))
 
-        res = self.basic_pattern.format("INTERVAL", "VAR-ID") + self.reg_pattern.format("REG")
+        res = [self.basic_pattern.format("INTERVAL", "VAR-ID"), self.reg_pattern.format("REG")]
         if self.options.intervals_verbose:
-            res += self.verbose_pattern.format("DEF", "USES")
+            res.append(self.verbose_pattern.format("DEF", "USES"))
         if self.options.intervals_advanced:
-            res += self.subs_pattern.format("SUBINTERVALS")
-        res += "\n"
+            res.append(self.subs_pattern.format("SUBINTERVALS"))
+        res.append("\n")
 
         for iv in ivs:
             if not iv.empty():
-                res += self.interval(iv) + "\n"
+                res.extend([self.interval(iv), "\n"])
 
-        return res + "\n"
+        res.append("\n")
+        return ''.join[res]
+
+    def __str__(self):
+        return self.full()
             
 
-class CostPrinter:
+class CostString:
     def __init__(self, f, cost_calc):
         self.f = f
         self.num_pattern = "{:^5}"
@@ -312,9 +322,12 @@ class CostPrinter:
 
         for i in instructions:
             cost = self.cost_calc.instr_cost(i)
-            istr = InstrPrinter(i, PrintOptions(alloc_only=True)).full()
+            istr = InstrString(i, Opts(alloc_only=True)).full()
             line = self.ld_pattern.format(i.get_loop_depth()) + \
                     self.cost_pattern.format(cost) + self.instr_pattern.format(istr) + "\n"
             res += line
 
         return res
+
+    def __str__(self):
+        return self.full()

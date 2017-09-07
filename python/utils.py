@@ -1,5 +1,5 @@
 import re
-from cfgprinter import FunctionPrinter, PrintOptions as Opts
+from cfgprinter import FunctionString, Opts
 import resolve
 from dashtable import data2rst
 from matplotlib import pyplot as plt
@@ -370,7 +370,7 @@ def full_register_allocation(f, allocator, regcount):
 
         success = allocator.full_allocation(f, regcount, spilling=False)
         if success:
-            #print FunctionPrinter(f)
+            #print FunctionString(f)
             resolve.eliminate_phi(f, regcount)
             f.perform_full_analysis()
             return True
