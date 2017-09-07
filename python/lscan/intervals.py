@@ -15,7 +15,7 @@ class Interval(object):
         self.uses = [] if uses is None else uses
 
     def empty(self):
-        return self.fr == self.to
+        return not self.uses
     
     def update_endpoints(self, fr, to):
         if self.fr is None or self.fr > fr:

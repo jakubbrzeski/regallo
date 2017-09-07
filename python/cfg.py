@@ -45,9 +45,10 @@ class Variable:
 
 class Instruction:
     PHI = "phi"
-    LOAD = "load"
-    STORE = "store"
+    LOAD = "load_"
+    STORE = "store_"
     MOV = "mov"
+    BRANCH = "br"
 
     def __init__(self, bb, defn, opname, uses, uses_debug=None):
         # Parent BasicBlock.
@@ -364,7 +365,7 @@ class BasicBlock:
             if not instr.is_phi():
                 regs = set()
                 for var in instr.uses:
-                    if instr.id is in var.alloc and utils.is_regname(var.alloc[instr.id]):
+                    if instr.id in var.alloc and utils.is_regname(var.alloc[instr.id]):
                         regs.add(var.alloc[instr.id])
                 if regs:
                     current_live_set |= regs
@@ -393,6 +394,7 @@ class Function:
 
         # Dictionary of all variables in this function {vid: Variable}.
         self.vars = {}
+        self.free_vid = "v0"
 
         # Counter of instruction ids.
         self.instr_counter = 0
@@ -490,15 +492,22 @@ class Function:
             if bb.llvm_name is not None:
                 self.llvm_name2id[bb.llvm_name] = bb.id
 
+
+    def find_free_vid(self):
+        while (self.free_vid in self.vars):
+            num = int(self.free_vid[1:])
+            self.free_vid = "v" + str(num+1)
+
+        return self.free_vid
+
     # Checks if there exists a variable with the same id. If so, it return this variable,
     # and if not, it creates new variable with this id. In both cases we "maybe-add" the
     # instruction the variable is used by. 
     def get_or_create_variable(self, name=None):
         if name is None:
-            free_num = len(self.vars) + 1
-            vid = "v"+str(free_num)
-            v = Variable(vid)
-            self.vars[vid] = v
+            free_vid = self.find_free_vid()
+            v = Variable(free_vid)
+            self.vars[free_vid] = v
             return v
 
         assert utils.is_varname(name)
@@ -514,6 +523,26 @@ class Function:
             self.vars[vid] = v
         
         return v
+
+    def create_new_basic_block(self):
+        bid = "bb" + str(len(self.bblocks) + 1) # New id.
+        bb = BasicBlock(bid, self)
+        self.bblocks[bid] = bb
+        return bb
+
+    # Creates new basic block between two given blocks.
+    def create_new_basic_block_between(self, bb1, bb2):
+        bti = self.create_new_basic_block()
+        # Add edge bb1-bti 
+        bti.preds[bb1.id] = bb1
+        bb1.succs[bti.id] = bti
+        # Add edge bti-bb2
+        bti.succs[bb2.id] = bb2
+        bb2.preds[bti.id] = bti
+        # Delete edge (bb1, bb2).
+        del bb2.preds[bb1.id]
+        del bb1.succs[bb2.id]
+        return bti
 
     def temp_variable(self):
         return self.get_or_create_variable("v0")
@@ -543,6 +572,8 @@ class Function:
     # live_in and live_out variable sets
     # ordered_bbs - optional list of ordered basic blocks the analysis should be performed on.
     def perform_liveness_analysis(self, ordered_bbs = None):
+        self.compute_defs_and_uevs()
+
         if ordered_bbs is None:
             ordered_bbs = self.bblocks.values()
 
@@ -579,6 +610,8 @@ class Function:
 
     # Liveness analysis for registers.
     def perform_reg_liveness_analysis(self, ordered_bbs = None):
+        self.compute_reg_defs_and_uevs()
+
         if ordered_bbs is None:
             ordered_bbs = self.bblocks.values()
 
@@ -693,8 +726,8 @@ class Function:
 
     def perform_full_analysis(self):
         utils.number_instructions(utils.reverse_postorder(self))
-        self.compute_defs_and_uevs()
         self.perform_liveness_analysis()
+        self.perform_reg_liveness_analysis()
         self.perform_dominance_analysis()
         self.perform_loop_analysis()
 

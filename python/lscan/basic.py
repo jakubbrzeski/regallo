@@ -4,7 +4,6 @@ from intervals import Interval
 import sys
 import utils
 import cfg
-import phi
 
 
 class BasicLinearScan(LinearScan):
@@ -12,6 +11,7 @@ class BasicLinearScan(LinearScan):
 
     class SpillingStrategy(object):
         FURTHEST_FIRST, CURRENT_FIRST, LESS_USED_FIRST = range(3)
+
 
     def __init__(self, **kwargs):
         super(BasicLinearScan, self).__init__()
@@ -93,7 +93,7 @@ class BasicLinearScan(LinearScan):
                 current.spill()
                 
 
-    def allocate_registers(self, intervals, regcount):
+    def allocate_registers(self, intervals, regcount, spilling=True):
         sorted_intervals = sorted([ivl[0] for ivl in intervals.values()], 
                 key = lambda iv: iv.fr)
         regset = utils.RegisterSet(regcount) # -2?
@@ -114,70 +114,24 @@ class BasicLinearScan(LinearScan):
                 iv.allocate(reg)
                 active.add(iv)
             else:
+                if not spilling:
+                    return False
                 self.spill_at_interval(iv, active)
 
-    # Checks all intervals that were spilled (don't have register assigned),
-    # and inserts load and store instructions in appropriate places of the program.
-    # IMPORTANT: it doesn't insert spill code for variables in phi instructions.
-    #            it is done separately in phi elimination phase.
-    # WARNING: it breaks uevs, defs and liveness sets and loop information.
-    def insert_spill_code(self, intervals):
-        dummy_def = self.f.get_or_create_variable()
-        insert_after = {iid: [] for iid in range(self.f.instr_counter)}
-        insert_before = {iid: [] for iid in range(self.f.instr_counter)}
-        update_endpoint = []
-        for vid in intervals.keys():
-            iv = intervals[vid][0]
-            if utils.is_slotname(iv.alloc):
-                # We divide iv into several small of the form: [def, store] and [load, use]
-                ivlist = []
-                
-                slot = iv.alloc
-                if iv.defn and not iv.defn.is_phi():
-                    store = cfg.Instruction(iv.defn.bb, None, cfg.Instruction.STORE,
-                                [iv.var], [slot, iv.var])
-                    
-                    insert_after[iv.defn.id].append(store)
-                    iv.var.alloc[iv.defn.id] = utils.scratch_reg()
-                    iv.var.alloc[store.id] = utils.scratch_reg()
-                    ivlist.append(Interval(iv.var, iv.defn, store, None, iv.defn, [store]))
-                    
-                for instr in iv.uses:
-                    if not instr.is_phi():
-                        load = cfg.Instruction(instr.bb, iv.var, cfg.Instruction.LOAD, [], 
-                                [slot])
-                        iv.var.alloc[instr.id] = utils.scratch_reg()
-                        iv.var.alloc[load.id] = utils.scratch_reg()
-                        insert_before[instr.id].append(load)
+        return True
 
-                        new_iv = Interval(iv.var, load, instr, None, load, [instr])
-                        ivlist.append(new_iv)
-                
-                intervals[vid] = ivlist
-        
-        # Reewrite instructions.
-        for bb in self.f.bblocks.values():
-            new_instructions = []
-            for instr in bb.instructions:
-                for ib in insert_before[instr.id]:
-                    new_instructions.append(ib)
-                new_instructions.append(instr)
-                for ia in insert_after[instr.id]:
-                    new_instructions.append(ia)
-
-            bb.set_instructions(new_instructions)
-
-        for (iv, pred) in update_endpoint:
-            iv.to = pred.last_instr()
-
-        # Because new instructions were inserted we have to renumber
-        # all instructions.
-        utils.number_instructions(self.bbs)
 
     def resolve(self, intervals):
-        self.insert_spill_code(intervals)
-        phi.eliminate_phi(self.f)
+        pass
 
+
+    def full_allocation(self, f, regcount, spilling=True):
+        ivs = self.compute_intervals(f)
+        success = self.allocate_registers(ivs, regcount, spilling)
+        if not success:
+            return False
+        self.resolve(ivs)
+        return True
 
 
 
