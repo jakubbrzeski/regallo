@@ -10,7 +10,9 @@ class PrintOptions:
         self.predecessors = options.get("predecessors", False)
         self.successors = options.get("successors", False)
         self.uevs_defs = options.get("uevs_defs", False)
+        self.reg_uevs_defs = options.get("reg_uevs_defs", False)
         self.liveness = options.get("liveness", False)
+        self.reg_liveness = options.get("reg_liveness", False)
         self.dominance = options.get("dominance", False)
         self.intervals_verbose = options.get("intervals_verbose", False)
         self.intervals_advanced = options.get("intervals_advanced", False)
@@ -35,10 +37,14 @@ class ValuePrinter:
         return self.vid() + "(" + llvm_name + ")"
 
     def __str__(self):
-        if self.options.llvm_names:
-            return self.full_name()
-        
-        return self.vid()
+        if isinstance(self.val, cfg.Variable) or isinstance(self.val, cfg.BasicBlock):
+            if self.options.llvm_names:
+                return self.full_name()
+            
+            return self.vid()
+
+        else:
+            return self.val
 
     def __repr__(self):
         return self.__str__()
@@ -164,6 +170,14 @@ class BBPrinter:
         return self.pattern.format("UEVS", uevs) + "\n" + \
                self.pattern.format("DEFS", defs) 
 
+    def reg_uevs_defs(self):
+        assert self.bb.reg_uevs is not None and self.bb.reg_defs is not None
+        uevs =  [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_uevs)]
+        defs = [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_defs)]
+       
+        return self.pattern.format("REG-UEVS", uevs) + "\n" + \
+               self.pattern.format("REG-DEFS", defs) 
+
     def liveness(self):
         assert self.bb.live_in is not None and self.bb.live_out is not None
         live_in = [ValuePrinter(var, self.options) for var in list(self.bb.live_in)]
@@ -172,6 +186,14 @@ class BBPrinter:
         return self.pattern.format("LIVE-IN", live_in) + "\n" + \
                self.pattern.format("LIVE-OUT", live_out) 
 
+    def reg_liveness(self):
+        assert self.bb.reg_live_in is not None and self.bb.reg_live_out is not None
+        live_in = [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_live_in)]
+        live_out = [ValuePrinter(reg, self.options) for reg in list(self.bb.reg_live_out)]
+        return self.pattern.format("REG-LIVE-IN", live_in) + "\n" + \
+               self.pattern.format("REG-LIVE-OUT", live_out) 
+
+    
     def dominance(self):
         assert self.bb.dominators is not None
         dominators = [ValuePrinter(dom, self.options) for dom in list(self.bb.dominators)]
@@ -185,7 +207,6 @@ class FunctionPrinter:
         
     def bbs(self):
         res = ""
-#        sorted_bblocks = sorted(self.f.bblocks.values(), key=lambda bb: bb.id)
         bbs = utils.reverse_postorder(self.f)
         for bb in bbs:
             printer = BBPrinter(bb, self.options)
@@ -198,10 +219,14 @@ class FunctionPrinter:
                 res += "\n" + printer.successors()
             if self.options.uevs_defs:
                 res += "\n" + printer.uevs_defs()
+            if self.options.reg_uevs_defs:
+                res += "\n" + printer.reg_uevs_defs()
             if self.options.liveness:
                 res += "\n" + printer.liveness()
             if self.options.dominance:
                 res += "\n" + printer.dominance()
+            if self.options.reg_liveness:
+                res += "\n" + printer.reg_liveness()
 
             res += "\n\n"
         return res

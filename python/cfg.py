@@ -221,6 +221,12 @@ class BasicBlock:
         self.live_in = set()
         self.live_out = set()
 
+        # Sets of live-in and live-out registers in this block.
+        self.reg_uevs = None
+        self.reg_defs = None
+        self.reg_live_in = set()
+        self.reg_live_out = set()
+
         # Set of dominators of this basic block.
         self.dominators = set()
 
@@ -284,6 +290,12 @@ class BasicBlock:
     def last_instr(self):
         return self.instructions[-1]
 
+    def register_pressure_in(self):
+        return len(self.live_in)
+
+    def register_pressure_out(self):
+        return len(self.live_out)
+
 
     # Computes variable sets (defs, uevs) for this basic block.
     # defs - variables defined in the basic block
@@ -294,14 +306,38 @@ class BasicBlock:
     
         for instr in self.instructions:
             if not instr.is_phi():
-                for use in instr.uses:
-                    if use not in defs:
-                        uevs.add(use)
-                            
-            defs.add(instr.definition)
+                for var in instr.uses:
+                    if var not in defs:
+                        uevs.add(var)
+        
+            if instr.definition:
+                defs.add(instr.definition)
             
         self.defs = defs
         self.uevs = uevs
+
+    # Coputes uevs and defs sets but for registers.
+    # See self.compute_defs_and_uevs.
+    def compute_reg_defs_and_uevs(self):
+        self.reg_uevs = None
+        self.reg_defs = None
+        defs = set()
+        uevs = set()
+        for instr in self.instructions:
+            if not instr.is_phi():
+                for var in instr.uses:
+                    if instr.id in var.alloc:
+                        alloc = var.alloc[instr.id]
+                        if utils.is_regname(alloc) and alloc not in defs:
+                            uevs.add(alloc)
+            
+            if instr.definition and instr.id in instr.definition.alloc:
+                alloc = instr.definition.alloc[instr.id]
+                if utils.is_regname(alloc):
+                    defs.add(alloc)
+
+        self.reg_defs = defs
+        self.reg_uevs = uevs
 
     # For each instruction computes sets of live-in and
     # live-out variables (before and after the instruction)
@@ -309,10 +345,31 @@ class BasicBlock:
         current_live_set = self.live_out.copy()
         for instr in self.instructions[::-1]:
             instr.live_out = current_live_set.copy()
-            current_live_set -= {instr.definition}
+            if instr.definition:
+                current_live_set -= {instr.definition}
             if not instr.is_phi():
                 current_live_set |= set(instr.uses)
             instr.live_in = current_live_set.copy()
+
+    # Liveness analysis for registers.
+    def perform_reg_instr_liveness_analysis(self):
+        current_live_set = self.reg_live_out.copy()
+        for instr in self.instructions[::-1]:
+            instr.reg_live_out = current_live_set.copy()
+            if instr.definition and instr.id in instr.definition.alloc:
+                alloc = instr.definition.alloc[instr.id]
+                if utils.is_regname(alloc):
+                    current_live_set -= {alloc}
+
+            if not instr.is_phi():
+                regs = set()
+                for var in instr.uses:
+                    if instr.id is in var.alloc and utils.is_regname(var.alloc[instr.id]):
+                        regs.add(var.alloc[instr.id])
+                if regs:
+                    current_live_set |= regs
+
+            instr.reg_live_in = current_live_set.copy()
 
 # Loop is a list of basic blocks, the first of which is a header and last - a tail.
 # Loops may be nested, so it has a parent field which is the 'nearest' parent in the
@@ -397,7 +454,7 @@ class Function:
             cbb.defs = set([cf.get_or_create_variable(v.id) for v in bb.defs if v is not None])
             cbb.live_in = set([cf.get_or_create_variable(v.id) for v in bb.live_in])
             cbb.live_out = set([cf.get_or_create_variable(v.id) for v in bb.live_out])
-
+    # Liveness analysis for registers.
             #instructions:
             for instr in bb.instructions:
                 ci = instr.copy(cbb)
@@ -478,11 +535,13 @@ class Function:
         for bb in self.bblocks.values():
             bb.compute_defs_and_uevs()
 
+    def compute_reg_defs_and_uevs(self):
+        for bb in self.bblocks.values():
+            bb.compute_reg_defs_and_uevs()
+
     # Performs liveness analysis - for each basic block and instruction computes 
     # live_in and live_out variable sets
-    #
-    # ordered_bbs (optional) - a list of ids - the order of bblocks in which to perform
-    #                          round robin algorithm, e.g. in reverse postorder.
+    # ordered_bbs - optional list of ordered basic blocks the analysis should be performed on.
     def perform_liveness_analysis(self, ordered_bbs = None):
         if ordered_bbs is None:
             ordered_bbs = self.bblocks.values()
@@ -494,9 +553,7 @@ class Function:
             bb.live_out = set()
 
         change = True
-        iterations = 0
         while change:
-            iterations += 1
             change = False
             for bb in ordered_bbs:
                 live_out_size = len(bb.live_out)
@@ -519,6 +576,38 @@ class Function:
 
         for bb in ordered_bbs:
             bb.perform_instr_liveness_analysis() # updates liveness for each instr
+
+    # Liveness analysis for registers.
+    def perform_reg_liveness_analysis(self, ordered_bbs = None):
+        if ordered_bbs is None:
+            ordered_bbs = self.bblocks.values()
+
+        # initialize sets
+        for bb in ordered_bbs:
+            assert bb.reg_defs is not None and bb.reg_uevs is not None
+            bb.reg_live_in = set()
+            bb.reg_live_out = set()
+
+        change = True
+        while change:
+            change = False
+            for bb in ordered_bbs:
+                live_out_size = len(bb.reg_live_out)
+                for succ in bb.succs.values():
+                    bb.reg_live_out != (succ.reg_live_in)
+                    for phi in succ.phis:
+                        if bb.id in phi.uses and phi.id in phi.uses[bb.id].alloc:
+                            alloc = phi.uses[bb.id].alloc[phi.id]
+                            if utils.is_regname(alloc):
+                                bb.reg_live_out.add(alloc)
+
+                live_in_size = len(bb.reg_live_in)
+                bb.reg_live_in = (bb.reg_uevs | (bb.reg_live_out - bb.reg_defs))
+                if len(bb.reg_live_in) > live_in_size or len(bb.reg_live_out) > live_out_size:
+                    change = True
+
+            for bb in ordered_bbs:
+                bb.perform_reg_instr_liveness_analysis()
 
 
 
