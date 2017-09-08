@@ -1,5 +1,5 @@
 import unittest
-from lscan.intervals import AdvInterval
+from allocators.lscan.intervals import AdvInterval
 
 SubInterval = AdvInterval.SubInterval
 

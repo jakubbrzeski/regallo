@@ -1,0 +1,1 @@
+from lscan import LinearScan

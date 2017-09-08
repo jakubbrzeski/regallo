@@ -1,6 +1,7 @@
 import re
-from cfgprinter import FunctionString, Opts
-import resolve
+from cfg.cfgprinter import FunctionString, Opts
+import cfg.resolve as resolve
+import allocators.utils as alutils
 from dashtable import data2rst
 from matplotlib import pyplot as plt
 
@@ -112,11 +113,6 @@ def number_instructions(bbs):
 
     return num_to_instr
 
-
-#########################################################################
-############################### REGISTERS ###############################
-#########################################################################
-
 # RegisterSet is a helper class for managing registers.
 # It is made up of a set of free registers and a set of allocated registers.
 # To return a free register it removes one from the set of free registers (if there are any)
@@ -146,9 +142,9 @@ class RegisterSet:
 
 # Draws plot with provided intervals. Each interval is a line segment [iv.fr, iv.to],
 # with Y coordinate equal to numerical sufix of corresponding variable id.
-# save_to_file - name of the file where the plot should be saved. If None, the plot is shown
+# to_file - name of the file where the plot should be saved. If None, the plot is shown
 #                in the pop-up window.
-def draw_intervals(intervals, save_to_file=None, figsize=None, with_subintervals=False):
+def draw_intervals(intervals, to_file=None, figsize=None, with_subintervals=False):
     plt.figure(figsize=figsize)
     id_nums = []
     for (vid, ivlist) in intervals.iteritems():
@@ -175,8 +171,8 @@ def draw_intervals(intervals, save_to_file=None, figsize=None, with_subintervals
     plt.ylabel('Variable ids')
     plt.margins(0.05)
 #    plt.yticks(id_nums)
-    if save_to_file:
-        plt.savefig(save_to_file)
+    if to_file:
+        plt.savefig(to_file)
     else:
         plt.show()
     plt.close()
@@ -220,7 +216,7 @@ def compute_full_results(setting, analysis=False):
             alloc_results = []
             for al in setting.allocators:
                 g = f.copy()
-                success = full_register_allocation(g, al, regc)
+                success = alutils.perform_full_register_allocation(g, al, regc)
 
                 cost_results = [(cc.name, -1) for cc in setting.cost_calculators]
                 if success:
@@ -312,7 +308,7 @@ def print_result_table(d, setting):
 # a plot (regcount -> result) for each algorithm
 # (i.e. one drawing but separate plots for each algorithm).
 # We assume that results contain numbers only for one function and cost calculator.
-def plot_reg_algorithm(results, setting, save_to_file=None, figsize=None):
+def plot_reg_algorithm(results, setting, to_file=None, figsize=None):
     assert len(results) == 1
     d = {alname: [] for alname in setting.allocator_names()}
     f, reg_results = results[0]
@@ -340,28 +336,10 @@ def plot_reg_algorithm(results, setting, save_to_file=None, figsize=None):
     plt.title("Results")
     plt.ylabel("cost")
     plt.xlabel("number of #registers")
-    if save_to_file:
-        plt.savefig(save_to_file)
+    if to_file:
+        plt.savefig(to_file)
     else:
         plt.show()
     plt.close()
 
-
-def full_register_allocation(f, allocator, regcount):
-    first_phase_regcount = regcount
-    while (first_phase_regcount >= 0):
-        allocator.full_allocation(f, first_phase_regcount)
-        resolve.insert_spill_code(f)
-        f.perform_full_analysis()
-
-        success = allocator.full_allocation(f, regcount, spilling=False)
-        if success:
-            #print FunctionString(f)
-            resolve.eliminate_phi(f, regcount)
-            f.perform_full_analysis()
-            return True
-
-        first_phase_regcount -= 1
-
-    return False
 

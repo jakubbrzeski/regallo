@@ -1,21 +1,15 @@
 from sortedcontainers import SortedSet
-from lscan import LinearScan
-from intervals import Interval
+from allocators.lscan import LinearScan
+from allocators.lscan.intervals import Interval
+import spillers
 import sys
 import utils
 import cfg
 
-
 class BasicLinearScan(LinearScan):
-
-    class SpillingStrategy(object):
-        FURTHEST_FIRST, CURRENT_FIRST, LESS_USED_FIRST = range(3)
-
-
-    def __init__(self, spilling_strategy=None, name="Basic Linear Scan"):
+    def __init__(self, spiller=spillers.default(), name="Basic Linear Scan"):
         super(BasicLinearScan, self).__init__(name)
-        self.spilling_strategy = spilling_strategy if spilling_strategy else self.SpillingStrategy.FURTHEST_FIRST
-
+        self.spiller = spiller
 
     # Returns dictionary {variable-id: Interval}
     def compute_intervals(self, f):
@@ -60,41 +54,11 @@ class BasicLinearScan(LinearScan):
         # For generality:
         return {vid: [iv] for (vid,iv) in intervals.iteritems() if not iv.empty()}
 
-    # Decides which interval should be spilled, based on chosen strategy.
-    def spill_at_interval(self, current, active):
-        if not active or self.spilling_strategy == self.SpillingStrategy.CURRENT_FIRST:
-            current.spill()
-            return
-        
-        elif self.spilling_strategy == self.SpillingStrategy.LESS_USED_FIRST:
-            spilled = current
-            for iv in active:
-                if len(iv.uses) < len(spilled.uses):
-                    spilled = iv
-
-            if spilled is not current:
-                current.allocate(spilled.alloc)
-                spilled.spill()
-                active.remove(spilled)
-                active.add(current)
-            else:
-                current.spill()
-
-        else: # Furthest first. 
-            spilled = active[-1] # Active interval with furthest endpoint.
-            if spilled.to > current.to:
-                current.allocate(spilled.alloc)
-                spilled.spill()
-                active.remove(spilled)
-                active.add(current)
-            else:
-                current.spill()
-                
-
+    
     def allocate_registers(self, intervals, regcount, spilling=True):
         sorted_intervals = sorted([ivl[0] for ivl in intervals.values()], 
                 key = lambda iv: iv.fr)
-        regset = utils.RegisterSet(regcount) # -2?
+        regset = utils.RegisterSet(regcount)
         active = SortedSet(key = lambda iv: iv.to)
 
         def expire_old_intervals(current):
@@ -111,10 +75,10 @@ class BasicLinearScan(LinearScan):
             if reg:
                 iv.allocate(reg)
                 active.add(iv)
+            elif not spilling:
+                return False
             else:
-                if not spilling:
-                    return False
-                self.spill_at_interval(iv, active)
+                self.spiller.spill_at_interval(iv, active)
 
         return True
 

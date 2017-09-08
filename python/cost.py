@@ -2,10 +2,7 @@ import math
 import cfg
 import utils
 
-
 class CostCalculator():
-
-
     def instr_cost(self, instr):
         raise NotImplementedError()
 

@@ -294,7 +294,7 @@ class IntervalsString:
                 res.extend([self.interval(iv), "\n"])
 
         res.append("\n")
-        return ''.join[res]
+        return ''.join(res)
 
     def __str__(self):
         return self.full()
@@ -310,6 +310,7 @@ class CostString:
         self.cost_calc = cost_calc
 
     def full(self):
+        res = [self.cost_calc.name]
         bbs = utils.reverse_postorder(self.f)
         # if no numbers, number
         instructions = []
@@ -317,17 +318,31 @@ class CostString:
            instructions.extend(bb.instructions)
 
         instructions = sorted(instructions, key = lambda i: i.num)
-        res = self.ld_pattern.format("LOOP") + \
-                self.cost_pattern.format("COST") + self.instr_pattern.format("INSTR") + "\n"
+        line = ''.join([
+            self.ld_pattern.format("LOOP"),
+            self.cost_pattern.format("COST"),
+            self.instr_pattern.format("INSTR")])
 
+        res.append(line)
+
+        csum = 0
         for i in instructions:
             cost = self.cost_calc.instr_cost(i)
-            istr = InstrString(i, Opts(alloc_only=True)).full()
-            line = self.ld_pattern.format(i.get_loop_depth()) + \
-                    self.cost_pattern.format(cost) + self.instr_pattern.format(istr) + "\n"
-            res += line
+            csum += cost
 
-        return res
+            istr = InstrString(i, Opts(alloc_only=True)).full()
+            line = ''.join([
+                    self.ld_pattern.format(i.get_loop_depth()),
+                    self.cost_pattern.format(cost),
+                    self.instr_pattern.format(istr)])
+
+            res.append(line)
+
+        summary = "SUM: " + str(csum)
+        res.append(summary)
+        res.append("\n")
+
+        return "\n".join(res)
 
     def __str__(self):
         return self.full()
