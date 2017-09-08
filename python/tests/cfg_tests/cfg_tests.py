@@ -1,5 +1,5 @@
 import unittest
-import cfgmocks
+import tests.cfgmocks
 from copy import deepcopy
 
 

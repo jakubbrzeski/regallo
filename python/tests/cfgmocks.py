@@ -1,14 +1,43 @@
 import unittest
-from testutils import CFGTestCase
 import cfg
 
-class GCDTest(CFGTestCase):
+class GCDTest(unittest.TestCase):
+    """
+    TestCase based on the following function
+    computing greatest common divisor.
+
+    bb1 (entry)
+       0: v1 = icmp v2 v3
+       1: v4 = br v1 bb3 bb2
+
+    bb2 (if.then)
+       2: v5 = xor v2 v3
+       3: v6 = xor v3 v5
+       4: v7 = xor v5 v6
+       5: v8 = br bb3
+
+    bb3 (if.end)
+       6: v9 = phi (bb2 -> v6) (bb1 -> v3)
+       7: v10 = phi (bb2 -> v7) (bb1 -> v2)
+       8: v11 = br bb4
+
+    bb4 (while.cond)
+       9: v12 = phi (bb3 -> v9) (bb5 -> v13)
+       10: v14 = phi (bb3 -> v10) (bb5 -> v12)
+       11: v15 = icmp v12 const
+       12: v16 = br v15 bb6 bb5
+
+    bb5 (while.body)
+       13: v13 = srem v14 v12
+       14: v17 = br bb4
+
+    bb6 (while.end)
+       15: v18 = ret v14
+    """
+
     def setUp(self):
-        print "GCDTest setup"
-        # Create gcd funtion based on llvm output.
         f = cfg.Function("gcd")
         
-        # Variables:
         var = {}
         for i in range(1,19):
             vid = "v"+str(i)
@@ -86,12 +115,9 @@ class GCDTest(CFGTestCase):
         d["bb4"] = bb4
         d["bb5"] = bb5
         d["bb6"] = bb6
-
         f.set_bblocks(d, bb1)
+
+        f.perform_full_analysis()
         self.f = f
-        f.compute_defs_and_uevs()
-        f.perform_liveness_analysis()
-        f.perform_dominance_analysis()
-        f.perform_loop_analysis()
 
 

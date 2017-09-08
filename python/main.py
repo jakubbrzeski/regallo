@@ -26,13 +26,20 @@ m.perform_full_analysis()
 print "Functions in the module: ", ", ".join(m.functions.keys())
 f = m.functions[args.function]
 g = f.copy()
-bcc = BasicCostCalculator()
 
+
+bcc = BasicCostCalculator()
+bls = BasicLinearScan()
+ivs = bls.compute_intervals(g)
+print IntervalsString(ivs)
+
+
+"""
 print FunctionString(f)
 bls = BasicLinearScan(name="furthest first")
 blscf = BasicLinearScan(spiller=CurrentFirst(), name="current first")
 
-"""
+
 ivs = bls.compute_intervals(f)
 bls.allocate_registers(ivs, 2)
 print IntervalsString(ivs)
@@ -41,7 +48,7 @@ f.perform_full_analysis()
 print FunctionString(f)
 print CostString(f, bcc)
 """
-
+"""
 ivscf = blscf.compute_intervals(g)
 blscf.allocate_registers(ivscf, 0)
 print IntervalsString(ivscf)
@@ -58,10 +65,6 @@ utils.draw_intervals(ivscf, "after.png")
 success = blscf.allocate_registers(ivscf, 2, spilling=False)
 print "Allocation: ", success
 
-
-
-
-"""
 rcs = utils.ResultCompSetting([f], [2], [bls, blscf], [bcc])
 res = utils.compute_full_results(rcs)
 utils.print_result_table(res, rcs)

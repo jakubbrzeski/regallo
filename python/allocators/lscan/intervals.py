@@ -110,11 +110,11 @@ class AdvInterval(Interval):
         start, end = subs[0].fr, subs[0].to
         for sub in subs[1:]:
             if sub.fr.num > end.num + 1:
-                new.append(AdvInterval.SubInterval(start, end, self, len(new)))
+                new.append(AdvInterval.SubInterval(start, end, self))
                 start, end = sub.fr, sub.to
             elif sub.to.num > end.num:
                 end = sub.to
-        new.append(AdvInterval.SubInterval(start, end, self, len(new)))
+        new.append(AdvInterval.SubInterval(start, end, self))
         self.subintervals = new
       
     # Splits this interval into two intervals: self = [fr, pos-1] and new = [pos, to]
