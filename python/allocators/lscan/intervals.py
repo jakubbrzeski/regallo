@@ -38,6 +38,9 @@ class Interval(object):
         self.update_variables(self.alloc)
 
 
+
+# Extended version of the Interval used in ExtendedLinearScan
+# register allocator. 
 class ExtendedInterval(Interval):
     class SubInterval:
         def __init__(self, fr, to, parent):
@@ -118,16 +121,61 @@ class ExtendedInterval(Interval):
         self.subintervals = new
       
     # Splits this interval into two intervals: self = [fr, pos-1] and new = [pos, to]
+    # Returns the new interval.
     def split_at(self, pos):
-        before = [] # Subintervals staying in first interval (self).
-        after = [] # Subintervals going to new interval.
+        # subintervals
+        sub_old = [] # Subintervals staying in first interval (self).
+        sub_new = [] # Subintervals going to sub_new interval.
         for sub in self.subintervals:
-            if sub.to.num < pos:
-                before.append((sub.fr, sub.to))
+            if sub.to < pos:
+                sub_old.append((sub.fr, sub.to))
             elif sub.fr > pos:
-                after.append((sub.fr, sub.to))
+                sub_new.append((sub.fr, sub.to))
             else:
-                pass
-                # TODO: needed access to prev/next instructions
-                # Maybe I may hold here numbers, not instructions?
+                if pos > sub.fr:
+                    sub_old.append((sub.fr, pos-1))
+                sub_new.append((pos, sub.to))
+
+        # endpoints
+        fr_old, to_old = sub_old[0][0], sub_old[-1][1]
+        self.fr = fr_old
+        self.to = to_old
+
+        fr_new, to_new = sub_new[0][0], sub_new[-1][1]
+
+        # defn
+        defn = None
+        if self.defn.num >= fr_new:
+            defn = self.defn
+            self.defn = None
+
+        # uses
+        uses_old = []
+        uses_new = []
+        for instr in self.uses:
+            num = instr.num
+            # Variable used in phi instruction is live until the end
+            # of corresponding predecessor block.
+            if instr.is_phi():
+                num = instr.phi_preds[self.var.id].last_instr().num
+
+            if num < fr_new:
+                uses_old.append(instr)
+            else:
+                uses_new.append(instr)
+        self.uses = uses_old
+
+        # Rewrite subintervals.
+        self.subintervals = []
+        for sub in sub_old:
+            self.add_subinterval(sub[0], sub[1])
+
+        # TODO: the same alloc or None?
+        new_iv = ExtendedInterval(self.var, fr_new, to_new, self.alloc, defn, uses_new)
+        for sub in sub_new:
+            new_iv.add_subinterval(sub[0], sub[1])
+
+
+
+        return new_iv
 

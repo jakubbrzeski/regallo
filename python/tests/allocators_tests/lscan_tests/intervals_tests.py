@@ -56,3 +56,42 @@ class ExtendedIntervalsTest(unittest.TestCase):
         self.assertTrue(sub_equal(iv.subintervals[0], Sub(1, 15, iv)))
         self.assertTrue(sub_equal(iv.subintervals[1], subF))
 
+    def test_splitting(self):
+        iv = ExtendedInterval(None)
+        iv.add_subinterval(1, 2)
+        iv.add_subinterval(3, 5)
+        iv.add_subinterval(6, 10)
+        iv.add_subinterval(11, 11)
+        iv.add_subinterval(12, 13)
+
+        class InstrMock():
+            def __init__(self, num, phi=False):
+                self.num = num
+                self.phi = phi
+            def is_phi(self):
+                return self.phi
+
+        iv.defn = InstrMock(1)
+        iv.uses = [InstrMock(2), InstrMock(7), InstrMock(10), InstrMock(11), InstrMock(13)]
+
+        new_iv = iv.split_at(7)
+        
+        old_subs_expected = [(1,2), (3, 5), (6,6)]
+        old_subs_actual = [(sub.fr, sub.to) for sub in iv.subintervals]
+        self.assertEqual(old_subs_expected, old_subs_actual)
+
+        new_subs_expected = [(7, 10), (11, 11), (12, 13)]
+        new_subs_actual = [(sub.fr, sub.to) for sub in new_iv.subintervals]
+        self.assertEqual(new_subs_expected, new_subs_actual)
+
+        old_uses_expected = [2]
+        old_uses_actual = [use.num for use in iv.uses]
+        self.assertEqual(old_uses_expected, old_uses_actual)
+
+        new_uses_expected = [7, 10, 11, 13]
+        new_uses_actual = [use.num for use in new_iv.uses]
+        self.assertEqual(new_uses_expected, new_uses_actual)
+
+
+
+
