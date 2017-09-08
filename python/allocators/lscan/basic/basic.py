@@ -11,7 +11,7 @@ class BasicLinearScan(LinearScan):
         super(BasicLinearScan, self).__init__(name)
         self.spiller = spiller
 
-    # Returns dictionary {variable-id: Interval}
+    # Returns dictionary {variable-id: [Interval]}
     def compute_intervals(self, f):
         intervals = {v.id: Interval(v) for v in f.vars.values()}
         bbs = utils.reverse_postorder(f)

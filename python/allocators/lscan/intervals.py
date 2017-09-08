@@ -38,25 +38,25 @@ class Interval(object):
         self.update_variables(self.alloc)
 
 
-class AdvInterval(Interval):
+class ExtendedInterval(Interval):
     class SubInterval:
         def __init__(self, fr, to, parent):
-            self.fr = fr # Instruction it starts with.
-            self.to = to # Instruction it ends with.
-            self.parent = parent # Parent AdvInterval.
+            self.fr = fr
+            self.to = to
+            self.parent = parent # Parent ExtendedInterval.
 
         def is_last(self):
             return self.index == len(self.parent.subintervals) - 1
 
         def intersection(self, another):
-            if another.fr.num >= self.fr.num and another.fr.num <= self.to.num:
-                return another.fr.num
-            if self.fr.num >= another.fr.num and self.fr.num <= another.to.num:
-                return self.fr.num
+            if another.fr >= self.fr and another.fr<= self.to:
+                return another.fr
+            if self.fr >= another.fr and self.fr <= another.to:
+                return self.fr
             return None
 
     def __init__(self, var, fr=None, to=None, alloc=None, defn=None, uses=None):
-        super(AdvInterval, self).__init__(var, fr, to, alloc, defn, uses)
+        super(ExtendedInterval, self).__init__(var, fr, to, alloc, defn, uses)
         self.subintervals = []
         self.next_use = 0 if uses else None
 
@@ -71,7 +71,7 @@ class AdvInterval(Interval):
         return self.next_use
 
     def add_subinterval(self, fr, to):
-        siv = AdvInterval.SubInterval(fr, to, self)
+        siv = ExtendedInterval.SubInterval(fr, to, self)
         self.subintervals.append(siv)
         return siv
 
@@ -86,7 +86,7 @@ class AdvInterval(Interval):
     # O(m lg m), where m = len(self.subintervals) + len(another.subintervals)
     def intersection(self, another):
         sorted_subs = sorted(self.subintervals + another.subintervals,
-                key = lambda sub: (sub.fr.num, sub.to.num))
+                key = lambda sub: (sub.fr, sub.to))
 
         # If two subsequent subintervals intersect, it means they are
         # from different intervals. If i-th doesn't intersect with i+1-th
@@ -106,15 +106,15 @@ class AdvInterval(Interval):
         if not self.subintervals:
             return
         new = []
-        subs = sorted(self.subintervals, key = lambda sub: sub.fr.num)
+        subs = sorted(self.subintervals, key = lambda sub: sub.fr)
         start, end = subs[0].fr, subs[0].to
         for sub in subs[1:]:
-            if sub.fr.num > end.num + 1:
-                new.append(AdvInterval.SubInterval(start, end, self))
+            if sub.fr > end + 1:
+                new.append(ExtendedInterval.SubInterval(start, end, self))
                 start, end = sub.fr, sub.to
-            elif sub.to.num > end.num:
+            elif sub.to > end:
                 end = sub.to
-        new.append(AdvInterval.SubInterval(start, end, self))
+        new.append(ExtendedInterval.SubInterval(start, end, self))
         self.subintervals = new
       
     # Splits this interval into two intervals: self = [fr, pos-1] and new = [pos, to]

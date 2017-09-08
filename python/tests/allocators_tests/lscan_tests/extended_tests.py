@@ -1,13 +1,12 @@
 import unittest
 from tests.cfgmocks import GCDTest
-from lscan.intervals import AdvInterval
-from lscan.advanced import AdvLinearScan
+from allocators.lscan.intervals import ExtendedInterval
+from allocators.lscan.advanced import ExtendedLinearScan
 
-class AdvLinearScanTest(GCDTest):
-
+class ExtendedLinearScanTest(GCDTest):
 
     def test_compute_intervals(self):
-        als = AdvLinearScan(self.f) 
+        als = ExtendedLinearScan(self.f) 
         intervals = als.compute_intervals()
         self.assertIn("v14", intervals)
         self.assertEqual(len(intervals["v14"]), 1)
