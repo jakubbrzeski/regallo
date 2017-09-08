@@ -12,11 +12,17 @@ class BasicLinearScan(LinearScan):
         self.spiller = spiller
 
     # Returns dictionary {variable-id: [Interval]}
+    # For generality, we return list of a single Interval because in other
+    # versions of the algorithm (see ExtendedLinearScan) multiple intervals
+    # for one variable may appear.
     def compute_intervals(self, f):
         intervals = {v.id: Interval(v) for v in f.vars.values()}
         bbs = utils.reverse_postorder(f)
         utils.number_instructions(bbs)
 
+        # Intervals always start from definition. If a variable is defined in a loop
+        # and used in a phi instruction at the loop header, its interval ends at the
+        # end of the loop..
         for bb in bbs[::-1]:
             for instr in bb.instructions[::-1]:
                 # Definition.
@@ -33,8 +39,7 @@ class BasicLinearScan(LinearScan):
                         iv.update_endpoints(pred.last_instr().num, pred.last_instr().num)
                         # We update interval only to the end of the predecessor block,
                         # not including the current phi instruction. However, we record
-                        # that the variable was used here e.g. to insert spill instructions
-                        # properly later.
+                        # that the variable was used here.
                         iv.uses.append(instr)
                 else:
                     for var in instr.uses:
@@ -42,16 +47,7 @@ class BasicLinearScan(LinearScan):
                         iv.update_endpoints(instr.num, instr.num)
                         iv.uses.append(instr)
 
-
-            # If the current basic block is a loop header, for all variables that are in 
-            # its live-in set we must extend their interval for the whole loop.
-            if bb.is_loop_header():
-                start = bb.loop.header.first_instr()
-                end = bb.loop.tail.last_instr()
-                for v in bb.live_in:
-                    iv.update_endpoints(start.num, end.num)
-        
-        # For generality:
+        # We skip empty intervals.
         return {vid: [iv] for (vid,iv) in intervals.iteritems() if not iv.empty()}
 
     
