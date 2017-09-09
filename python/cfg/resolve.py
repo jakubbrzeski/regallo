@@ -285,7 +285,7 @@ def eliminate_phi(f, regcount=0):
                     cycles_endpoints.extend(endpoints)
             
         # Remove phi instructions from this block.
-        bb.instructions = bb.instructions[len(bb.phis):]
+        bb.instructions = [instr for instr in bb.instructions if not instr.is_phi()]
         bb.phis = []
 
     f.perform_liveness_analysis()
