@@ -5,6 +5,7 @@ import utils
 import allocators.utils as alutils
 from allocators.lscan.basic.spillers import CurrentFirst, LessUsedFirst
 from allocators.lscan.basic import BasicLinearScan
+from allocators.lscan.extended import ExtendedLinearScan
 
 from cost import BasicCostCalculator, SpillRatioCalculator
 
@@ -24,48 +25,31 @@ with open(args.file) as f:
 m = cfg.Module.from_json(module_json)
 m.perform_full_analysis()
 print "Functions in the module: ", ", ".join(m.functions.keys())
-f = m.functions[args.function]
-g = f.copy()
 
 
-bcc = BasicCostCalculator()
-bls = BasicLinearScan()
-ivs = bls.compute_intervals(g)
-print IntervalsString(ivs)
+bas = BasicLinearScan()
+ext = ExtendedLinearScan()
+
+if args.function:
+
+    f = m.functions[args.function]
+    #print FunctionString(f)
+
+    g = f.copy()
+    ivs = ext.compute_intervals(g)
+    #print IntervalsString(ivs, Opts(subintervals=True))
+
+    suc = ext.perform_full_register_allocation(g, 8)
+    print "success: ", suc
+    print FunctionString(g)
 
 
-"""
-print FunctionString(f)
-bls = BasicLinearScan(name="furthest first")
-blscf = BasicLinearScan(spiller=CurrentFirst(), name="current first")
+else :
+    flist = m.functions.values()
 
+    bcc = BasicCostCalculator()
+    src = SpillRatioCalculator()
 
-ivs = bls.compute_intervals(f)
-bls.allocate_registers(ivs, 2)
-print IntervalsString(ivs)
-resolve.insert_spill_code(f)
-f.perform_full_analysis()
-print FunctionString(f)
-print CostString(f, bcc)
-"""
-"""
-ivscf = blscf.compute_intervals(g)
-blscf.allocate_registers(ivscf, 0)
-print IntervalsString(ivscf)
-utils.draw_intervals(ivscf, "before.png")
-
-resolve.insert_spill_code(g)
-g.perform_full_analysis()
-print FunctionString(g)
-print CostString(g, bcc)
-
-ivscf = blscf.compute_intervals(g)
-print IntervalsString(ivscf)
-utils.draw_intervals(ivscf, "after.png")
-success = blscf.allocate_registers(ivscf, 2, spilling=False)
-print "Allocation: ", success
-
-rcs = utils.ResultCompSetting([f], [2], [bls, blscf], [bcc])
-res = utils.compute_full_results(rcs)
-utils.print_result_table(res, rcs)
-"""
+    rcs = utils.ResultCompSetting(flist, [1, 3, 5], [bas, ext], [bcc, src])
+    res = utils.compute_full_results(rcs)
+    utils.print_result_table(res, rcs)

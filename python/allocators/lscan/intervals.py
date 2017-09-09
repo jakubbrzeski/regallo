@@ -1,7 +1,7 @@
 import utils
 
 class Interval(object):
-    def __init__(self, var, fr=None, to=None, alloc=None, defn=None, uses=None):
+    def __init__(self, var, fr=-0.5, to=0, alloc=None, defn=None, uses=None):
         # Variable this interval represents
         self.var = var
         # Instructions this interval starts and ends with.
@@ -17,10 +17,10 @@ class Interval(object):
     def empty(self):
         return not self.uses
     
-    def update_endpoints(self, fr, to):
-        if self.fr is None or self.fr > fr:
+    def update_endpoints(self, fr=None, to=None):
+        if fr is not None and (self.fr is None or self.fr > fr):
             self.fr = fr
-        if self.to is None or self.to < to:
+        if to is not None and (self.to is None or self.to < to):
             self.to = to
 
     def update_variables(self, alloc):
@@ -61,6 +61,7 @@ class ExtendedInterval(Interval):
     def __init__(self, var, fr=None, to=None, alloc=None, defn=None, uses=None):
         super(ExtendedInterval, self).__init__(var, fr, to, alloc, defn, uses)
         self.subintervals = []
+        self.split = False
         self.next_use = 0 if uses else None
 
     # For a single case O(n) but overall O(1).

@@ -1,4 +1,8 @@
 class Spiller(object):
+    # Chooses and spills one interval (may be current).
+    # Returns the spilled interval.
+    # 
+    # active - SortedSet of intervals ordered by right endpoint.
     def spill_at_interval(self, current, active):
         raise NotImplementedError()
 
@@ -12,14 +16,16 @@ class FurthestFirst(Spiller):
                 spilled.spill()
                 active.remove(spilled)
                 active.add(current)
-                return
+                return spilled
 
         current.spill()
+        return current
 
 
 class CurrentFirst(Spiller):
     def spill_at_interval(self, current, active):
         current.spill()
+        return current
 
 
 class LessUsedFirst(Spiller):
@@ -35,9 +41,10 @@ class LessUsedFirst(Spiller):
                 spilled.spill()
                 active.remove(spilled)
                 active.add(current)
-                return
+                return spilled
         
         current.spill()
+        return current
 
 
 def default():

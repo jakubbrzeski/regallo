@@ -1,8 +1,6 @@
 import cfg.resolve as resolve
 
-# Performs full register allocation on a given function using provided
-# allocator with specific number of available registers. 
-# First, it performs allocation with spilling TODO: finish.
+
 def perform_full_register_allocation(f, allocator, regcount):    
     first_phase_regcount = regcount
     while (first_phase_regcount >= 0):

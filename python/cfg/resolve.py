@@ -284,7 +284,6 @@ def eliminate_phi(f, regcount=0):
                     endpoints = insert_cycles(bti, cycles)
                     cycles_endpoints.extend(endpoints)
             
-
         # Remove phi instructions from this block.
         bb.instructions = bb.instructions[len(bb.phis):]
         bb.phis = []

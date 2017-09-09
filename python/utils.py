@@ -1,7 +1,6 @@
 import re
 from cfg.cfgprinter import FunctionString, Opts
 import cfg.resolve as resolve
-import allocators.utils as alutils
 from dashtable import data2rst
 from matplotlib import pyplot as plt
 
@@ -123,21 +122,26 @@ class RegisterSet:
         self.count = count
         # A list of free registers ['reg_count', 'reg_{count-1}', ..., 'reg3', 'reg2', 'reg1']
         self.free = set(["reg"+str(i+1) for i in range(count)])
-        self.allocated = set()
+        self.occupied = set()
 
     # Returns id of one of free registers. If there are no free registers, returns None.
     def get_free(self):
         if len(self.free) == 0:
             return None
         x = self.free.pop()
-        self.allocated.add(x)
+        self.occupied.add(x)
         return x
 
     # Frees the given registers (makes it available for another allocation).
     def set_free(self, reg):
-        assert reg in self.allocated
-        self.allocated.remove(reg)
+        assert reg in self.occupied
+        self.occupied.remove(reg)
         self.free.add(reg)
+
+    def occupy(self, reg):
+        assert reg in self.free
+        self.occupied.add(reg)
+        self.free.remove(reg)
 
 
 # Draws plot with provided intervals. Each interval is a line segment [iv.fr, iv.to],
@@ -216,7 +220,7 @@ def compute_full_results(setting, analysis=False):
             alloc_results = []
             for al in setting.allocators:
                 g = f.copy()
-                success = alutils.perform_full_register_allocation(g, al, regc)
+                success = al.perform_full_register_allocation(g, regc)
 
                 cost_results = [(cc.name, -1) for cc in setting.cost_calculators]
                 if success:

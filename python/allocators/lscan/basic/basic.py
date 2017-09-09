@@ -24,11 +24,16 @@ class BasicLinearScan(LinearScan):
         # and used in a phi instruction at the loop header, its interval ends at the
         # end of the loop..
         for bb in bbs[::-1]:
+            for v in bb.live_out:
+                iv = intervals[v.id]
+                if iv.to < bb.last_instr().num + 0.5:
+                    iv.to = bb.last_instr().num + 0.5
+
             for instr in bb.instructions[::-1]:
                 # Definition.
                 if instr.definition:
                     iv = intervals[instr.definition.id]
-                    iv.update_endpoints(instr.num, instr.num)
+                    iv.fr = instr.num 
                     iv.defn = instr
                 
                 # Uses.
@@ -36,7 +41,8 @@ class BasicLinearScan(LinearScan):
                     for (bid, var) in instr.uses.iteritems():
                         iv = intervals[var.id]
                         pred = f.bblocks[bid]
-                        iv.update_endpoints(pred.last_instr().num, pred.last_instr().num)
+                        if iv.to < pred.last_instr().num + 0.5:
+                            iv.to = pred.last_instr().num + 0.5
                         # We update interval only to the end of the predecessor block,
                         # not including the current phi instruction. However, we record
                         # that the variable was used here.
@@ -44,7 +50,8 @@ class BasicLinearScan(LinearScan):
                 else:
                     for var in instr.uses:
                         iv = intervals[var.id]
-                        iv.update_endpoints(instr.num, instr.num)
+                        if iv.to < instr.num:
+                            iv.to = instr.num
                         iv.uses.append(instr)
 
         # We skip empty intervals.
@@ -81,15 +88,4 @@ class BasicLinearScan(LinearScan):
 
     def resolve(self, intervals):
         pass
-
-
-    def full_allocation(self, f, regcount, spilling=True):
-        ivs = self.compute_intervals(f)
-        success = self.allocate_registers(ivs, regcount, spilling)
-        if not success:
-            return False
-        self.resolve(ivs)
-        return True
-
-
 

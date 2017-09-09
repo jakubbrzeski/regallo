@@ -21,7 +21,7 @@ class Opts:
         self.with_alloc = options.get("with_alloc", False)
         
         self.intervals_verbose = options.get("intervals_verbose", False)
-        self.intervals_advanced = options.get("intervals_advanced", False)
+        self.subintervals = options.get("subintervals", False)
 
 
 # Here value is an object which has id and optional llvm_id
@@ -246,7 +246,7 @@ class IntervalsString:
         self.intervals = intervals
         self.options = options
         self.basic_pattern = "{:10s} {:10s}"
-        self.reg_pattern = "{:^6s}"
+        self.reg_pattern = "{:^10s}"
         self.verbose_pattern = "{:10s} {:15s}"
         self.subs_pattern = "{}"
 
@@ -268,7 +268,7 @@ class IntervalsString:
             verbose = self.verbose_pattern.format(str(defn), uses)
             res.append(verbose)
 
-        if self.options.intervals_advanced:
+        if self.options.subintervals:
             subs = [self.subinterval(sub) for sub in iv.subintervals]
             res.append(self.subs_pattern.format(' '.join(subs)))
             
@@ -285,7 +285,7 @@ class IntervalsString:
         res = [self.basic_pattern.format("INTERVAL", "VAR-ID"), self.reg_pattern.format("REG")]
         if self.options.intervals_verbose:
             res.append(self.verbose_pattern.format("DEF", "USES"))
-        if self.options.intervals_advanced:
+        if self.options.subintervals:
             res.append(self.subs_pattern.format("SUBINTERVALS"))
         res.append("\n")
 
