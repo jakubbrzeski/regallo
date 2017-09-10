@@ -1,0 +1,20 @@
+
+
+I. GENERATING JSON WITH CONTROL FLOW GRAPH
+
+    requirements: 
+        - LLVM 5.0 (with opt tool), clang (older versions should work)
+        http://releases.llvm.org/download.html#5.0.0
+
+    For each .c file:
+        1. Compile to .ll (LLVM IR)
+        clang -S -emit-llvm file.c
+        
+        2. Extract control flow graph into json:
+        opt -mem2reg -load=path/to/LLVMCFGextractor.dylib -extract_cfg file.ll -to-json file.json
+
+    (Optional) VISUALIZE CFG
+    opt -mem2reg -dot-cfg hello.ll (For each function in ll generates .dot.cfg file)
+    dot -Tpng file.dot -o file.png (Generates PNG with visualized CFG of the function)
+
+

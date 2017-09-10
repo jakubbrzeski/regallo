@@ -33,8 +33,9 @@ ext = ExtendedLinearScan()
 if args.function:
 
     f = m.functions[args.function]
-    #print FunctionString(f)
+    print FunctionString(f)
 
+    """
     g = f.copy()
     ivs = ext.compute_intervals(g)
     #print IntervalsString(ivs, Opts(subintervals=True))
@@ -42,7 +43,7 @@ if args.function:
     suc = ext.perform_full_register_allocation(g, 8)
     print "success: ", suc
     print FunctionString(g)
-
+    """
 
 else :
     flist = m.functions.values()
@@ -53,3 +54,4 @@ else :
     rcs = utils.ResultCompSetting(flist, [1, 3, 5], [bas, ext], [bcc, src])
     res = utils.compute_full_results(rcs)
     utils.print_result_table(res, rcs)
+

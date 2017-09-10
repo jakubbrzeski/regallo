@@ -30,7 +30,7 @@ class SpillRatioCalculator(CostCalculator):
                     spilled += 1
 
         if percent:
-            return (spilled * 100) / total
+            return (spilled * 100) / max(1, total)
 
         return (total, spilled)
 
@@ -43,7 +43,7 @@ class SpillRatioCalculator(CostCalculator):
             spilled += s
 
         if percent:
-            return (spilled * 100) / total
+            return (spilled * 100) / max(1, total)
 
         return (total, spilled)
 
@@ -56,7 +56,7 @@ class SpillRatioCalculator(CostCalculator):
             spilled += s
 
         if percent:
-            return (spilled * 100) / total
+            return (spilled * 100) / max(1, total)
 
         return (total, spilled)
 
