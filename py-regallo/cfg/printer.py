@@ -245,7 +245,7 @@ class IntervalsString:
     def __init__(self, intervals, options=Opts()):
         self.intervals = intervals
         self.options = options
-        self.basic_pattern = "{:10s} {:10s}"
+        self.basic_pattern = "{:20s} {:10s}"
         self.reg_pattern = "{:^10s}"
         self.verbose_pattern = "{:10s} {:15s}"
         self.subs_pattern = "{}"

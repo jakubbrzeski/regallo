@@ -1,7 +1,9 @@
 import re
+import numpy as np
 from cfg.cfgprinter import FunctionString, Opts
 import cfg.resolve as resolve
 from dashtable import data2rst
+import matplotlib.patches as mpatches
 from matplotlib import pyplot as plt
 
 SEPARATOR = "/" # Should be the same as in cfgextractor in C++
@@ -156,16 +158,26 @@ class RegisterSet:
 # with Y coordinate equal to numerical sufix of corresponding variable id.
 # to_file - name of the file where the plot should be saved. If None, the plot is shown
 #                in the pop-up window.
-def draw_intervals(intervals, to_file=None, figsize=None, with_subintervals=False):
+def draw_intervals(intervals, regcount, to_file=None, figsize=None, with_subintervals=False, title="Lifetime intervals"):
     plt.figure(figsize=figsize)
     id_nums = []
+
+    regset = RegisterSet(regcount)
+
+    cmap = plt.get_cmap('gnuplot')
+    colors = [cmap(i) for i in np.linspace(0, 0.8, regcount+1)]
+    black = colors[0]
+    reg_colors = {reg: col for reg, col in zip(list(regset.free), colors[1:])}
+
+    print reg_colors
+
     for (vid, ivlist) in intervals.iteritems():
-        x = []
-        y = []
         id_num = int(extract_num_from_id(vid))
         id_nums.append(id_num)
         
         for iv in ivlist:
+            x = []
+            y = []
             if with_subintervals:
                 for sub in iv.subintervals:
                     # None at the end guarantees that line is not continuous all the time and
@@ -175,14 +187,23 @@ def draw_intervals(intervals, to_file=None, figsize=None, with_subintervals=Fals
             else:
                 x.extend([iv.fr, iv.to, None])
                 y.extend([id_num, id_num, None])
-        
-        plt.plot(x,y,label=str(vid))
+  
+            color = black
+            linestyle = 'solid'
+            if is_regname(iv.alloc):
+                color = reg_colors[iv.alloc]
+            elif is_slotname(iv.alloc):
+                linestyle = '--'
 
-    plt.title('Lifetime Intervals')
+            plt.plot(x, y, color=color, linestyle=linestyle)
+
+    plt.title(title)
     plt.xlabel('Instruction numbers')
     plt.ylabel('Variable ids')
     plt.margins(0.05)
-#    plt.yticks(id_nums)
+
+    #plt.legend(loc='best')
+    #plt.yticks(id_nums)
     if to_file:
         plt.savefig(to_file)
     else:
