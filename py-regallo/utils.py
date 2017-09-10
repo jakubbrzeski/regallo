@@ -51,6 +51,7 @@ def slot(var):
 def scratch_reg():
     return "reg0"
 
+
 #########################################################################
 ########################### GRAPH OPERATIONS ############################
 #########################################################################
@@ -112,6 +113,10 @@ def number_instructions(bbs):
 
     return num_to_instr
 
+#########################################################################
+############################### REGISTERS ###############################
+#########################################################################
+
 # RegisterSet is a helper class for managing registers.
 # It is made up of a set of free registers and a set of allocated registers.
 # To return a free register it removes one from the set of free registers (if there are any)
@@ -143,6 +148,9 @@ class RegisterSet:
         self.occupied.add(reg)
         self.free.remove(reg)
 
+#########################################################################
+############################### DRAWINGS ################################
+#########################################################################
 
 # Draws plot with provided intervals. Each interval is a line segment [iv.fr, iv.to],
 # with Y coordinate equal to numerical sufix of corresponding variable id.
@@ -181,6 +189,10 @@ def draw_intervals(intervals, to_file=None, figsize=None, with_subintervals=Fals
         plt.show()
     plt.close()
 
+
+#########################################################################
+########################### COMPUTING RESULTS ###########################
+#########################################################################
 
 # A helper class for storing arguments for computing full results. 
 # functions - list of Functions.
@@ -307,7 +319,7 @@ def print_result_table(d, setting):
     table, spans = compute_result_table(d, setting)
     print(data2rst(table, spans=spans, use_headers=True))
 
-
+# TODO: check it out
 # For given function and cost calculator, draws
 # a plot (regcount -> result) for each algorithm
 # (i.e. one drawing but separate plots for each algorithm).

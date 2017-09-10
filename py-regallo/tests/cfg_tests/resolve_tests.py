@@ -1,8 +1,8 @@
 import unittest
 import utils
 import cfg
-import resolve
-import cfgprinter
+import cfg.resolve as resolve
+import cfg.printer as cfgprinter
 
 class TestOrderMoves(unittest.TestCase):
 

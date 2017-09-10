@@ -11,7 +11,7 @@ from cost import BasicCostCalculator, SpillRatioCalculator
 
 import cfg
 import cfg.resolve as resolve
-from cfg.cfgprinter import InstrString, FunctionString, IntervalsString, CostString, Opts
+from cfg.printer import InstrString, FunctionString, IntervalsString, CostString, Opts
 
 parser = argparse.ArgumentParser(description='Process json with CFG')
 parser.add_argument('-file', help="Name of the json file with CFG")

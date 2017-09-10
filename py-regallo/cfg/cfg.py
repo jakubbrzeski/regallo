@@ -1,4 +1,5 @@
 import utils
+import json
 from copy import deepcopy
 
 #########################################################################
@@ -741,6 +742,17 @@ class Module:
     def from_json(cls, json):
         functions = [Function.from_json(f_json) for f_json in json]
         return cls(functions)
+
+    @classmethod
+    def from_file(cls, filename):
+        module_json = None
+        with open(filename) as f:
+            module_json = json.load(f)
+
+        if module_json:
+            return cls.from_json(module_json)
+
+        return None
 
     def perform_full_analysis(self):
         for f in self.functions.values():

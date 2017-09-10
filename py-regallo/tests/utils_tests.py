@@ -50,7 +50,7 @@ class ResultTableTests(unittest.TestCase):
                 ]
         self.assertEqual(spans, correct_spans)
 
-        print(data2rst(table, spans=spans, use_headers=True))
+        #print(data2rst(table, spans=spans, use_headers=True))
 
     def test2(self):
         d = [("f1", [(1, [("Allocator1", [("cost1",1)]),
@@ -80,7 +80,7 @@ class ResultTableTests(unittest.TestCase):
                 [[0, 0], [0, 1]],
                 [[2, 0], [3, 0], [4, 0]]]
         self.assertEqual(spans, correct_spans)
-        print(data2rst(table, spans=spans, use_headers=True))
+        #print(data2rst(table, spans=spans, use_headers=True))
 
     
     def test3(self):
@@ -103,4 +103,8 @@ class ResultTableTests(unittest.TestCase):
 
         correct_spans = [[[0, 0], [0, 1]]]
         self.assertEqual(spans, correct_spans)
-        print(data2rst(table, spans=spans, use_headers=True))
+        #print(data2rst(table, spans=spans, use_headers=True))
+
+
+if __name__ == '__main__':
+    unittest.main()

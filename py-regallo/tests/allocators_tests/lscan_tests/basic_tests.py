@@ -35,35 +35,35 @@ class BasicLinearScanTest(cfgmocks.GCDTest):
 
         """
         Correct answer:
-        INTERVAL   VAR-ID     REG  
-        [0, 1]     v1          -   
-        [0, 2]     v2          -   
-        [0, 3]     v3          -   
-        [2, 4]     v5          -   
-        [3, 5]     v6          -   
-        [4, 5]     v7          -   
-        [6, 8]     v9          -   
-        [7, 8]     v10         -   
-        [9, 14]    v12         -   
-        [10, 15]   v14         -   
-        [11, 12]   v15         -   
-        [13, 14]   v13         -
+        INTERVAL   VAR-ID       REG    
+        [-0.5, 2]  v2            -     
+        [-0.5, 3]  v3            -     
+        [0, 1]     v1            -     
+        [2, 4]     v5            -     
+        [3, 5.5]   v6            -     
+        [4, 5.5]   v7            -     
+        [6, 8.5]   v9            -     
+        [7, 8.5]   v10           -     
+        [9, 14.5]  v12           -     
+        [10, 15]   v14           -     
+        [11, 12]   v15           -     
+        [13, 14.5] v13           - 
 
         """
 
         assertInterval("v1", 0, 1, 0, [1])
-        assertInterval("v2", 0, 2, None, [0, 2, 7])
-        assertInterval("v3", 0, 3, None, [0, 2, 3, 6])
+        assertInterval("v2", -0.5, 2, None, [0, 2, 7])
+        assertInterval("v3", -0.5, 3, None, [0, 2, 3, 6])
         self.assertNotIn("v4", intervals)
         assertInterval("v5", 2, 4, 2, [3,4])
-        assertInterval("v6", 3, 5, 3, [4, 6])
-        assertInterval("v7", 4, 5, 4, [7])
+        assertInterval("v6", 3, 5.5, 3, [4, 6])
+        assertInterval("v7", 4, 5.5, 4, [7])
         self.assertNotIn("v8", intervals)
-        assertInterval("v9", 6, 8, 6, [9])
-        assertInterval("v10", 7, 8, 7, [10])
+        assertInterval("v9", 6, 8.5, 6, [9])
+        assertInterval("v10", 7, 8.5, 7, [10])
         self.assertNotIn("v11", intervals)
-        assertInterval("v12", 9, 14, 9, [10, 11, 13])
-        assertInterval("v13", 13, 14, 13, [9])
+        assertInterval("v12", 9, 14.5, 9, [10, 11, 13])
+        assertInterval("v13", 13, 14.5, 13, [9])
         assertInterval("v14", 10, 15, 10, [13, 15])
         assertInterval("v15", 11, 12, 11, [12])
         self.assertNotIn("v16", intervals)
