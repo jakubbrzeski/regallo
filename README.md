@@ -38,11 +38,14 @@ Generates PNG with visualized CFG of the function
 
 ## Using py-regallo
 
-### Install all required python libraries.
+Install all required python libraries
+
     py-regallo/make
 
-### For interactive use and tutorial reading ipython is necessary.
+For interactive use and tutorial reading ipython is necessary
+
     pip install ipython
 
-### Tutorial.
+Tutorial
+
     ipython notebook py-regallo/tutorial/tutorial.ipynb 
