@@ -91,4 +91,4 @@ For interactive use and tutorial reading ipython is necessary
 
 Show tutorial
 
-    ipython notebook py-regallo/tutorial/tutorial.ipynb 
+    ipython notebook py-regallo/tutorial.ipynb 
