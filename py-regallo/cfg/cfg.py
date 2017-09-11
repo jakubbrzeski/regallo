@@ -230,8 +230,9 @@ class BasicBlock:
         # uevs - set of upword-exposed variables i.e. such variables that
         # are used before any redefinition in this block. 
         # defs - set of variables defined in this block. 
-        self.uevs = None
-        self.defs = None
+        self.uevs = set()
+        self.defs = set()
+
 
         # Sets of live-in and live-out variables in this block.
         self.live_in = set()
@@ -242,6 +243,12 @@ class BasicBlock:
         self.reg_defs = None
         self.reg_live_in = set()
         self.reg_live_out = set()
+
+        # Dictionaries of uevs and defs with their allocs (reg or memslot).
+        self.uevs_with_alloc = {}
+        self.defs_with_alloc = {}
+        self.live_in_with_alloc = {}
+        self.live_out_with_alloc = {}
 
         # Set of dominators of this basic block.
         self.dominators = set()
@@ -341,6 +348,23 @@ class BasicBlock:
             
         self.defs = defs
         self.uevs = uevs
+
+    def compute_defs_and_uevs_with_alloc(self):
+        defs = {}
+        uevs = {}
+    
+        for instr in self.instructions:
+            if not instr.is_phi():
+                for var in instr.uses:
+                    if var.id not in defs:
+                        uevs[var.id] = var.alloc.get(instr.id, None)
+        
+            if instr.definition:
+                var = instr.definition
+                defs[var.id] = var.alloc.get(instr.id, None)
+            
+        self.defs_with_alloc = defs
+        self.uevs_with_alloc = uevs
 
     # Coputes uevs and defs sets but for registers.
     # See self.compute_defs_and_uevs.
@@ -592,6 +616,10 @@ class Function:
         for bb in self.bblocks.values():
             bb.compute_reg_defs_and_uevs()
 
+    def compute_defs_and_uevs_with_alloc(self):
+        for bb in self.bblocks.values():
+            bb.compute_defs_and_uevs_with_alloc()
+
     # Performs liveness analysis - for each basic block and instruction computes 
     # live_in and live_out variable sets
     # ordered_bbs - optional list of ordered basic blocks the analysis should be performed on.
@@ -631,6 +659,65 @@ class Function:
 
         for bb in ordered_bbs:
             bb.perform_instr_liveness_analysis() # updates liveness for each instr
+
+    def perform_liveness_analysis_with_alloc(self, ordered_bbs = None):
+        self.compute_defs_and_uevs_with_alloc()
+    
+        if ordered_bbs is None:
+            ordered_bbs = self.bblocks.values()
+
+        live_in_with_alloc = {}
+        live_out_with_alloc = {}
+        for bb in ordered_bbs:
+            assert bb.defs_with_alloc is not None and bb.uevs_with_alloc is not None
+            live_in_with_alloc[bb.id] = {}
+            live_out_with_alloc[bb.id] = {}
+
+        # Checks if all vids contained in both  d1 and d2 have the same allocation.
+        def alloc_correct(d1, d2):
+            for (vid, alloc) in d1.iteritems():
+                alloc2 = d2.get(vid, None)
+                if alloc2 and alloc != alloc2:
+                    return False
+
+            return True
+
+        change = True
+        while change:
+            change = False
+            for bb in ordered_bbs:
+                # LIVE-OUT
+                live_out_size = len(live_out_with_alloc[bb.id])
+                for succ in bb.succs.values():
+                    if not alloc_correct(live_out_with_alloc[bb.id], live_in_with_alloc[succ.id]):
+                        return False
+
+                    live_out_with_alloc[bb.id].update(live_in_with_alloc[succ.id])
+                    for phi in succ.phis:
+                        if bb.id in phi.uses:
+                            var = phi.uses[bb.id]
+                            live_out_with_alloc[bb.id][var.id] = var.alloc.get(phi.id, None)
+
+                # LIVE-IN
+                live_in_size = len(live_in_with_alloc[bb.id])
+                live_out_minus_defs = {vid: alloc for (vid, alloc) in live_out_with_alloc[bb.id].iteritems() if vid not in bb.defs_with_alloc}
+                if not alloc_correct(bb.uevs_with_alloc, live_out_minus_defs):
+                    return False
+
+                live_in_with_alloc[bb.id] = bb.uevs_with_alloc.copy()
+                live_in_with_alloc[bb.id].update(live_out_minus_defs)
+                    
+                if len(live_in_with_alloc[bb.id]) > live_in_size or len(live_out_with_alloc[bb.id]) > live_out_size:
+                    change = True
+
+        for bb in ordered_bbs:
+            bb.live_in_with_alloc = live_in_with_alloc[bb.id]
+            bb.live_out_with_alloc = live_out_with_alloc[bb.id]
+
+        return True
+        #for bb in ordered_bbs:
+        #    bb.perform_instr_liveness_analysis() # updates liveness for each instr
+
 
     # Liveness analysis for registers.
     def perform_reg_liveness_analysis(self, ordered_bbs = None):
@@ -754,6 +841,16 @@ class Function:
         self.perform_reg_liveness_analysis()
         self.perform_dominance_analysis()
         self.perform_loop_analysis()
+
+    """
+    # Sanity check.
+    # Checks whether: 
+    # - each variable that is used at least once is allocated to register.
+    # - allocation is consistent (two subsequent uses have the same register assigned)
+    # - in every program point, each live variable has different register allocated.
+    def allocation_is_correct(self):
+    """ 
+
 
 # Module represents a program and consists of list of functions.
 class Module:

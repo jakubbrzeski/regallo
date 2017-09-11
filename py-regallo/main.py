@@ -33,13 +33,16 @@ ext = ExtendedLinearScan()
 if args.function:
 
     f = m.functions[args.function]
+    f.compute_defs_and_uevs_with_alloc()
+    #for bb in f.bblocks.values():
+    #    print bb.llvm_name, bb.defs_with_alloc, bb.uevs_with_alloc
+    print FunctionString(f, Opts(defs_uevs_with_alloc=True))
+   
     bas.perform_full_register_allocation(f, 2)
-    print FunctionString(f, Opts(liveness=True, successors=True))
-    print "\n - - - - - - \n"
-    print FunctionString(f, Opts(alloc_only=True))
-    bcc = BasicCostCalculator()
-    print CostString(f, bcc)
-    
+    print f.perform_liveness_analysis_with_alloc()
+    print f.perform_liveness_analysis()
+    print FunctionString(f, Opts(defs_uevs=True, liveness=True, liveness_with_alloc=True))
+
 
 else :
     flist = m.functions.values()

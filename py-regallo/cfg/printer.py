@@ -10,10 +10,14 @@ class Opts:
         
         self.predecessors = options.get("predecessors", False)
         self.successors = options.get("successors", False)
-        self.uevs_defs = options.get("uevs_defs", False)
-        self.reg_uevs_defs = options.get("reg_uevs_defs", False)
+        self.defs_uevs = options.get("defs_uevs", False)
+        self.reg_defs_uevs = options.get("reg_defs_uevs", False)
+        self.defs_uevs_with_alloc = options.get("defs_uevs_with_alloc", False)
+
         self.liveness = options.get("liveness", False)
         self.reg_liveness = options.get("reg_liveness", False)
+        self.liveness_with_alloc = options.get("liveness_with_alloc", False)
+
         self.dominance = options.get("dominance", False)
         # Instead of variable names, print allocs.
         self.alloc_only = options.get("alloc_only", False)
@@ -38,6 +42,9 @@ class ValueString:
         return self.vid() + "(" + llvm_name + ")"
 
     def __str__(self):
+        if self.val is None:
+            return "None"
+
         if isinstance(self.val, cfg.Variable) or isinstance(self.val, cfg.BasicBlock):
             if self.options.llvm_names:
                 return self.full_name()
@@ -170,7 +177,7 @@ class BBString:
         succs = [ValueString(pred, self.options) for pred in list(self.bb.succs.values())]
         return self.pattern.format("SUCCS", succs)
 
-    def uevs_defs(self):
+    def defs_uevs(self):
         assert self.bb.uevs is not None and self.bb.defs is not None
         uevs =  [ValueString(uev, self.options) for uev in list(self.bb.uevs)]
         defs = [ValueString(defn, self.options) for defn in list(self.bb.defs)]
@@ -178,13 +185,21 @@ class BBString:
         return self.pattern.format("UEVS", uevs) + "\n" + \
                self.pattern.format("DEFS", defs) 
 
-    def reg_uevs_defs(self):
+    def reg_defs_uevs(self):
         assert self.bb.reg_uevs is not None and self.bb.reg_defs is not None
         uevs =  [ValueString(reg, self.options) for reg in list(self.bb.reg_uevs)]
         defs = [ValueString(reg, self.options) for reg in list(self.bb.reg_defs)]
        
         return self.pattern.format("REG-UEVS", uevs) + "\n" + \
                self.pattern.format("REG-DEFS", defs) 
+
+    def defs_uevs_with_alloc(self):
+        assert self.bb.uevs_with_alloc is not None and self.bb.defs_with_alloc is not None
+        uevs = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.uevs_with_alloc.iteritems()]
+        defs = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.defs_with_alloc.iteritems()]
+      
+        return self.pattern.format("UEVS-ALLOC", uevs) + "\n" + \
+               self.pattern.format("DEFS-ALLOC", defs) 
 
     def liveness(self):
         assert self.bb.live_in is not None and self.bb.live_out is not None
@@ -201,7 +216,13 @@ class BBString:
         return self.pattern.format("REG-LIVE-IN", live_in) + "\n" + \
                self.pattern.format("REG-LIVE-OUT", live_out) 
 
-    
+    def liveness_with_alloc(self):
+        assert self.bb.live_in_with_alloc is not None and self.bb.live_out_with_alloc is not None
+        live_in = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.live_in_with_alloc.iteritems()]
+        live_out = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.live_out_with_alloc.iteritems()]
+        return self.pattern.format("LIVE-IN-ALLOC", live_in) + "\n" + \
+               self.pattern.format("LIVE-OUT-ALLOC", live_out) 
+
     def dominance(self):
         assert self.bb.dominators is not None
         dominators = [ValueString(dom, self.options) for dom in list(self.bb.dominators)]
@@ -229,12 +250,16 @@ class FunctionString:
                 res.append(printer.predecessors())
             if self.options.successors:
                 res.append(printer.successors())
-            if self.options.uevs_defs:
-                res.append(printer.uevs_defs())
-            if self.options.reg_uevs_defs:
-                res.append(printer.reg_uevs_defs())
+            if self.options.defs_uevs:
+                res.append(printer.defs_uevs())
+            if self.options.reg_defs_uevs:
+                res.append(printer.reg_defs_uevs())
+            if self.options.defs_uevs_with_alloc:
+                res.append(printer.defs_uevs_with_alloc())
             if self.options.liveness:
                 res.append(printer.liveness())
+            if self.options.liveness_with_alloc:
+                res.append(printer.liveness_with_alloc())
             if self.options.dominance:
                 res.append(printer.dominance())
             if self.options.reg_liveness:
