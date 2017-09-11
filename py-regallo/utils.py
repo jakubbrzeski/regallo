@@ -158,18 +158,20 @@ class RegisterSet:
 # with Y coordinate equal to numerical sufix of corresponding variable id.
 # to_file - name of the file where the plot should be saved. If None, the plot is shown
 #                in the pop-up window.
-def draw_intervals(intervals, regcount, to_file=None, figsize=None, with_subintervals=False, title="Lifetime intervals"):
+def draw_intervals(intervals, regcount=0, to_file=None, figsize=None, with_subintervals=False, title="Lifetime intervals"):
     plt.figure(figsize=figsize)
     id_nums = []
 
-    regset = RegisterSet(regcount)
+
 
     cmap = plt.get_cmap('gnuplot')
     colors = [cmap(i) for i in np.linspace(0, 0.8, regcount+1)]
     black = colors[0]
-    reg_colors = {reg: col for reg, col in zip(list(regset.free), colors[1:])}
+    reg_colors = {}
 
-    print reg_colors
+    if regcount:
+        regset = RegisterSet(regcount)
+        reg_colors = {reg: col for reg, col in zip(list(regset.free), colors[1:])}
 
     for (vid, ivlist) in intervals.iteritems():
         id_num = int(extract_num_from_id(vid))
@@ -190,7 +192,7 @@ def draw_intervals(intervals, regcount, to_file=None, figsize=None, with_subinte
   
             color = black
             linestyle = 'solid'
-            if is_regname(iv.alloc):
+            if regcount and is_regname(iv.alloc):
                 color = reg_colors[iv.alloc]
             elif is_slotname(iv.alloc):
                 linestyle = '--'
