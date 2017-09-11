@@ -10,15 +10,58 @@ It consists of two parts:
 
      
 ### Requirements:
-* LLVM 5.0 (with opt tool)
-* Clang (older versions should work)
+* LLVM source code
+* Clang
 
-Dynamic library needed for control flow extraction was compiled using LLVM 5.0 and
-this version is neccessary to run it. clang (older versions should work)
-LINK: http://releases.llvm.org/download.html#5.0.0
+It was tested with LLVM 5.0 and Clang 3.9.0. Other version should work but it is important
+to use dynamic library with the same LLVM version it was compiled with.
+
+LLVM and Clang source codes as well as binaries are available here: http://releases.llvm.org/download.html#5.0.0
+
+### Installation
+Let's assume we have cloned regallo repository, downloaded LLVM source code into the same directory and got the Clang binary. To build and use llvm with the CFGextractor library we should do the following:
+
+
+Move llvm source files to regallo's llvm/src directory
+     
+     tar xf llvm-5.0.0.src.tar.xz -C regallo/llvm/src --strip-components 1
+
+Add CFGextractor library directory to CMakeLists: 
+
+     echo "add_subdirectory(CFGExtractor)" >> regallo/llvm/src/lib/Transforms/CMakeLists.txt
+
+Create build directory
+
+     mkdir regallo/llvm/build
+
+In regallo/llvm/build run: 
+
+     cmake ../src
+     
+It will generate files necessary for building LLVM.
+
+At the same directory, build LLVM 
+
+     make -j2
+     
+or if using another build tool:
+
+     cmake --build .
+
+Dynamic library for cfg extraction will be in:
+     
+     llvm/build/lib/LLVMCFGextractor.dylib
+
+or if we use Linux:
+
+     llvm/build/lib/LLVMCFGextractor.so
+     
+opt tool (see https://llvm.org/docs/CommandGuide/opt.html) that we also need should be in:
+
+     llvm/build/lib/opt
+
 
 ### Extracting CFG from programs in C into JSON.
-For each .c file:
 Compile to .ll (LLVM IR)
 
     clang -S -emit-llvm file.c
@@ -46,6 +89,6 @@ For interactive use and tutorial reading ipython is necessary
 
     pip install ipython
 
-Tutorial
+Show tutorial
 
     ipython notebook py-regallo/tutorial/tutorial.ipynb 
