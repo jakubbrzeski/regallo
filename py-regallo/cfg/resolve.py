@@ -17,6 +17,10 @@ class Alloc:
 # Based on: 
 # S. Hack "Register Allocation for Programs in SSA Form",
 # 4.4. Implementing Phi-Operations. 
+#
+# Contrary to the algorithm, the function returns also self-loops for
+# technical reasons - it would break liveness analysis. However, we can 
+# later print the function after phi elimination without redundant moves.
 def order_moves(moves):
     # All moves that include non-allocable uses such as consts
     # may be safely added to the end.
@@ -27,6 +31,8 @@ def order_moves(moves):
     results = [] 
     # List of cycles. We treat cycles separately.
     cycles = [] 
+    # Self-loops
+    self_loops = []
 
     # Building graph.
     class Edge:
@@ -48,9 +54,12 @@ def order_moves(moves):
     for (d,u) in moves:
         e = Edge(d,u)
         if d.alloc != u.alloc: 
-            # We exlude self-loops because they don't need a move.
+            # We skip self loops here.
             IN[d.alloc].add(e)
             OUT[u.alloc].add(e)
+        else:
+            self_loops.append((e.d, e.u))
+            
 
     # Find edges (a,b): outdeg(b) == 0.
     leaves = []
@@ -97,7 +106,7 @@ def order_moves(moves):
             cycle.append((l[0].d, None))
             cycles.append(cycle)
 
-    return (results + non_allocable, cycles)
+    return (self_loops + results + non_allocable, cycles)
 
 # Takes ordered moves as a list of pairs (Alloc(def), Alloc(use))
 # and insert them at the end of the given BasicBlock.
@@ -119,34 +128,6 @@ def insert_moves(bb, moves):
         else:
             # After register allocation No variable in phi instructions should be in memory slot.
             assert False
-
-        """
-        elif utils.is_slotname(d.alloc) and u.alloc is None:
-            # d is in memory, u.val is const or another non-allocable value.
-            instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [], [d.alloc, u.val])
-            instructions.append(instr)
-        
-        elif utils.is_slotname(d.alloc) and utils.is_slotname(u.alloc):
-            # Both are in memory slot:
-            # temp = load slot(u)
-            # store slot(d) <- temp
-            tvar = bb.f.temp_variable()
-            load = cfg.Instruction(bb, tvar, cfg.Instruction.LOAD, [], [u.alloc])
-            store = cfg.Instruction(bb, None, cfg.Instruction.STORE, [tvar], [d.alloc, tvar])
-            instructions.extend([load, store])
-
-        elif utils.is_slotname(d.alloc) and utils.is_regname(u.alloc):
-            # d is in memory slot, u in register => produce "store slot(d) <- u"
-            instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [u.val], [d.alloc, u.val])
-            instructions.append(instr)
-            u.val.alloc[instr.id] = u.alloc
-
-        elif utils.is_regname(d.alloc) and utils.is_slotname(u.alloc):
-            # d is in register, u is in memory slot => produce "d = load slot(u)"
-            instr = cfg.Instruction(bb, d.val, cfg.Instruction.LOAD, [], [u.alloc])
-            instructions.append(instr)
-            d.val.alloc[instr.id] = d.alloc
-        """
 
 def insert_cycles(bb, cycles):
     endpoints = []
@@ -177,8 +158,8 @@ def insert_cycles(bb, cycles):
 
     return endpoints
 
-# If during phi elimination a cycle of movs appeared - it
-# was cut by storing one of its variables in a new temporary variable.
+# If during phi elimination a cycle of movs appears - it
+# is cut by storing one of its variables in a new temporary variable.
 # This function takes two instructions being the endpoints of a list of
 # mov instructions that was created from the cut cycle and checks whether
 # this temporary variable can be assigned a register or must be replaced

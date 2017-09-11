@@ -20,6 +20,9 @@ class SpillRatioCalculator(CostCalculator):
 
     def instr_cost(self, instr, percent=True):
         assert not instr.is_phi()
+        if instr.is_redundant():
+            return (0, 0)
+
         total = 0
         spilled = 0
         for use in instr.uses:
@@ -76,6 +79,9 @@ class BasicCostCalculator(CostCalculator):
             self.name = name
 
     def instr_cost(self, instr):
+        if instr.is_redundant():
+            return 0
+
         loop_depth = math.pow(self.l, instr.get_loop_depth())
 
         if instr.opname == cfg.Instruction.LOAD or instr.opname == cfg.Instruction.STORE:

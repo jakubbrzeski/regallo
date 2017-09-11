@@ -33,17 +33,13 @@ ext = ExtendedLinearScan()
 if args.function:
 
     f = m.functions[args.function]
-    print FunctionString(f)
-
-    """
-    g = f.copy()
-    ivs = ext.compute_intervals(g)
-    #print IntervalsString(ivs, Opts(subintervals=True))
-
-    suc = ext.perform_full_register_allocation(g, 8)
-    print "success: ", suc
-    print FunctionString(g)
-    """
+    bas.perform_full_register_allocation(f, 2)
+    print FunctionString(f, Opts(liveness=True, successors=True))
+    print "\n - - - - - - \n"
+    print FunctionString(f, Opts(alloc_only=True))
+    bcc = BasicCostCalculator()
+    print CostString(f, bcc)
+    
 
 else :
     flist = m.functions.values()

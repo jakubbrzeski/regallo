@@ -181,6 +181,19 @@ class Instruction:
     def is_phi(self):
         return self.opname == Instruction.PHI
 
+    # Returns true if this instruction is a MOV between variables
+    # with the same registers assigned.
+    def is_redundant(self):
+        is_mov = (self.opname == Instruction.MOV)
+        if is_mov and self.definition and self.uses:
+            alloc1 = self.definition.alloc.get(self.id, None)
+            alloc2 = (list(self.uses)[0]).alloc.get(self.id, None)
+            if alloc1 and alloc2 and (alloc1 == alloc2):
+                return True
+
+        return False
+
+
     def get_loop_depth(self):
         assert self.f.loops is not None
         if self.bb.loop is None:
@@ -256,6 +269,16 @@ class BasicBlock:
                 bb.phis.append(instr)
 
         return bb
+
+    # Returns true if all its instructions are redundant.
+    # see Instruction.is_redundant(self)
+    # Such BasicBlocks may be created after phi_elimination.
+    def is_redundant(self):
+        for instr in self.instructions:
+            if not instr.is_redundant():
+                return False
+
+        return True
 
     def dominates(self, another):
         return self in another.dominators
@@ -458,7 +481,6 @@ class Function:
             cbb.defs = set([cf.get_or_create_variable(v.id) for v in bb.defs if v is not None])
             cbb.live_in = set([cf.get_or_create_variable(v.id) for v in bb.live_in])
             cbb.live_out = set([cf.get_or_create_variable(v.id) for v in bb.live_out])
-    # Liveness analysis for registers.
             #instructions:
             for instr in bb.instructions:
                 ci = instr.copy(cbb)

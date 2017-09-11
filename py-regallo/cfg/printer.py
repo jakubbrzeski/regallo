@@ -155,6 +155,9 @@ class BBString:
     def instructions(self):
         res = []
         for instr in self.bb.instructions:
+            if self.options.alloc_only and instr.is_redundant():
+                continue
+
             res.append(InstrString(instr, self.options).full())
 
         return "\n".join(res)
@@ -214,6 +217,9 @@ class FunctionString:
         res = []
         bbs = utils.reverse_postorder(self.f)
         for bb in bbs:
+            if self.options.alloc_only and bb.is_redundant():
+                continue
+
             printer = BBString(bb, self.options)
             bb_name = str(bb.id) + "(" + str(bb.llvm_name) + ")"
             bb_name = colored(bb_name, attrs=['underline'])

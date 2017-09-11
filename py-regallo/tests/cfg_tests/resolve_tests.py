@@ -61,6 +61,8 @@ class TestOrderMoves(unittest.TestCase):
 
         """
         CORRECT ORDER:
+         d1   =  u1     (reg1 = reg1) self loop (it may be anywhere actually)
+
          d3   =  u3     (reg3 = reg2)
          d2   =  u2     (reg2 = reg1)
          d7   =  u7     (reg1 = const)
@@ -70,9 +72,8 @@ class TestOrderMoves(unittest.TestCase):
          d6   =  u6     (reg4 = reg6)
          d5   =  None   (reg6 = None)
 
-        Variables u1 and d1 share the same register so they don't need move.
         """
-
+        self.assertTrue((d1,u1) in res)
         self.assertTrue(res.index((d3, u3)) < res.index((d2, u2)))
         self.assertTrue(res.index((d2, u2)) < res.index((d7, u7)))
         self.assertTrue(len(cycles) == 1)
@@ -195,6 +196,7 @@ class PhiEliminationTests(unittest.TestCase):
         """
         CORRECT ANSWER
         In a new basic block between bb1 and bb2
+        reg1 = mov reg1 (redundant mov)
         reg3 = mov reg2       
         reg2 = mov reg1       
         reg7 = mov const               
@@ -210,7 +212,7 @@ class PhiEliminationTests(unittest.TestCase):
                 new_bb = bb
 
         self.assertIsNotNone(new_bb)
-        self.assertEquals(len(new_bb.instructions), 7)
+        self.assertEquals(len(new_bb.instructions), 8)
         # TODO: finish 
 
 
