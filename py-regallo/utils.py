@@ -1,6 +1,6 @@
 import re
 import numpy as np
-from cfg.cfgprinter import FunctionString, Opts
+from cfg.printer import FunctionString, Opts
 import cfg.resolve as resolve
 from dashtable import data2rst
 import matplotlib.patches as mpatches
