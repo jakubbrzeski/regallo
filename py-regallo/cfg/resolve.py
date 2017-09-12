@@ -174,7 +174,9 @@ def allocate_cycle(i1, i2, cycle_allocs, regcount=0):
    
     if regcount:
         regset = utils.RegisterSet(regcount)
-        occupied = cycle_allocs | i2.reg_live_in
+        # registers live out at the end of cycle
+        live_out_regs = set([alloc for alloc in i2.live_out_with_alloc.values() if utils.is_regname(alloc)])
+        occupied = cycle_allocs | live_out_regs
         free = regset.free - occupied
         if free:
             reg = free.pop()
@@ -269,7 +271,6 @@ def eliminate_phi(f, regcount=0):
         bb.phis = []
 
     f.perform_liveness_analysis()
-    f.perform_reg_liveness_analysis()
 
     for (i1, i2, allocs) in cycles_endpoints:
         allocate_cycle(i1, i2, allocs, regcount)

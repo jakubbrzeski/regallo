@@ -86,8 +86,11 @@ class Instruction:
         self.uses_debug = uses_debug if uses_debug else []
       
         # Set of variables live-in and live-out at this instruction.
+        # and dictionaries of live variables with their allocations
         self.live_in = None
         self.live_out = None
+        self.live_in_with_alloc = None
+        self.live_out_with_alloc = None
 
         if opname == Instruction.PHI:
             phi_uses = {}
@@ -136,9 +139,12 @@ class Instruction:
         ci = Instruction(cbb, cdefn, self.opname, cuses, cuses_debug)
 
         ci.num = self.num
-        ci.live_in = set([cf.vars[v.id] for v in self.live_in])
-        ci.live_out = set([cf.vars[v.id] for v in self.live_out])
-
+        ci.live_in_with_alloc = {cf.vars[v.id]: alloc for (v, alloc) in self.live_in_with_alloc.iteritems()}
+        ci.live_out_with_alloc = {cf.vars[v.id]: alloc for (v, alloc) in self.live_out_with_alloc.iteritems()}
+        
+        ci.live_in = set(ci.live_in_with_alloc.keys())
+        ci.live_out = set(ci.live_out_with_alloc.keys())
+        
         return ci
 
 
@@ -227,26 +233,21 @@ class BasicBlock:
         self.preds = {}
         self.succs = {}
 
-        # uevs - set of upword-exposed variables i.e. such variables that
-        # are used before any redefinition in this block. 
-        # defs - set of variables defined in this block. 
-        self.uevs = set()
+        # Sets of
+        # - definitions and upward-exposed variables (used before any redefinition)
+        # - definitions and upward-exposed registers
+        # - dictionary of definitions and upward-exposed variables with their allocations.
         self.defs = set()
-
-
-        # Sets of live-in and live-out variables in this block.
-        self.live_in = set()
-        self.live_out = set()
-
-        # Sets of live-in and live-out registers in this block.
-        self.reg_uevs = None
-        self.reg_defs = None
-        self.reg_live_in = set()
-        self.reg_live_out = set()
-
-        # Dictionaries of uevs and defs with their allocs (reg or memslot).
+        self.uevs = set()
         self.uevs_with_alloc = {}
         self.defs_with_alloc = {}
+
+
+        # Sets of:
+        # - live-in and live-out variables in this block.
+        # - dictionary of live variables and their allocations. 
+        self.live_in = set()
+        self.live_out = set()
         self.live_in_with_alloc = {}
         self.live_out_with_alloc = {}
 
@@ -329,127 +330,68 @@ class BasicBlock:
     def register_pressure_out(self):
         return len(self.live_out)
 
-
-    # Computes variable sets (defs, uevs) for this basic block.
-    # defs - variables defined in the basic block
-    # uevs - variables that are used before any redefinition.
+    # Computes: 
+    # - sets of defined and upward-exposed variables (defs and uevs)
+    # - dictionary of these variables to their allocations (~with_alloc)
+    # - sets of defined and upward-exposed registers (reg_defs and reg_uevs)
     def compute_defs_and_uevs(self):
-        defs = set() 
-        uevs = set()
+        defs_with_alloc = {}
+        uevs_with_alloc = {}
     
         for instr in self.instructions:
             if not instr.is_phi():
                 for var in instr.uses:
-                    if var not in defs:
-                        uevs.add(var)
-        
-            if instr.definition:
-                defs.add(instr.definition)
-            
-        self.defs = defs
-        self.uevs = uevs
-
-    def compute_defs_and_uevs_with_alloc(self):
-        defs = {}
-        uevs = {}
-    
-        for instr in self.instructions:
-            if not instr.is_phi():
-                for var in instr.uses:
-                    if var.id not in defs:
-                        uevs[var.id] = var.alloc.get(instr.id, None)
+                    if var not in defs_with_alloc:
+                        uevs_with_alloc[var] = var.alloc.get(instr.id, None)
         
             if instr.definition:
                 var = instr.definition
-                defs[var.id] = var.alloc.get(instr.id, None)
+                defs_with_alloc[var] = var.alloc.get(instr.id, None)
             
-        self.defs_with_alloc = defs
-        self.uevs_with_alloc = uevs
+        self.defs_with_alloc = defs_with_alloc
+        self.uevs_with_alloc = uevs_with_alloc
+        self.defs = set(defs_with_alloc.keys())
+        self.uevs = set(uevs_with_alloc.keys())
 
-    # Coputes uevs and defs sets but for registers.
-    # See self.compute_defs_and_uevs.
-    def compute_reg_defs_and_uevs(self):
-        defs = set()
-        uevs = set()
-
-        for instr in self.instructions:
-            if not instr.is_phi():
-                for var in instr.uses:
-                    if instr.id in var.alloc:
-                        alloc = var.alloc[instr.id]
-                        if utils.is_regname(alloc) and alloc not in defs:
-                            uevs.add(alloc)
-            
-            if instr.definition and instr.id in instr.definition.alloc:
-                alloc = instr.definition.alloc[instr.id]
-                if utils.is_regname(alloc):
-                    defs.add(alloc)
-
-        self.reg_defs = defs
-        self.reg_uevs = uevs
-
-    # For each instruction computes sets of live-in and
-    # live-out variables (before and after the instruction)
-    def perform_instr_liveness_analysis(self):
-        current_live_set = self.live_out.copy()
-        for instr in self.instructions[::-1]:
-            instr.live_out = current_live_set.copy()
-            if instr.definition:
-                current_live_set -= {instr.definition}
-            if not instr.is_phi():
-                current_live_set |= set(instr.uses)
-            instr.live_in = current_live_set.copy()
-
-    # Liveness analysis for registers.
-    def perform_reg_instr_liveness_analysis(self):
-        current_live_set = self.reg_live_out.copy()
-        for instr in self.instructions[::-1]:
-            instr.reg_live_out = current_live_set.copy()
-            if instr.definition and instr.id in instr.definition.alloc:
-                alloc = instr.definition.alloc[instr.id]
-                if utils.is_regname(alloc):
-                    current_live_set -= {alloc}
-
-            if not instr.is_phi():
-                regs = set()
-                for var in instr.uses:
-                    if instr.id in var.alloc and utils.is_regname(var.alloc[instr.id]):
-                        regs.add(var.alloc[instr.id])
-                if regs:
-                    current_live_set |= regs
-
-            instr.reg_live_in = current_live_set.copy()
-
-    def perform_instr_liveness_analysis_with_alloc(self):
+    # Liveness analysis for instructions.
+    #
+    # Params:
+    # check_correctnes - if True, tests if allocation of variables is correct
+    #                    on the basic block level, i.e. whether variable live
+    #                    -in and -out at the instruction share the same register.
+    def perform_instr_liveness_analysis(self, check_correctness=False):
         current_live_dict = self.live_out_with_alloc.copy()
 
         def alloc_correct(instr, var):
             instr_alloc = var.alloc.get(instr.id, None)
-            dict_alloc = current_live_dict[var.id]
+            dict_alloc = current_live_dict[var]
             if instr_alloc and dict_alloc and (instr_alloc != dict_alloc):
                 return False
             return True
 
-
         for instr in self.instructions[::-1]:
             instr.live_out_with_alloc = current_live_dict.copy()
+            instr.live_out = set(instr.live_out_with_alloc.keys())
+
             if instr.definition:
                 var = instr.definition
-
-                if var.id in current_live_dict:
-                    if not alloc_correct(instr, var):
+                if var in current_live_dict:
+                    # CORRECTNESS CHECK
+                    if check_correctness and not alloc_correct(instr, var):
                         return False
-                    del current_live_dict[var.id]
+                    del current_live_dict[var]
 
             if not instr.is_phi(): # ?
                 for var in instr.uses:
-                    if var.id in current_live_dict:
-                        if not alloc_correct(instr, var):
+                    if var in current_live_dict:
+                        # CORRECTNESS CHECK
+                        if check_correctness and not alloc_correct(instr, var):
                             return False
                     else:    
-                        current_live_dict[var.id] = var.alloc.get(instr.id, None)
+                        current_live_dict[var] = var.alloc.get(instr.id, None)
 
             instr.live_in_with_alloc = current_live_dict.copy()
+            instr.live_in = set(instr.live_in_with_alloc.keys())
 
         return True
 
@@ -525,18 +467,26 @@ class Function:
             cbb = BasicBlock(bid, cf, bb.llvm_name)
             cf.bblocks[bid] = cbb
 
+
         cf.entry_bblock = cf.bblocks[self.entry_bblock.id]
 
         # Copy basic blocks.
         for (bid, bb) in self.bblocks.iteritems():
             cbb = cf.bblocks[bid] # copy
+            
             cbb.preds = {k: cf.bblocks[k] for k in bb.preds.keys()}
             cbb.succs = {k: cf.bblocks[k] for k in bb.succs.keys()}
             cbb.dominators = set([cf.bblocks[dom.id] for dom in bb.dominators])
+            
             cbb.uevs = set([cf.get_or_create_variable(v.id) for v in bb.uevs])
             cbb.defs = set([cf.get_or_create_variable(v.id) for v in bb.defs if v is not None])
-            cbb.live_in = set([cf.get_or_create_variable(v.id) for v in bb.live_in])
-            cbb.live_out = set([cf.get_or_create_variable(v.id) for v in bb.live_out])
+            
+            cbb.live_in_with_alloc = {cf.get_or_create_variable(v.id): alloc for v, alloc in bb.live_in_with_alloc.iteritems()}
+            cbb.live_out_with_alloc = {cf.get_or_create_variable(v.id): alloc for v, alloc in bb.live_out_with_alloc.iteritems()}
+            
+            cbb.live_in = set(cbb.live_in_with_alloc.keys())
+            cbb.live_out = set(cbb.live_out_with_alloc.keys())
+            
             #instructions:
             for instr in bb.instructions:
                 ci = instr.copy(cbb)
@@ -639,76 +589,31 @@ class Function:
         self.instr_counter += 1
         return iid
 
-    # Computes definitions and upword-exposed variables for each basic block.
-    def compute_defs_and_uevs(self):
-        for bb in self.bblocks.values():
-            bb.compute_defs_and_uevs()
-
-    def compute_reg_defs_and_uevs(self):
-        for bb in self.bblocks.values():
-            bb.compute_reg_defs_and_uevs()
-
-    def compute_defs_and_uevs_with_alloc(self):
-        for bb in self.bblocks.values():
-            bb.compute_defs_and_uevs_with_alloc()
-
-    # Performs liveness analysis - for each basic block and instruction computes 
-    # live_in and live_out variable sets
+    # For each basic block and their instructions computes liveness sets:
+    # live_in and live_out - sets of live-in and live-out variables
+    # live_in_with_alloc and live_out_with_alloc - sets of live variables with their allocations
+    #
+    # Params:
     # ordered_bbs - optional list of ordered basic blocks the analysis should be performed on.
-    def perform_liveness_analysis(self, ordered_bbs = None):
-        self.compute_defs_and_uevs()
-
-        if ordered_bbs is None:
-            ordered_bbs = self.bblocks.values()
-
-        # initialize sets
-        for bb in ordered_bbs:
-            assert bb.defs is not None and bb.uevs is not None
-            bb.live_in = set()
-            bb.live_out = set()
-
-        change = True
-        while change:
-            change = False
-            for bb in ordered_bbs:
-                live_out_size = len(bb.live_out)
-                for succ in bb.succs.values():
-                    bb.live_out |= (succ.live_in)
-                    # We add to the live-out set these input variables of phi instructions,
-                    # that were upward exposed in the successor block.
-                    for phi in succ.phis:
-                        if bb.id in phi.uses: # it may not be in there if the used value is not Variable.
-                            bb.live_out.add(phi.uses[bb.id])
-                
-                live_in_size = len(bb.live_in)
-                # Variable is in live-in set if
-                # - it is upword-exposed in bb (i.e. used before any redefinition)
-                # - or is live on the exit from bb and not defined in this block.
-                bb.live_in = (bb.uevs | (bb.live_out - bb.defs))
-
-                if len(bb.live_in) > live_in_size or len(bb.live_out) > live_out_size:
-                    change = True
-
-        for bb in ordered_bbs:
-            bb.perform_instr_liveness_analysis() # updates liveness for each instr
-
-    def perform_liveness_analysis_with_alloc(self, ordered_bbs = None):
-        self.compute_defs_and_uevs_with_alloc()
-    
-        if ordered_bbs is None:
-            ordered_bbs = self.bblocks.values()
-
+    # check_correctness - if True, tests whether variables allocation is correct on the function level:
+    #                     i.e. whether variables live-in and live-out on any edge between two basic blocks
+    #                     have the same register assign.
+    def perform_liveness_analysis(self, ordered_bbs = None, check_correctness = False):
         live_in_with_alloc = {}
         live_out_with_alloc = {}
-        for bb in ordered_bbs:
-            assert bb.defs_with_alloc is not None and bb.uevs_with_alloc is not None
+
+        for bb in self.bblocks.values():
+            bb.compute_defs_and_uevs()
             live_in_with_alloc[bb.id] = {}
             live_out_with_alloc[bb.id] = {}
 
-        # Checks if all vids contained in both  d1 and d2 have the same allocation.
+        if ordered_bbs is None:
+            ordered_bbs = self.bblocks.values()
+
+        # Checks if all vars contained in both d1 and d2 have the same allocation.
         def alloc_correct(d1, d2):
-            for (vid, alloc) in d1.iteritems():
-                alloc2 = d2.get(vid, None)
+            for (var, alloc) in d1.iteritems():
+                alloc2 = d2.get(var, None)
                 if alloc2 and alloc != alloc2:
                     return False
 
@@ -721,19 +626,28 @@ class Function:
                 # LIVE-OUT
                 live_out_size = len(live_out_with_alloc[bb.id])
                 for succ in bb.succs.values():
-                    if not alloc_correct(live_out_with_alloc[bb.id], live_in_with_alloc[succ.id]):
+
+                    # CORRECTNESS CHECK
+                    if check_correctness and not alloc_correct(live_out_with_alloc[bb.id], live_in_with_alloc[succ.id]):
                         return False
 
                     live_out_with_alloc[bb.id].update(live_in_with_alloc[succ.id])
+                    # We follow the convention that variable used in a phi instruction is not live at this instruction
+                    # nor live-in at this basic block BUT is live-out at its predecessor.
                     for phi in succ.phis:
                         if bb.id in phi.uses:
                             var = phi.uses[bb.id]
-                            live_out_with_alloc[bb.id][var.id] = var.alloc.get(phi.id, None)
+                            live_out_with_alloc[bb.id][var] = var.alloc.get(phi.id, None)
 
                 # LIVE-IN
+                # Variable is live-in at the basic block.
+                # - it is upword-exposed in this basic block
+                # - OR is live on the exit from this block and not defined in this block.
                 live_in_size = len(live_in_with_alloc[bb.id])
-                live_out_minus_defs = {vid: alloc for (vid, alloc) in live_out_with_alloc[bb.id].iteritems() if vid not in bb.defs_with_alloc}
-                if not alloc_correct(bb.uevs_with_alloc, live_out_minus_defs):
+                live_out_minus_defs = {var: alloc for (var, alloc) in live_out_with_alloc[bb.id].iteritems() if var not in bb.defs_with_alloc}
+
+                # CORRECTNESS CHECK
+                if check_correctness and not alloc_correct(bb.uevs_with_alloc, live_out_minus_defs):
                     return False
 
                 live_in_with_alloc[bb.id] = bb.uevs_with_alloc.copy()
@@ -745,50 +659,16 @@ class Function:
         for bb in ordered_bbs:
             bb.live_in_with_alloc = live_in_with_alloc[bb.id]
             bb.live_out_with_alloc = live_out_with_alloc[bb.id]
+            bb.live_in = set(bb.live_in_with_alloc.keys())
+            bb.live_out = set(bb.live_out_with_alloc.keys())
 
-
+        # LIVENESS ANALYSIS BETWEEN INSTRUCTIONS
         for bb in ordered_bbs:
-            result = bb.perform_instr_liveness_analysis_with_alloc()
-            if not result:
+            correct = bb.perform_instr_liveness_analysis()
+            if check_correctness and not correct:
                 return False
 
         return True
-
-    # Liveness analysis for registers.
-    def perform_reg_liveness_analysis(self, ordered_bbs = None):
-        self.compute_reg_defs_and_uevs()
-
-        if ordered_bbs is None:
-            ordered_bbs = self.bblocks.values()
-
-        # initialize sets
-        for bb in ordered_bbs:
-            assert bb.reg_defs is not None and bb.reg_uevs is not None
-            bb.reg_live_in = set()
-            bb.reg_live_out = set()
-
-        change = True
-        while change:
-            change = False
-            for bb in ordered_bbs:
-                live_out_size = len(bb.reg_live_out)
-                for succ in bb.succs.values():
-                    bb.reg_live_out |= (succ.reg_live_in)
-                    for phi in succ.phis:
-                        if bb.id in phi.uses: 
-                            alloc = phi.uses[bb.id].alloc.get(phi.id, None)
-                            if alloc and utils.is_regname(alloc):
-                                bb.reg_live_out.add(alloc)
-
-                live_in_size = len(bb.reg_live_in)
-                bb.reg_live_in = (bb.reg_uevs | (bb.reg_live_out - bb.reg_defs))
-                if len(bb.reg_live_in) > live_in_size or len(bb.reg_live_out) > live_out_size:
-                    change = True
-
-            for bb in ordered_bbs:
-                bb.perform_reg_instr_liveness_analysis()
-
-
 
     # Performs dominance analysis by updating bb.dominators for each
     # basic block in this function. The bb.dominators is set of basic blocks
@@ -873,7 +753,6 @@ class Function:
     def perform_full_analysis(self):
         utils.number_instructions(utils.reverse_postorder(self))
         self.perform_liveness_analysis()
-        self.perform_reg_liveness_analysis()
         self.perform_dominance_analysis()
         self.perform_loop_analysis()
 
@@ -884,30 +763,26 @@ class Function:
     # - allocation is consistent (two subsequent uses with no def bewteen have the same register assigned)
     # - in every program point, each live variable has different register allocated.
     def allocation_is_correct(self):
-        result = self.perform_liveness_analysis_with_alloc()
+        result = self.perform_liveness_analysis(check_correctness=True)
         if not result:
-
             return False
 
         for bb in self.bblocks.values():
             for instr in bb.instructions:
-                live_out = set([var.id for var in instr.live_out])
-                live_out_with_alloc = set(instr.live_out_with_alloc.keys())
                 # Each live variable must have allocation.
-                if live_out != live_out_with_alloc:
-
-                    return False
+                for (var, alloc) in instr.live_out_with_alloc.iteritems():
+                    if alloc is None:
+                        return False
 
                 tmp = set()
-                for (vid, alloc) in instr.live_out_with_alloc.iteritems():
+                for (var, alloc) in instr.live_out_with_alloc.iteritems():
                     # Each live variable must have register assigned.
                     if not utils.is_regname(alloc):
-
                         return False
 
                     # Variable must have different register assigned.
                     if alloc in tmp:
-                        print "TU CIE MAM", instr.num
+                        print "HERE: ", instr.num, instr.live_out_with_alloc, tmp
                         return False
                     tmp.add(alloc)
 

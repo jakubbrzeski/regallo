@@ -18,11 +18,11 @@ class LivenessWithAllocTests(unittest.TestCase):
     def assert_module(self, m):
         m.perform_full_analysis()
         for f in m.functions.values():
-            result = f.perform_liveness_analysis_with_alloc()
+            result = f.perform_liveness_analysis()
             self.assertTrue(result)
             for bb in f.bblocks.values():
-                self.assertEqual(set([v.id for v in bb.live_in]), set(bb.live_in_with_alloc.keys()))
-                self.assertEqual(set([v.id for v in bb.live_out]), set(bb.live_out_with_alloc.keys()))
+                self.assertEqual(bb.live_in, set(bb.live_in_with_alloc.keys()))
+                self.assertEqual(bb.live_out, set(bb.live_out_with_alloc.keys()))
 
     def test_gcd(self):
         m = cfg.Module.from_file("programs/gcd.json")

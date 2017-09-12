@@ -11,11 +11,9 @@ class Opts:
         self.predecessors = options.get("predecessors", False)
         self.successors = options.get("successors", False)
         self.defs_uevs = options.get("defs_uevs", False)
-        self.reg_defs_uevs = options.get("reg_defs_uevs", False)
         self.defs_uevs_with_alloc = options.get("defs_uevs_with_alloc", False)
 
         self.liveness = options.get("liveness", False)
-        self.reg_liveness = options.get("reg_liveness", False)
         self.liveness_with_alloc = options.get("liveness_with_alloc", False)
 
         self.dominance = options.get("dominance", False)
@@ -185,14 +183,6 @@ class BBString:
         return self.pattern.format("UEVS", uevs) + "\n" + \
                self.pattern.format("DEFS", defs) 
 
-    def reg_defs_uevs(self):
-        assert self.bb.reg_uevs is not None and self.bb.reg_defs is not None
-        uevs =  [ValueString(reg, self.options) for reg in list(self.bb.reg_uevs)]
-        defs = [ValueString(reg, self.options) for reg in list(self.bb.reg_defs)]
-       
-        return self.pattern.format("REG-UEVS", uevs) + "\n" + \
-               self.pattern.format("REG-DEFS", defs) 
-
     def defs_uevs_with_alloc(self):
         assert self.bb.uevs_with_alloc is not None and self.bb.defs_with_alloc is not None
         uevs = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.uevs_with_alloc.iteritems()]
@@ -209,15 +199,10 @@ class BBString:
         return self.pattern.format("LIVE-IN", live_in) + "\n" + \
                self.pattern.format("LIVE-OUT", live_out) 
 
-    def reg_liveness(self):
-        assert self.bb.reg_live_in is not None and self.bb.reg_live_out is not None
-        live_in = [ValueString(reg, self.options) for reg in list(self.bb.reg_live_in)]
-        live_out = [ValueString(reg, self.options) for reg in list(self.bb.reg_live_out)]
-        return self.pattern.format("REG-LIVE-IN", live_in) + "\n" + \
-               self.pattern.format("REG-LIVE-OUT", live_out) 
-
     def liveness_with_alloc(self):
         assert self.bb.live_in_with_alloc is not None and self.bb.live_out_with_alloc is not None
+        print "DUPA"
+        print self.bb.live_in_with_alloc
         live_in = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.live_in_with_alloc.iteritems()]
         live_out = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.live_out_with_alloc.iteritems()]
         return self.pattern.format("LIVE-IN-ALLOC", live_in) + "\n" + \
@@ -241,8 +226,6 @@ class BBString:
             res.append(self.successors())
         if self.options.defs_uevs:
             res.append(self.defs_uevs())
-        if self.options.reg_defs_uevs:
-            res.append(self.reg_defs_uevs())
         if self.options.defs_uevs_with_alloc:
             res.append(self.defs_uevs_with_alloc())
         if self.options.liveness:
@@ -251,8 +234,6 @@ class BBString:
             res.append(self.liveness_with_alloc())
         if self.options.dominance:
             res.append(self.dominance())
-        if self.options.reg_liveness:
-            res.append(self.reg_liveness())
         res.append("\n")
 
         return "\n".join(res)
