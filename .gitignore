@@ -4,5 +4,6 @@
 *.pyc
 llvm2/
 llvm/
+!llvm/programs
 !llvm/src/lib/Transforms/CFGExtractor
 python/ipynb_checkpoints
