@@ -229,6 +229,38 @@ class BBString:
         return self.pattern.format("DOM", dominators) 
 
 
+    def full(self):
+        res = []
+        bb_name = str(self.bb.id) + "(" + str(self.bb.llvm_name) + ")"
+        bb_name = colored(bb_name, attrs=['underline'])
+        res.append(bb_name)
+        res.append(self.instructions())
+        if self.options.predecessors:
+            res.append(self.predecessors())
+        if self.options.successors:
+            res.append(self.successors())
+        if self.options.defs_uevs:
+            res.append(self.defs_uevs())
+        if self.options.reg_defs_uevs:
+            res.append(self.reg_defs_uevs())
+        if self.options.defs_uevs_with_alloc:
+            res.append(self.defs_uevs_with_alloc())
+        if self.options.liveness:
+            res.append(self.liveness())
+        if self.options.liveness_with_alloc:
+            res.append(self.liveness_with_alloc())
+        if self.options.dominance:
+            res.append(self.dominance())
+        if self.options.reg_liveness:
+            res.append(self.reg_liveness())
+        res.append("\n")
+
+        return "\n".join(res)
+
+
+    def __str__(self):
+        return self.full()
+
 class FunctionString:
     def __init__(self, f, options=Opts()):
         self.f = f
@@ -240,32 +272,8 @@ class FunctionString:
         for bb in bbs:
             if self.options.alloc_only and bb.is_redundant():
                 continue
-
-            printer = BBString(bb, self.options)
-            bb_name = str(bb.id) + "(" + str(bb.llvm_name) + ")"
-            bb_name = colored(bb_name, attrs=['underline'])
-            res.append(bb_name)
-            res.append(printer.instructions())
-            if self.options.predecessors:
-                res.append(printer.predecessors())
-            if self.options.successors:
-                res.append(printer.successors())
-            if self.options.defs_uevs:
-                res.append(printer.defs_uevs())
-            if self.options.reg_defs_uevs:
-                res.append(printer.reg_defs_uevs())
-            if self.options.defs_uevs_with_alloc:
-                res.append(printer.defs_uevs_with_alloc())
-            if self.options.liveness:
-                res.append(printer.liveness())
-            if self.options.liveness_with_alloc:
-                res.append(printer.liveness_with_alloc())
-            if self.options.dominance:
-                res.append(printer.dominance())
-            if self.options.reg_liveness:
-                res.append(printer.reg_liveness())
-            res.append("\n")
-
+            res.append(BBString(bb, self.options).full())
+            
         return "\n".join(res)
 
     def __str__(self):

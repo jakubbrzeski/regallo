@@ -27,22 +27,47 @@ m.perform_full_analysis()
 print "Functions in the module: ", ", ".join(m.functions.keys())
 
 
-bas = BasicLinearScan()
+bas = BasicLinearScan(spiller=CurrentFirst())
 ext = ExtendedLinearScan()
 
 if args.function:
 
     f = m.functions[args.function]
-    f.compute_defs_and_uevs_with_alloc()
-    #for bb in f.bblocks.values():
-    #    print bb.llvm_name, bb.defs_with_alloc, bb.uevs_with_alloc
-    print FunctionString(f, Opts(defs_uevs_with_alloc=True))
-   
-    bas.perform_full_register_allocation(f, 2)
-    print f.perform_liveness_analysis_with_alloc()
-    print f.perform_liveness_analysis()
-    print FunctionString(f, Opts(defs_uevs=True, liveness=True, liveness_with_alloc=True))
+    g = f.copy()
 
+    """
+    res = bas.perform_register_allocation(g, 3)
+    g.perform_full_analysis()
+    resolve.insert_spill_code(g)
+    res = bas.perform_register_allocation(g, 5, spilling=False)
+    print "SUCCESS: ", res 
+    print FunctionString(g, Opts(with_alloc=True, predecessors=True, successors=True))
+    print "\n- - - - - - - - AFTER PHI ELIMINATION - - - - - - - - - - \n"    
+    resolve.eliminate_phi(g, 5)
+    g.perform_full_analysis()
+    g.perform_liveness_analysis_with_alloc()
+    if res:
+        print FunctionString(g, Opts(with_alloc=True, predecessors=True, successors=True, reg_liveness=True, liveness_with_alloc=True, liveness=True, defs_uevs=True, reg_defs_uevs=True, defs_uevs_with_alloc=True))
+        success = g.allocation_is_correct()
+        print "SANITY CHECK:", success
+
+        bb = g.bblocks["bb14"]
+        for instr in bb.instructions:
+            print instr.num, instr.reg_live_in, instr.reg_live_out
+
+
+        print "\n"
+        for instr in bb.instructions:
+            print instr.num, instr.live_in_with_alloc, instr.live_out_with_alloc
+
+    """
+    #"""
+    bas.perform_full_register_allocation(g, 5)
+    g.perform_liveness_analysis_with_alloc()
+    print FunctionString(g, Opts(with_alloc=True, liveness=True, liveness_with_alloc=True))
+    success = g.allocation_is_correct()
+    print "SANITY CHECK:", success
+    #"""
 
 else :
     flist = m.functions.values()

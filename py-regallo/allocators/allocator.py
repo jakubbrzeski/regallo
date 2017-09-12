@@ -1,4 +1,5 @@
 import cfg.resolve as resolve
+import cfg.printer as printer
 
 class Allocator(object):
     def __init__(self, name):

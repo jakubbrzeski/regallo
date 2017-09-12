@@ -286,6 +286,7 @@ def insert_spill_code(f):
     insert_after  = {iid: [] for iid in range(f.instr_counter)}
 
     for bb in f.bblocks.values():
+
         for instr in bb.instructions:
             if instr.definition and instr.definition.is_spilled_at(instr):
                 # Insert store after instr.
@@ -301,7 +302,13 @@ def insert_spill_code(f):
                         uses = set([v]), 
                         uses_debug = [memslot, v])
 
-                insert_after[instr.id].append(store)
+                if instr.is_phi():
+                    # For variables defined by phi operation, we have to insert
+                    # store after all phi instructions. Otherwise, allocator could
+                    # later assign the same register to both PHI definitions which
+                    # is incorrect.
+                    last_phi_id = bb.phis[-1].id
+                    insert_after[last_phi_id].append(store)
 
             if instr.is_phi():
                 for (bid, var) in instr.uses.iteritems():

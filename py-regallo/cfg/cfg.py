@@ -369,10 +369,9 @@ class BasicBlock:
     # Coputes uevs and defs sets but for registers.
     # See self.compute_defs_and_uevs.
     def compute_reg_defs_and_uevs(self):
-        self.reg_uevs = None
-        self.reg_defs = None
         defs = set()
         uevs = set()
+
         for instr in self.instructions:
             if not instr.is_phi():
                 for var in instr.uses:
@@ -420,6 +419,39 @@ class BasicBlock:
                     current_live_set |= regs
 
             instr.reg_live_in = current_live_set.copy()
+
+    def perform_instr_liveness_analysis_with_alloc(self):
+        current_live_dict = self.live_out_with_alloc.copy()
+
+        def alloc_correct(instr, var):
+            instr_alloc = var.alloc.get(instr.id, None)
+            dict_alloc = current_live_dict[var.id]
+            if instr_alloc and dict_alloc and (instr_alloc != dict_alloc):
+                return False
+            return True
+
+
+        for instr in self.instructions[::-1]:
+            instr.live_out_with_alloc = current_live_dict.copy()
+            if instr.definition:
+                var = instr.definition
+
+                if var.id in current_live_dict:
+                    if not alloc_correct(instr, var):
+                        return False
+                    del current_live_dict[var.id]
+
+            if not instr.is_phi(): # ?
+                for var in instr.uses:
+                    if var.id in current_live_dict:
+                        if not alloc_correct(instr, var):
+                            return False
+                    else:    
+                        current_live_dict[var.id] = var.alloc.get(instr.id, None)
+
+            instr.live_in_with_alloc = current_live_dict.copy()
+
+        return True
 
 # Loop is a list of basic blocks, the first of which is a header and last - a tail.
 # Loops may be nested, so it has a parent field which is the 'nearest' parent in the
@@ -714,10 +746,13 @@ class Function:
             bb.live_in_with_alloc = live_in_with_alloc[bb.id]
             bb.live_out_with_alloc = live_out_with_alloc[bb.id]
 
-        return True
-        #for bb in ordered_bbs:
-        #    bb.perform_instr_liveness_analysis() # updates liveness for each instr
 
+        for bb in ordered_bbs:
+            result = bb.perform_instr_liveness_analysis_with_alloc()
+            if not result:
+                return False
+
+        return True
 
     # Liveness analysis for registers.
     def perform_reg_liveness_analysis(self, ordered_bbs = None):
@@ -738,11 +773,11 @@ class Function:
             for bb in ordered_bbs:
                 live_out_size = len(bb.reg_live_out)
                 for succ in bb.succs.values():
-                    bb.reg_live_out != (succ.reg_live_in)
+                    bb.reg_live_out |= (succ.reg_live_in)
                     for phi in succ.phis:
-                        if bb.id in phi.uses and phi.id in phi.uses[bb.id].alloc:
-                            alloc = phi.uses[bb.id].alloc[phi.id]
-                            if utils.is_regname(alloc):
+                        if bb.id in phi.uses: 
+                            alloc = phi.uses[bb.id].alloc.get(phi.id, None)
+                            if alloc and utils.is_regname(alloc):
                                 bb.reg_live_out.add(alloc)
 
                 live_in_size = len(bb.reg_live_in)
@@ -842,14 +877,41 @@ class Function:
         self.perform_dominance_analysis()
         self.perform_loop_analysis()
 
-    """
+
     # Sanity check.
     # Checks whether: 
     # - each variable that is used at least once is allocated to register.
-    # - allocation is consistent (two subsequent uses have the same register assigned)
+    # - allocation is consistent (two subsequent uses with no def bewteen have the same register assigned)
     # - in every program point, each live variable has different register allocated.
     def allocation_is_correct(self):
-    """ 
+        result = self.perform_liveness_analysis_with_alloc()
+        if not result:
+
+            return False
+
+        for bb in self.bblocks.values():
+            for instr in bb.instructions:
+                live_out = set([var.id for var in instr.live_out])
+                live_out_with_alloc = set(instr.live_out_with_alloc.keys())
+                # Each live variable must have allocation.
+                if live_out != live_out_with_alloc:
+
+                    return False
+
+                tmp = set()
+                for (vid, alloc) in instr.live_out_with_alloc.iteritems():
+                    # Each live variable must have register assigned.
+                    if not utils.is_regname(alloc):
+
+                        return False
+
+                    # Variable must have different register assigned.
+                    if alloc in tmp:
+                        print "TU CIE MAM", instr.num
+                        return False
+                    tmp.add(alloc)
+
+        return True
 
 
 # Module represents a program and consists of list of functions.

@@ -1,6 +1,9 @@
 import unittest
 from allocators.lscan.basic import BasicLinearScan
+from allocators.lscan.basic import spillers
 import tests.cfgmocks as cfgmocks
+import cfg
+
 
 class BasicLinearScanTest(cfgmocks.GCDTest):
 
@@ -70,3 +73,60 @@ class BasicLinearScanTest(cfgmocks.GCDTest):
         self.assertNotIn("v17", intervals)
         self.assertNotIn("v18", intervals)
 
+# Performs sanity check after each allocation.
+# If allocation succeeded, sanity check also must succeed.
+class AllocationCorrectnessTests(unittest.TestCase):
+
+    def setUp(self):
+        self.allocators = [
+                BasicLinearScan(),
+                BasicLinearScan(spiller=spillers.CurrentFirst(), name="current"),
+                BasicLinearScan(spiller=spillers.LessUsedFirst(), name="lessUsed")]
+
+
+    def assert_allocation_correct(self, m, allocator, regcount):
+        for f in m.functions.values():
+            g = f.copy()
+            success = allocator.perform_full_register_allocation(g, regcount)
+            if success:
+
+                correct = g.allocation_is_correct()
+                if not correct:
+                    print "Function: ", g.name, " allocator:", allocator.name, "rc:", regcount 
+                self.assertTrue(correct)
+    
+    def test_gcd(self):
+        m = cfg.Module.from_file("programs/gcd.json")
+        m.perform_full_analysis()
+        for allocator in self.allocators:
+            self.assert_allocation_correct(m, allocator, 2)
+            self.assert_allocation_correct(m, allocator, 3)
+            self.assert_allocation_correct(m, allocator, 4)
+            self.assert_allocation_correct(m, allocator, 5)
+       
+    def test_sort(self):
+        m = cfg.Module.from_file("programs/gcd.json")
+        m.perform_full_analysis()
+        for allocator in self.allocators:
+            self.assert_allocation_correct(m, allocator, 2)
+            self.assert_allocation_correct(m, allocator, 3)
+            self.assert_allocation_correct(m, allocator, 4)
+            self.assert_allocation_correct(m, allocator, 5)
+
+    def test_gjk(self):
+        m = cfg.Module.from_file("programs/gjk.json")
+        m.perform_full_analysis()
+        for allocator in self.allocators:
+            self.assert_allocation_correct(m, allocator, 3)
+            self.assert_allocation_correct(m, allocator, 5)
+            self.assert_allocation_correct(m, allocator, 7)
+            self.assert_allocation_correct(m, allocator, 8)
+
+    def test_fft(self):
+        m = cfg.Module.from_file("programs/fft.json")
+        m.perform_full_analysis()
+        for allocator in self.allocators:
+            self.assert_allocation_correct(m, allocator, 3)
+            self.assert_allocation_correct(m, allocator, 5)
+            self.assert_allocation_correct(m, allocator, 7)
+            self.assert_allocation_correct(m, allocator, 8)
