@@ -135,9 +135,9 @@ def insert_cycles(bb, cycles):
         instructions = []
         tmp = bb.f.get_or_create_variable()
         i1, i2 = None, None # endpoints of the cycle
+        cycle_allocs = set()
         for (d,u) in cycle:
             instr = None
-
             if d is None:
                 instr = cfg.Instruction(bb, tmp, cfg.Instruction.MOV, [u.val], [u.val])
                 u.val.alloc[instr.id] = u.alloc
@@ -145,16 +145,18 @@ def insert_cycles(bb, cycles):
             elif u is None:
                 instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [tmp], [tmp])
                 d.val.alloc[instr.id] = d.alloc
+                cycle_allocs.add(d.alloc)
                 i2 = instr
             else:
                 instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
                 d.val.alloc[instr.id] = d.alloc
                 u.val.alloc[instr.id] = u.alloc
+                cycle_allocs.add(d.alloc)
 
             instructions.append(instr)
 
         bb.instructions.extend(instructions)
-        endpoints.append((i1, i2))
+        endpoints.append((i1, i2, cycle_allocs))
 
     return endpoints
 
@@ -166,26 +168,23 @@ def insert_cycles(bb, cycles):
 # by STORE and LOAD operations.
 #
 # regcount - overall number of registers available. If 0, we replace temp. var by STORE and LOAD.
-def allocate_cycle(i1, i2, regcount=0):
-    # We want to find a free register between i1 and i2
-    # knowing that [i1, i2] is connected interval.
-    # Occupied registers are those from i1.reg_live_out + i2.reg_live_in.
+def allocate_cycle(i1, i2, cycle_allocs, regcount=0):
+    # We want to find a free register between i1 and i2. 
+    # [i1, i2] is connected interval.
    
     if regcount:
         regset = utils.RegisterSet(regcount)
-        occupied = i1.reg_live_out | i2.reg_live_in
+        occupied = cycle_allocs | i2.reg_live_in
         free = regset.free - occupied
-        reg = free.pop()
-        if reg:
+        if free:
+            reg = free.pop()
             i1.definition.alloc[i1.id] = reg
-
             list(i2.uses)[0].alloc[i2.id] = reg
             return
 
     # There is no free register, we need to spill.
     # We change MOVs to STORE and LOAD and use memslot for
     # the temporary variable.
-
     tmp = i1.definition
     slot = utils.slot(tmp)
    
@@ -272,8 +271,8 @@ def eliminate_phi(f, regcount=0):
     f.perform_liveness_analysis()
     f.perform_reg_liveness_analysis()
 
-    for (i1, i2) in cycles_endpoints:
-        allocate_cycle(i1, i2, regcount)
+    for (i1, i2, allocs) in cycles_endpoints:
+        allocate_cycle(i1, i2, allocs, regcount)
 
 
 # For a function processed by register allocator,
