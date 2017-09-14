@@ -112,22 +112,49 @@ def order_moves(moves):
 # and insert them at the end of the given BasicBlock.
 def insert_moves(bb, moves):
     for (d,u) in moves:
-        if utils.is_regname(d.alloc) and u.alloc is None:
-            # d is in register, u.val is const or another non-allocable value.
-            instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [], [u.val])
-            bb.instructions.append(instr)
-            d.val.alloc[instr.id] = d.alloc
+        if utils.is_regname(d.alloc): 
+           
+            # REG - CONST
+            if u.alloc is None:
+                # d is in register, u.val is const or another non-allocable value.
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [], [u.val])
+                bb.instructions.append(instr)
+                d.val.alloc[instr.id] = d.alloc
+           
+            # REG - REG
+            elif utils.is_regname(u.alloc):
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
+                bb.instructions.append(instr)
+                d.val.alloc[instr.id] = d.alloc
+                u.val.alloc[instr.id] = u.alloc
 
-        elif utils.is_regname(d.alloc) and utils.is_regname(u.alloc):
-            # Both d and u are in registers => produce "d = u"
-            instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
-            bb.instructions.append(instr)
-            d.val.alloc[instr.id] = d.alloc
-            u.val.alloc[instr.id] = u.alloc
+            # REG - MEM
+            elif utils.is_slotname(u.alloc):
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.LOAD, [], [u.val])
+                bb.instructions.append(instr)
+                d.val.alloc[instr.id] = d.alloc
+                u.val.alloc[instr.id] = u.alloc
 
-        else:
-            # After register allocation No variable in phi instructions should be in memory slot.
-            assert False
+        elif utils.is_slotname(d.alloc):
+
+            # MEM - CONST
+            if u.alloc is None:
+                instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [], [d.val, u.val])
+                bb.instructions.append(instr)
+
+            # MEM - REG
+            elif utils.is_regname(u.alloc):
+                instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [u.val], [d.val, u.val])
+                bb.instructions.append(instr)
+                u.val.alloc[instr.id] = u.alloc
+
+            # MEM - MEM
+            elif utils.is_slotname(u.alloc):
+                print "MEM - MEM"
+                return False
+
+    return True
+
 
 def insert_cycles(bb, cycles):
     endpoints = []
@@ -165,16 +192,16 @@ def insert_cycles(bb, cycles):
 # This function takes two instructions being the endpoints of a list of
 # mov instructions that was created from the cut cycle and checks whether
 # this temporary variable can be assigned a register or must be replaced
-# by STORE and LOAD operations.
+# by STORE and LOAD operations. Cycle may occur only between registers.
 #
 # regcount - overall number of registers available. If 0, we replace temp. var by STORE and LOAD.
 def allocate_cycle(i1, i2, cycle_allocs, regcount=0):
     # We want to find a free register between i1 and i2. 
-    # [i1, i2] is connected interval.
+    # [i1, i2] is a connected interval.
    
     if regcount:
         regset = utils.RegisterSet(regcount)
-        # registers live out at the end of cycle
+        # registers live out at the end of the cycle
         live_out_regs = set([alloc for alloc in i2.live_out_with_alloc.values() if utils.is_regname(alloc)])
         occupied = cycle_allocs | live_out_regs
         free = regset.free - occupied
@@ -207,9 +234,8 @@ def allocate_cycle(i1, i2, cycle_allocs, regcount=0):
 # and inserting properly ordered mov instructions in the predecessor blocks.
 #
 # regcount - overall number of available registers: phi elimination may 
-#            need additional register when some moves form a cycle. 
-#            If regcount is 0 we spill one value in the cycle to the memory.
-#            For details see insert_moves function.
+#            need additional register when some moves form a cycle or to swap
+#            memory addresses.
 def eliminate_phi(f, regcount=0):
 
     # Moves between registers may create cycles which need special
@@ -241,11 +267,10 @@ def eliminate_phi(f, regcount=0):
                 # store the value (Variable or const) and corresponding 
                 # allocation (register or memory slot or None).
                 d = Alloc(phi.definition, phi.definition.alloc[phi.id])
-                u = None
+                u = Alloc(phi.uses_debug[pred.id], None)
                 if pred.id in phi.uses:
                     u = Alloc(phi.uses[pred.id], phi.uses[pred.id].alloc[phi.id])
-                else:
-                    u = Alloc(phi.uses_debug[pred.id], None)
+
                 moves.append((d,u))
             
             moves, cycles = order_moves(moves)
@@ -257,10 +282,13 @@ def eliminate_phi(f, regcount=0):
                 # a new basic block on the edge from pred to bb.
                 bti = pred
                 if len(pred.succs) > 1:
-                    bti = f.create_new_basic_block_between(pred, bb)
+                    bti = f.create_new_basic_block()
+                    f.insert_basic_block_between(bti, pred, bb)
                 
                 if moves:
-                    insert_moves(bti, moves)
+                    success = insert_moves(bti, moves)
+                    if not success:
+                        return False
 
                 if cycles:
                     endpoints = insert_cycles(bti, cycles)
@@ -275,6 +303,7 @@ def eliminate_phi(f, regcount=0):
     for (i1, i2, allocs) in cycles_endpoints:
         allocate_cycle(i1, i2, allocs, regcount)
 
+    return True
 
 # For a function processed by register allocator,
 # checks which of its variables have to be spilled into memory and 
@@ -287,91 +316,66 @@ def insert_spill_code(f):
     insert_after  = {iid: [] for iid in range(f.instr_counter)}
 
     for bb in f.bblocks.values():
-
         for instr in bb.instructions:
-            if instr.definition and instr.definition.is_spilled_at(instr):
-                # Insert store after instr.
-                # [v1 = ...] -> [v2 = ... ; store mem(v1), v2]  
-                v = f.get_or_create_variable()
-                memslot = instr.definition.alloc[instr.id]
-                instr.definition = v
+            # Variable instances used and defined in phi instructions are treated
+            # separately in phi elimination phase.
+            if not instr.is_phi():
+                if instr.definition and instr.definition.is_spilled_at(instr):
+                    # Insert store after instr.
+                    # [v1 = ...] -> [v2 = ... ; store mem(v1), v2]  
+                    v = f.get_or_create_variable()
+                    memslot = instr.definition.alloc[instr.id]
+                    instr.definition = v
+                    
+                    store = cfg.Instruction(
+                            bb = instr.bb, 
+                            defn = None, 
+                            opname = cfg.Instruction.STORE,
+                            uses = set([v]), 
+                            uses_debug = [memslot, v])
+
+                    insert_after[instr.id].append(store)
                 
-                store = cfg.Instruction(
-                        bb = instr.bb, 
-                        defn = None, 
-                        opname = cfg.Instruction.STORE,
-                        uses = set([v]), 
-                        uses_debug = [memslot, v])
+                else:
+                    replace = []
+                    for var in instr.uses:
+                        if var.is_spilled_at(instr):
+                            # Insert load before the instruction.
+                            # [... = v1] -> [v2 = load mem(v1) ;  ... = v2]
+                            v = f.get_or_create_variable()
+                            memslot = var.alloc[instr.id]
+                            replace.append((var, v))
+                            
+                            load = cfg.Instruction(
+                                    bb = instr.bb,
+                                    defn = v,
+                                    opname = cfg.Instruction.LOAD,
+                                    uses = [],
+                                    uses_debug = [memslot])
 
-                if instr.is_phi():
-                    # For variables defined by phi operation, we have to insert
-                    # store after all phi instructions. Otherwise, allocator could
-                    # later assign the same register to both PHI definitions which
-                    # is incorrect.
-                    last_phi_id = bb.phis[-1].id
-                    insert_after[last_phi_id].append(store)
+                            insert_before[instr.id].append(load)
 
-            if instr.is_phi():
-                for (bid, var) in instr.uses.iteritems():
-                    if var.is_spilled_at(instr):
-                        # Insert load at the end of predecessor block.
-                        # bb:[... = v1] -> pred:[v2 = load mem(v1)] bb:[ ... = v2]
-                        pred = f.bblocks[bid]
-                        v = f.get_or_create_variable()
-                        memslot = var.alloc[instr.id]
-                        instr.uses[bid] = v
-                        instr.uses_debug[bid] = v
+                    for (a, b) in replace:
+                        instr.uses.remove(a)
+                        instr.uses.add(b)
 
-                        load = cfg.Instruction(
-                                bb = pred,
-                                defn = v,
-                                opname = cfg.Instruction.LOAD,
-                                uses = set(),
-                                uses_debug = [memslot])
-                        
-                        insert_after[pred.last_instr().id].append(load)
-                        # TODO: if the last instruction in pred is br,
-                        # insert it before br.
-
-            else:
-                replace = []
-                for var in instr.uses:
-                    if var.is_spilled_at(instr):
-                        # Insert load before the instruction.
-                        # [... = v1] -> [v2 = load mem(v1) ;  ... = v2]
-                        v = f.get_or_create_variable()
-                        memslot = var.alloc[instr.id]
-                        replace.append((var, v))
-
-                        
-                        load = cfg.Instruction(
-                                bb = instr.bb,
-                                defn = v,
-                                opname = cfg.Instruction.LOAD,
-                                uses = [],
-                                uses_debug = [memslot])
-
-                        insert_before[instr.id].append(load)
-
-                for (a, b) in replace:
-                    instr.uses.remove(a)
-                    instr.uses.add(b)
-
-                    # Replace all occurrences in uses_debug.
-                    for j, vd in enumerate(instr.uses_debug):
-                        if vd == a:
-                            instr.uses_debug[j] = b
+                        # Replace all occurrences in uses_debug.
+                        for j, vd in enumerate(instr.uses_debug):
+                            if vd == a:
+                                instr.uses_debug[j] = b
 
 
     # Reewrite instructions.
     for bb in f.bblocks.values():
         new_instructions = []
         for instr in bb.instructions:
-            for ib in insert_before[instr.id]:
-                new_instructions.append(ib)
+            if instr.id in insert_before:
+                for ib in insert_before[instr.id]:
+                    new_instructions.append(ib)
             new_instructions.append(instr)
-            for ia in insert_after[instr.id]:
-                new_instructions.append(ia)
+            if instr.id in insert_after:
+                for ia in insert_after[instr.id]:
+                    new_instructions.append(ia)
 
         bb.set_instructions(new_instructions)
 

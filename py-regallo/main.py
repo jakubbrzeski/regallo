@@ -35,16 +35,16 @@ if args.function:
     f = m.functions[args.function]
     g = f.copy()
 
-    print FunctionString(g, Opts(liveness=True, liveness_with_alloc=True))
-    print f.bblocks["bb1"].live_in_with_alloc
-    print f.bblocks["bb2"].live_in_with_alloc
-    print f.bblocks["bb3"].live_in_with_alloc
+    print FunctionString(g, Opts(predecessors=True, successors=True))
+    print "\n - - - - - - - - - - - - - - - - - - - - - - - - - \n"
+    success = bas.perform_register_allocation(g, 0)
+    resolve.insert_spill_code(g)
+    g.perform_full_analysis()
+    print success
+    print FunctionString(g, Opts(predecessors=True, successors=True, liveness=True, with_alloc=True))
 
-    bas.perform_full_register_allocation(g, 2)
-    g.perform_liveness_analysis()
-    print FunctionString(g, Opts(with_alloc=True, liveness=True, liveness_with_alloc=True))
-    success = g.allocation_is_correct()
-    print "SANITY CHECK:", success
+    #success = g.allocation_is_correct()
+    #print "SANITY CHECK:", success
 
 else :
     flist = m.functions.values()

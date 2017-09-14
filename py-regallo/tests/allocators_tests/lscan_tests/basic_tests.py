@@ -83,7 +83,6 @@ class AllocationCorrectnessTests(unittest.TestCase):
                 BasicLinearScan(spiller=spillers.CurrentFirst(), name="current"),
                 BasicLinearScan(spiller=spillers.LessUsedFirst(), name="lessUsed")]
 
-
     def assert_allocation_correct(self, m, allocator, regcount):
         for f in m.functions.values():
             g = f.copy()
@@ -130,3 +129,39 @@ class AllocationCorrectnessTests(unittest.TestCase):
             self.assert_allocation_correct(m, allocator, 5)
             self.assert_allocation_correct(m, allocator, 7)
             self.assert_allocation_correct(m, allocator, 8)
+
+
+class AllocationWithMinRegPressureTests(unittest.TestCase):
+
+    def setUp(self):
+        self.allocators = [
+                BasicLinearScan(),
+                BasicLinearScan(spiller=spillers.CurrentFirst(), name="current"),
+                BasicLinearScan(spiller=spillers.LessUsedFirst(), name="lessUsed")]
+
+    def assert_allocation_success(self, m, allocator):
+        for f in m.functions.values():
+            g = f.copy()
+            minimal_pressure = g.minimal_register_pressure()
+            success = allocator.perform_full_register_allocation(g, minimal_pressure)
+            print "function", g.name, "min pressure =", minimal_pressure, "success =", success
+            self.assertTrue(success)
+
+    def test_gcd(self):
+        m = cfg.Module.from_file("programs/gcd.json")
+        m.perform_full_analysis()
+        for allocator in self.allocators:
+            self.assert_allocation_success(m, allocator) 
+
+    def test_sort(self):
+        m = cfg.Module.from_file("programs/sort.json")
+        m.perform_full_analysis()
+        for allocator in self.allocators:
+            self.assert_allocation_success(m, allocator)
+
+    def test_gjk(self):
+        m = cfg.Module.from_file("programs/gjk.json")
+        m.perform_full_analysis()
+        #self.assert_allocation_success(m, self.allocators[0])
+        #for allocator in self.allocators:
+        #    self.assert_allocation_success(m, allocator)

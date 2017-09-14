@@ -307,7 +307,7 @@ class BasicBlock:
         return False
 
     def __hash__(self):
-        return int(self.id[2:]) # we omit "b" - first two characters of id
+        return int(self.id[2:]) # we omit "bb" - first two characters of id
 
     def __repr__(self):
         return str(self.id)
@@ -329,6 +329,19 @@ class BasicBlock:
 
     def register_pressure_out(self):
         return len(self.live_out)
+
+    # Register pressure at the given point of the program is a number
+    # of currently live variables. We define minimal register pressure
+    # as the register pressure in the program where all variables were
+    # spilled. Then, it should amount to the maximum over a number of 
+    # used variables in each instruction.
+    def minimal_register_pressure(self):
+        max_uses = 0
+        for instr in self.instructions:
+            if not instr.is_phi():
+                max_uses = max(max_uses, len(instr.uses))
+
+        return max_uses
 
     # Computes: 
     # - sets of defined and upward-exposed variables (defs and uevs)
@@ -424,6 +437,7 @@ class Function:
 
         # Dictionary of basic blocks {bid: bb}.
         self.bblocks = {}
+        self.free_bid = "bb1"
 
         # Entry basic block
         self.entry_bblock = None
@@ -512,6 +526,15 @@ class Function:
 
         return cf 
 
+    # Returns the maximum over minimal register pressure
+    # values in all basic blocks in this function.
+    # see BasicBlock.minimal_register_pressure()
+    def minimal_register_pressure(self):
+        max_pressure = 0
+        for bb in self.bblocks.values():
+            max_pressure = max(max_pressure, bb.minimal_register_pressure())
+
+        return max_pressure
 
     def set_bblocks(self, bbs_dict, entrybb):
         self.entry_bblock = entrybb
@@ -523,12 +546,21 @@ class Function:
                 self.llvm_name2id[bb.llvm_name] = bb.id
 
 
+    # Finds and returns the first available variable id.
     def find_free_vid(self):
         while (self.free_vid in self.vars):
             num = int(self.free_vid[1:])
             self.free_vid = "v" + str(num+1)
 
         return self.free_vid
+
+    # Finds and returns the first available basic block id.
+    def find_free_bid(self):
+        while (self.free_bid in self.bblocks):
+            num = int(self.free_bid[2:])
+            self.free_bid = "bb" + str(num+1)
+
+        return self.free_bid
 
     # Checks if there exists a variable with the same id. If so, it return this variable,
     # and if not, it creates new variable with this id. In both cases we "maybe-add" the
@@ -554,15 +586,15 @@ class Function:
         
         return v
 
-    def create_new_basic_block(self):
-        bid = "bb" + str(len(self.bblocks) + 1) # New id.
+    def create_new_basic_block(self, bid=None):
+        if bid is None:
+            bid = self.find_free_bid()
         bb = BasicBlock(bid, self)
         self.bblocks[bid] = bb
         return bb
 
-    # Creates new basic block between two given blocks.
-    def create_new_basic_block_between(self, bb1, bb2):
-        bti = self.create_new_basic_block()
+    # Inserts bti between bb1 and bb2.
+    def insert_basic_block_between(self, bti, bb1, bb2):
         # Add edge bb1-bti 
         bti.preds[bb1.id] = bb1
         bb1.succs[bti.id] = bti
@@ -572,7 +604,17 @@ class Function:
         # Delete edge (bb1, bb2).
         del bb2.preds[bb1.id]
         del bb1.succs[bb2.id]
-        return bti
+
+        # For all phi instructions in bb2, replace all 
+        # entries (bb1.id -> val) with (bti.id -> val)
+        for phi in bb2.phis:
+            v = phi.uses_debug[bb1.id]
+            del phi.uses_debug[bb1.id]
+            phi.uses_debug[bti.id] = v
+
+            if bb1.id in phi.uses: # false if val is const
+                del phi.uses[bb1.id]
+                phi.uses[bti.id] = v # if condition was true, it is the same var
 
     def temp_variable(self):
         return self.get_or_create_variable("v0")
@@ -782,7 +824,6 @@ class Function:
 
                     # Variable must have different register assigned.
                     if alloc in tmp:
-                        print "HERE: ", instr.num, instr.live_out_with_alloc, tmp
                         return False
                     tmp.add(alloc)
 
