@@ -3,4 +3,7 @@ add_llvm_loadable_module( LLVMCFGextractor
 
   PLUGIN_TOOL
   opt
+
+  DEPENDS
+  intrinsics_gen
   )
