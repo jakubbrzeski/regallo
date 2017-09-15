@@ -31,7 +31,7 @@ class BasicLinearScan(LinearScan):
 
             for instr in bb.instructions[::-1]:
                 # Definition.
-                if instr.definition:
+                if instr.definition and not instr.definition.is_spilled():
                     iv = intervals[instr.definition.id]
                     iv.fr = instr.num 
                     iv.defn = instr
@@ -39,20 +39,22 @@ class BasicLinearScan(LinearScan):
                 # Uses.
                 if instr.is_phi():
                     for (bid, var) in instr.uses.iteritems():
-                        iv = intervals[var.id]
-                        pred = f.bblocks[bid]
-                        if iv.to < pred.last_instr().num + 0.5:
-                            iv.to = pred.last_instr().num + 0.5
-                        # We update interval only to the end of the predecessor block,
-                        # not including the current phi instruction. However, we record
-                        # that the variable was used here.
-                        iv.uses.append(instr)
+                        if not var.is_spilled():
+                            iv = intervals[var.id]
+                            pred = f.bblocks[bid]
+                            if iv.to < pred.last_instr().num + 0.5:
+                                iv.to = pred.last_instr().num + 0.5
+                            # We update interval only to the end of the predecessor block,
+                            # not including the current phi instruction. However, we record
+                            # that the variable was used here.
+                            iv.uses.append(instr)
                 else:
                     for var in instr.uses:
-                        iv = intervals[var.id]
-                        if iv.to < instr.num:
-                            iv.to = instr.num
-                        iv.uses.append(instr)
+                        if not var.is_spilled():
+                            iv = intervals[var.id]
+                            if iv.to < instr.num:
+                                iv.to = instr.num
+                            iv.uses.append(instr)
 
         # We skip empty intervals.
         return {vid: [iv] for (vid,iv) in intervals.iteritems() if not iv.empty()}
@@ -63,6 +65,7 @@ class BasicLinearScan(LinearScan):
                 key = lambda iv: iv.fr)
         regset = utils.RegisterSet(regcount)
         active = SortedSet(key = lambda iv: iv.to)
+        spill_occurred = False
 
         def expire_old_intervals(current):
             for iv in active:
@@ -82,8 +85,12 @@ class BasicLinearScan(LinearScan):
                 return False
             else:
                 self.spiller.spill_at_interval(iv, active)
+                spill_occurred = True
+            
+        if not spill_occurred:
+            return True
 
-        return True
+        return False
 
 
     def resolve(self, intervals):

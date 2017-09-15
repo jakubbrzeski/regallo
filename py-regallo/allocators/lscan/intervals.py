@@ -25,9 +25,9 @@ class Interval(object):
 
     def update_variables(self, alloc):
         if self.defn is not None:
-            self.var.alloc[self.defn.id] = alloc
+            self.var.alloc = alloc
         for use in self.uses:
-            self.var.alloc[use.id] = alloc
+            self.var.alloc = alloc
 
     def allocate(self, alloc):
         self.alloc = alloc

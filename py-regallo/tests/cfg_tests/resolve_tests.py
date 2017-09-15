@@ -144,6 +144,7 @@ class PhiEliminationTests(unittest.TestCase):
         d6 (reg4) = u6 (reg6)
 
         d7 (reg7) = u7 (None)
+        
 
                                          _____
                                         |     |
@@ -156,8 +157,9 @@ class PhiEliminationTests(unittest.TestCase):
 
         """""""""""
 
-        defs = [f.get_or_create_variable() for i in range(8)]
-        uses = [f.get_or_create_variable() for i in range(8)]
+        # We add "None" at the beginning for convenience - we wnat to have defs[1] = "v1".
+        defs = [None]+[f.get_or_create_variable() for i in range(10)]
+        uses = [None]+[f.get_or_create_variable() for i in range(10)]
 
         # Helper function for creating PHI instruction in bb2 which copy Variables from bb1 and consts from bb0.
         def phi21(d, u, reg_d, reg_u):
@@ -165,9 +167,9 @@ class PhiEliminationTests(unittest.TestCase):
             i = cfg.Instruction(bb2, d, "phi", uses = _uses, uses_debug = [("bb0", "const"), ("bb1", u)])
             
             if reg_d:
-                d.alloc[i.id] = reg_d
+                d.alloc = reg_d
             if reg_u:
-                u.alloc[i.id] = reg_u
+                u.alloc = reg_u
 
             return i
 
@@ -189,30 +191,57 @@ class PhiEliminationTests(unittest.TestCase):
         self.defs = defs
         self.uses = uses
 
+    def assert_mov(self, instr, def_id, use_id, use_const=False, redundant=False):
+        self.assertEqual(instr.opname, cfg.Instruction.MOV)
+        self.assertIsNotNone(instr.definition)
+        self.assertEqual(instr.definition.id, def_id)
+        self.assertEqual(instr.is_redundant(), redundant)
+
+        if use_const:
+            self.assertFalse(instr.uses)
+            self.assertEqual(len(instr.uses_debug), 1)
+            use_debug = list(instr.uses_debug)[0]
+            self.assertEqual(use_debug, "const")
+
+        else:
+            self.assertEqual(len(instr.uses), 1)
+            use = list(instr.uses)[0]
+            self.assertEqual(use.id, use_id)
+
     def test_simple(self):
-        #print cfgprinter.FunctionPrinter(self.f, cfgprinter.PrintOptions(nums=False))
         resolve.eliminate_phi(self.f)
-        #print cfgprinter.FunctionPrinter(self.f, cfgprinter.PrintOptions(nums=False, alloc_only=True))
+
+
         """
         CORRECT ANSWER
         In a new basic block between bb1 and bb2
-        reg1 = mov reg1 (redundant mov)
-        reg3 = mov reg2       
-        reg2 = mov reg1       
-        reg7 = mov const               
-        store mem(?) reg5 
-        reg5 = mov reg4       
-        reg4 = mov reg6       
-        reg6 = load mem(?) 
+        v1   =  v11     (reg1 = reg1) self loop (it may be anywhere actually)
+
+        v3   =  v13     (reg3 = reg2)
+        v2   =  v12     (reg2 = reg1)
+        v7   =  const     (reg1 = const)
+
+        None =  v15     (None = reg5)
+        v4   =  v14     (reg5 = reg4)
+        v6   =  v16     (reg4 = reg6)
+        v5   =  None    (reg6 = None)
+
 
         """
+
+
         new_bb = None
         for bb in self.f.bblocks.values():
             if len(bb.preds) == 1 and len(bb.succs) == 1 and "bb1" in bb.preds and "bb2" in bb.succs:
                 new_bb = bb
 
+
+        # Assert new block between bb1 nad bb2 has been created.
         self.assertIsNotNone(new_bb)
         self.assertEquals(len(new_bb.instructions), 8)
-        # TODO: finish 
+        self.assert_mov(new_bb.instructions[0], "v1", "v11", redundant=True)
+        self.assert_mov(new_bb.instructions[1], "v3", "v13")
+        self.assert_mov(new_bb.instructions[2], "v2", "v12")
+        # TODO: finish , add mem-mem move
 
 

@@ -11,15 +11,13 @@ class Opts:
         self.predecessors = options.get("predecessors", False)
         self.successors = options.get("successors", False)
         self.defs_uevs = options.get("defs_uevs", False)
-        self.defs_uevs_with_alloc = options.get("defs_uevs_with_alloc", False)
 
         self.liveness = options.get("liveness", False)
-        self.liveness_with_alloc = options.get("liveness_with_alloc", False)
 
         self.dominance = options.get("dominance", False)
         # Instead of variable names, print allocs.
         self.alloc_only = options.get("alloc_only", False)
-        # Besides variable names, print allocs.
+        # Besides variable names, print allocs, also with defs, uevs and liveness sets.
         self.with_alloc = options.get("with_alloc", False)
         
         self.intervals_verbose = options.get("intervals_verbose", False)
@@ -80,11 +78,10 @@ class InstrString:
         if self.options.colors:
             vstr = colored(vstr, 'yellow', attrs=['bold'])
 
-        alloc = d.alloc[self.instr.id] if self.instr.id in d.alloc else None
-        if self.options.alloc_only and alloc:
-            vstr = allocstr(alloc)
-        elif self.options.with_alloc and alloc:
-            vstr += "("+allocstr(alloc)+")"
+        if self.options.alloc_only and d.alloc:
+            vstr = allocstr(d.alloc)
+        elif self.options.with_alloc and d.alloc:
+            vstr += "("+allocstr(d.alloc)+")"
 
         return vstr
 
@@ -96,11 +93,10 @@ class InstrString:
             for (bid, var) in self.instr.uses_debug.iteritems():
                 if isinstance(var, cfg.Variable):
                     vstr = colored(var, 'yellow')
-                    alloc = var.alloc[self.instr.id] if self.instr.id in var.alloc else None
-                    if self.options.alloc_only and alloc:
-                        vstr = allocstr(alloc)
-                    elif self.options.with_alloc and alloc:
-                        vstr += "("+allocstr(alloc)+")"
+                    if self.options.alloc_only and var.alloc:
+                        vstr = allocstr(var.alloc)
+                    elif self.options.with_alloc and var.alloc:
+                        vstr += "("+allocstr(var.alloc)+")"
 
                 elif utils.is_slotname(var) and (self.options.alloc_only 
                         or self.options.with_alloc):
@@ -114,11 +110,10 @@ class InstrString:
             for var in self.instr.uses_debug:
                 if isinstance(var, cfg.Variable):
                     vstr = colored(var, 'yellow', attrs=['bold'])
-                    alloc = var.alloc[self.instr.id] if self.instr.id in var.alloc else None
-                    if self.options.alloc_only and alloc:
-                        vstr = allocstr(alloc)
-                    elif self.options.with_alloc and alloc:
-                        vstr += "("+allocstr(alloc)+")"
+                    if self.options.alloc_only and var.alloc:
+                        vstr = allocstr(var.alloc)
+                    elif self.options.with_alloc and var.alloc:
+                        vstr += "("+allocstr(var.alloc)+")"
 
                 elif utils.is_slotname(var) and (self.options.alloc_only 
                         or self.options.with_alloc):
@@ -184,12 +179,12 @@ class BBString:
                self.pattern.format("DEFS", defs) 
 
     def defs_uevs_with_alloc(self):
-        assert self.bb.uevs_with_alloc is not None and self.bb.defs_with_alloc is not None
-        uevs = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.uevs_with_alloc.iteritems()]
-        defs = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.defs_with_alloc.iteritems()]
+        assert self.bb.uevs is not None and self.bb.defs is not None
+        uevs = [(ValueString(v, self.options), ValueString(v.alloc)) for v in self.bb.uevs]
+        defs = [(ValueString(v, self.options), ValueString(v.alloc)) for v in self.bb.defs]
       
-        return self.pattern.format("UEVS-ALLOC", uevs) + "\n" + \
-               self.pattern.format("DEFS-ALLOC", defs) 
+        return self.pattern.format("UEVS", uevs) + "\n" + \
+               self.pattern.format("DEFS", defs) 
 
     def liveness(self):
         assert self.bb.live_in is not None and self.bb.live_out is not None
@@ -200,13 +195,11 @@ class BBString:
                self.pattern.format("LIVE-OUT", live_out) 
 
     def liveness_with_alloc(self):
-        assert self.bb.live_in_with_alloc is not None and self.bb.live_out_with_alloc is not None
-        print "DUPA"
-        print self.bb.live_in_with_alloc
-        live_in = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.live_in_with_alloc.iteritems()]
-        live_out = [(ValueString(v, self.options), ValueString(al, self.options)) for (v, al) in self.bb.live_out_with_alloc.iteritems()]
-        return self.pattern.format("LIVE-IN-ALLOC", live_in) + "\n" + \
-               self.pattern.format("LIVE-OUT-ALLOC", live_out) 
+        assert self.bb.live_in is not None and self.bb.live_out is not None
+        live_in = [(ValueString(v, self.options), ValueString(v.alloc)) for v in self.bb.live_in]
+        live_out = [(ValueString(v, self.options), ValueString(v.alloc)) for v in self.bb.live_out]
+        return self.pattern.format("LIVE-IN", live_in) + "\n" + \
+               self.pattern.format("LIVE-OUT", live_out) 
 
     def dominance(self):
         assert self.bb.dominators is not None
@@ -225,13 +218,15 @@ class BBString:
         if self.options.successors:
             res.append(self.successors())
         if self.options.defs_uevs:
-            res.append(self.defs_uevs())
-        if self.options.defs_uevs_with_alloc:
-            res.append(self.defs_uevs_with_alloc())
+            if self.options.with_alloc:
+                res.append(self.defs_uevs_with_alloc())
+            else:
+                res.append(self.defs_uevs())
         if self.options.liveness:
-            res.append(self.liveness())
-        if self.options.liveness_with_alloc:
-            res.append(self.liveness_with_alloc())
+            if self.options.with_alloc:
+                res.append(self.liveness_with_alloc())
+            else:
+                res.append(self.liveness())
         if self.options.dominance:
             res.append(self.dominance())
         res.append("\n")

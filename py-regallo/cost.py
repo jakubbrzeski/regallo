@@ -26,10 +26,8 @@ class SpillRatioCalculator(CostCalculator):
         total = 0
         spilled = 0
         for use in instr.uses:
-            if instr.id in use.alloc:
                 total += 1
-                if not utils.is_regname(use.alloc[instr.id]) \
-                        or use.alloc[instr.id] == utils.scratch_reg():
+                if use.is_spilled():
                     spilled += 1
 
         if percent:

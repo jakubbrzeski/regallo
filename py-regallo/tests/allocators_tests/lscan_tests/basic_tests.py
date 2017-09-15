@@ -73,8 +73,10 @@ class BasicLinearScanTest(cfgmocks.GCDTest):
         self.assertNotIn("v17", intervals)
         self.assertNotIn("v18", intervals)
 
-# Performs sanity check after each allocation.
-# If allocation succeeded, sanity check also must succeed.
+# Tries allocate registers in our test programs multiple times with
+# different number of available registers, each time checking if the allocation
+# is correct i.e. if at all program points every live variable has a register
+# assigned and every two variables have different registers assigned.
 class AllocationCorrectnessTests(unittest.TestCase):
 
     def setUp(self):
@@ -85,14 +87,12 @@ class AllocationCorrectnessTests(unittest.TestCase):
 
     def assert_allocation_correct(self, m, allocator, regcount):
         for f in m.functions.values():
-            g = f.copy()
-            success = allocator.perform_full_register_allocation(g, regcount)
-            if success:
-
-                correct = g.allocation_is_correct()
+            result = allocator.perform_full_register_allocation(f, regcount)
+            if result:
+                correct = result.allocation_is_correct()
                 if not correct:
-                    print "Function: ", g.name, " allocator:", allocator.name, "rc:", regcount 
-                self.assertTrue(correct)
+                    print f.name, "not correct", allocator.name, regcount
+                    self.assertTrue(correct)
     
     def test_gcd(self):
         m = cfg.Module.from_file("programs/gcd.json")
@@ -104,7 +104,7 @@ class AllocationCorrectnessTests(unittest.TestCase):
             self.assert_allocation_correct(m, allocator, 5)
        
     def test_sort(self):
-        m = cfg.Module.from_file("programs/gcd.json")
+        m = cfg.Module.from_file("programs/sort.json")
         m.perform_full_analysis()
         for allocator in self.allocators:
             self.assert_allocation_correct(m, allocator, 2)
@@ -141,11 +141,14 @@ class AllocationWithMinRegPressureTests(unittest.TestCase):
 
     def assert_allocation_success(self, m, allocator):
         for f in m.functions.values():
-            g = f.copy()
-            minimal_pressure = g.minimal_register_pressure()
-            success = allocator.perform_full_register_allocation(g, minimal_pressure)
-            print "function", g.name, "min pressure =", minimal_pressure, "success =", success
-            self.assertTrue(success)
+            minimal_pressure = f.minimal_register_pressure()
+            result = allocator.perform_full_register_allocation(f, minimal_pressure)
+            self.assertIsNotNone(result)
+            self.assertTrue(result.allocation_is_correct)
+
+            # It shouldn't pass with fewer registers
+            result = allocator.perform_full_register_allocation(f, minimal_pressure-1)
+            self.assertIsNone(result)
 
     def test_gcd(self):
         m = cfg.Module.from_file("programs/gcd.json")
@@ -162,6 +165,6 @@ class AllocationWithMinRegPressureTests(unittest.TestCase):
     def test_gjk(self):
         m = cfg.Module.from_file("programs/gjk.json")
         m.perform_full_analysis()
-        #self.assert_allocation_success(m, self.allocators[0])
-        #for allocator in self.allocators:
-        #    self.assert_allocation_success(m, allocator)
+        self.assert_allocation_success(m, self.allocators[0])
+        for allocator in self.allocators:
+            self.assert_allocation_success(m, allocator)

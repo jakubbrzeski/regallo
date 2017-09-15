@@ -2,7 +2,6 @@ import json
 import argparse
 import utils
 
-import allocators.utils as alutils
 from allocators.lscan.basic.spillers import CurrentFirst, LessUsedFirst
 from allocators.lscan.basic import BasicLinearScan
 from allocators.lscan.extended import ExtendedLinearScan
@@ -33,18 +32,15 @@ ext = ExtendedLinearScan()
 if args.function:
 
     f = m.functions[args.function]
-    g = f.copy()
+    print FunctionString(f, Opts(predecessors=True, successors=True, liveness=True))
+    print "-- -- -- -- -- -- -- --"
 
-    print FunctionString(g, Opts(predecessors=True, successors=True))
-    print "\n - - - - - - - - - - - - - - - - - - - - - - - - - \n"
-    success = bas.perform_register_allocation(g, 0)
-    resolve.insert_spill_code(g)
-    g.perform_full_analysis()
-    print success
-    print FunctionString(g, Opts(predecessors=True, successors=True, liveness=True, with_alloc=True))
-
-    #success = g.allocation_is_correct()
-    #print "SANITY CHECK:", success
+    res = bas.perform_full_register_allocation(f, 3)
+    if res is None:
+        print "allocation failed"
+    else:
+        print FunctionString(res, Opts(predecessors=True, successors=True, liveness=True))
+        print "allocation correct:", res.allocation_is_correct()
 
 else :
     flist = m.functions.values()

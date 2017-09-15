@@ -110,49 +110,61 @@ def order_moves(moves):
 
 # Takes ordered moves as a list of pairs (Alloc(def), Alloc(use))
 # and insert them at the end of the given BasicBlock.
-def insert_moves(bb, moves):
+def insert_moves(bb, moves, regcount=0):
+    new_instructions = []
+    
+    all_regs = utils.RegisterSet(regcount).free
+    reg_defs = set() 
+
     for (d,u) in moves:
         if utils.is_regname(d.alloc): 
-           
+            reg_defs.add(d.alloc)
+
             # REG - CONST
             if u.alloc is None:
-                # d is in register, u.val is const or another non-allocable value.
                 instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [], [u.val])
-                bb.instructions.append(instr)
-                d.val.alloc[instr.id] = d.alloc
+                new_instructions.append(instr)
            
             # REG - REG
             elif utils.is_regname(u.alloc):
                 instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
-                bb.instructions.append(instr)
-                d.val.alloc[instr.id] = d.alloc
-                u.val.alloc[instr.id] = u.alloc
+                new_instructions.append(instr)
 
             # REG - MEM
             elif utils.is_slotname(u.alloc):
                 instr = cfg.Instruction(bb, d.val, cfg.Instruction.LOAD, [], [u.val])
-                bb.instructions.append(instr)
-                d.val.alloc[instr.id] = d.alloc
-                u.val.alloc[instr.id] = u.alloc
+                new_instructions.append(instr)
 
         elif utils.is_slotname(d.alloc):
-
             # MEM - CONST
             if u.alloc is None:
                 instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [], [d.val, u.val])
-                bb.instructions.append(instr)
+                new_instructions.append(instr)
 
             # MEM - REG
             elif utils.is_regname(u.alloc):
                 instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [u.val], [d.val, u.val])
-                bb.instructions.append(instr)
-                u.val.alloc[instr.id] = u.alloc
+                new_instructions.append(instr)
 
             # MEM - MEM
             elif utils.is_slotname(u.alloc):
-                print "MEM - MEM"
-                return False
+                occupied_regs = set(var.alloc for var in bb.live_out) | reg_defs
+                free_regs = all_regs - occupied_regs
+                if not free_regs:
+                    return False
 
+                tmp = bb.f.get_or_create_variable()
+                tmp.alloc = free_regs.pop()
+                load = cfg.Instruction(bb, tmp, cfg.Instruction.LOAD, [], [u.alloc])
+                store = cfg.Instruction(bb, None, cfg.Instruction.STORE, [tmp], [d.alloc, tmp])
+
+                new_instructions.append(load)
+                new_instructions.append(store)
+
+                #return False
+
+
+    bb.instructions.extend(new_instructions)
     return True
 
 
@@ -167,17 +179,13 @@ def insert_cycles(bb, cycles):
             instr = None
             if d is None:
                 instr = cfg.Instruction(bb, tmp, cfg.Instruction.MOV, [u.val], [u.val])
-                u.val.alloc[instr.id] = u.alloc
                 i1 = instr
             elif u is None:
                 instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [tmp], [tmp])
-                d.val.alloc[instr.id] = d.alloc
                 cycle_allocs.add(d.alloc)
                 i2 = instr
             else:
                 instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
-                d.val.alloc[instr.id] = d.alloc
-                u.val.alloc[instr.id] = u.alloc
                 cycle_allocs.add(d.alloc)
 
             instructions.append(instr)
@@ -202,13 +210,11 @@ def allocate_cycle(i1, i2, cycle_allocs, regcount=0):
     if regcount:
         regset = utils.RegisterSet(regcount)
         # registers live out at the end of the cycle
-        live_out_regs = set([alloc for alloc in i2.live_out_with_alloc.values() if utils.is_regname(alloc)])
+        live_out_regs = set([var.alloc for var in i2.live_out if utils.is_regname(var.alloc)])
         occupied = cycle_allocs | live_out_regs
         free = regset.free - occupied
         if free:
-            reg = free.pop()
-            i1.definition.alloc[i1.id] = reg
-            list(i2.uses)[0].alloc[i2.id] = reg
+            i1.definition.alloc = free.pop() 
             return
 
     # There is no free register, we need to spill.
@@ -233,27 +239,53 @@ def allocate_cycle(i1, i2, cycle_allocs, regcount=0):
 # Translates the function out of SSA form by deleting phi instructions
 # and inserting properly ordered mov instructions in the predecessor blocks.
 #
+# The algorithm is as follows:
+# 1. For each basic block:
+#    - we collect all potential variable moves that need to be inserted
+#      on a particular predecessor edge.
+#    - we order these moves in a proper way to preserve the correct data
+#      flow between registers. We store the ordered moves and cycles
+#      separately since they need different treatment. We will insert them
+#      later
+#    - if a predecessor of the current basic block has multiple successors,
+#      we need to put a new basic block on their edge.
+#
+# 2. We recompute liveness sets because of newly created basic blocks and
+#    then insert all previously registered moves and cycles independently.
+#    
+#    Cycles have to be cut by inserting an additional variable or spilling
+#    one variable in the cycle into memory. Here we create the temporary
+#    variable for each cycle but try to allocate it at the end of the procedure.
+#   
+#    Memory-to-memory moves need an additional variable and register - so
+#    if there is no free register, we have to return False here.
+#
+# 3. When all moves and cycles were properly inserted, we remove phi instructions
+#    from all basic blocks and execute liveness analysis again beause we
+#    need up-to-date liveness information in the next step.
+#
+# 4. At the end, we go back to cycles and try to allocate the new variables.
+#    If there are no free registers at the program points where cycle is located,
+#    we remove the temporary variable and spill one of cycle's original variables
+#    into memory.
+#    
 # regcount - overall number of available registers: phi elimination may 
-#            need additional register when some moves form a cycle or to swap
-#            memory addresses.
+#            need additional when dealing with memory to memory copies
+#            or in case of mov-cycles.
 def eliminate_phi(f, regcount=0):
 
-    # Moves between registers may create cycles which need special
-    # treatment - we need to remember one variable on the cycle and
-    # cut it at that point. If there is a free register, it may
-    # reside in a temporary variable. If not, we need to store it in
-    # memory. 
-    
-    # The strategy here is as follows:
-    # For each cycle we create a new Variable that stores one value in
-    # the cycle. After all cycles are processed, we perform again full
-    # liveness analysis for our function (together with register liveness
-    # analysis) to obtain register pressure in all points of the program.
-    # Then we check if at all cycle endpoints is a free register available.
-    # If yes, we allocate it to the corresponding temporary variable we created.
-    # If not, we remove the variable and insert store and load respectively
-    # at the beginning and the end of the cycle.
+
+    # List of tuples (instr1, instr2, allocs) denoting start and end instruction
+    # where a particular cycle was inserted and set of registers allocated to
+    # all variables on the cycle.
     cycles_endpoints = []
+
+    # List of tuples (basic block, moves, cycles) denoting the need to insert 
+    # moves and cycles at the end of the given basic block. We register such
+    # events and before executing them we perform full liveness analysis which
+    # is necessary for moves and cycles insertion espcially in case of newly
+    # created basic blocks.
+    events = []
 
     for bb in f.bblocks.values():
         # Process only these bblocks that have any phi instructions.
@@ -266,15 +298,13 @@ def eliminate_phi(f, regcount=0):
                 # We represent a move as a pair of Allocs objects, which
                 # store the value (Variable or const) and corresponding 
                 # allocation (register or memory slot or None).
-                d = Alloc(phi.definition, phi.definition.alloc[phi.id])
+                d = Alloc(phi.definition, phi.definition.alloc)
                 u = Alloc(phi.uses_debug[pred.id], None)
                 if pred.id in phi.uses:
-                    u = Alloc(phi.uses[pred.id], phi.uses[pred.id].alloc[phi.id])
-
+                    u = Alloc(phi.uses[pred.id], phi.uses[pred.id].alloc)
                 moves.append((d,u))
             
             moves, cycles = order_moves(moves)
-          
             if moves or cycles:
                 # It may happen that moves or cycles are empty,
                 # e.g. if there were self loops only.
@@ -284,20 +314,31 @@ def eliminate_phi(f, regcount=0):
                 if len(pred.succs) > 1:
                     bti = f.create_new_basic_block()
                     f.insert_basic_block_between(bti, pred, bb)
-                
-                if moves:
-                    success = insert_moves(bti, moves)
-                    if not success:
-                        return False
+     
+                events.append((bti, moves, cycles))    
+    
+    # Functions repsonsible for inserting moves need up-to-date liveness information
+    # which might have been disturbed if we added new basic blocks.
+    f.perform_liveness_analysis()
+       
+    # Now insert moves and cycles.
+    for (bti, moves, cycles) in events:     
+        if moves:
+            success = insert_moves(bti, moves, regcount)
+            if not success:
+                # It can fail because of lack or available registers in mem-mem copies.
+                return False
 
-                if cycles:
-                    endpoints = insert_cycles(bti, cycles)
-                    cycles_endpoints.extend(endpoints)
-            
+        if cycles:
+            endpoints = insert_cycles(bti, cycles)
+            cycles_endpoints.extend(endpoints)
+
+    for bb in f.bblocks.values():
         # Remove phi instructions from this block.
         bb.instructions = [instr for instr in bb.instructions if not instr.is_phi()]
         bb.phis = []
 
+    # After changes in instructions sets, we perform liveness analysis again.
     f.perform_liveness_analysis()
 
     for (i1, i2, allocs) in cycles_endpoints:
@@ -320,11 +361,12 @@ def insert_spill_code(f):
             # Variable instances used and defined in phi instructions are treated
             # separately in phi elimination phase.
             if not instr.is_phi():
-                if instr.definition and instr.definition.is_spilled_at(instr):
+                # DEFINITION
+                if instr.definition and instr.definition.is_spilled():
                     # Insert store after instr.
                     # [v1 = ...] -> [v2 = ... ; store mem(v1), v2]  
                     v = f.get_or_create_variable()
-                    memslot = instr.definition.alloc[instr.id]
+                    memslot = instr.definition.alloc
                     instr.definition = v
                     
                     store = cfg.Instruction(
@@ -335,34 +377,34 @@ def insert_spill_code(f):
                             uses_debug = [memslot, v])
 
                     insert_after[instr.id].append(store)
-                
-                else:
-                    replace = []
-                    for var in instr.uses:
-                        if var.is_spilled_at(instr):
-                            # Insert load before the instruction.
-                            # [... = v1] -> [v2 = load mem(v1) ;  ... = v2]
-                            v = f.get_or_create_variable()
-                            memslot = var.alloc[instr.id]
-                            replace.append((var, v))
-                            
-                            load = cfg.Instruction(
-                                    bb = instr.bb,
-                                    defn = v,
-                                    opname = cfg.Instruction.LOAD,
-                                    uses = [],
-                                    uses_debug = [memslot])
+               
+                # USES
+                replace = []
+                for var in instr.uses:
+                    if var.is_spilled():
+                        # Insert load before the instruction.
+                        # [... = v1] -> [v2 = load mem(v1) ;  ... = v2]
+                        v = f.get_or_create_variable()
+                        memslot = var.alloc
+                        replace.append((var, v))
+                        
+                        load = cfg.Instruction(
+                                bb = instr.bb,
+                                defn = v,
+                                opname = cfg.Instruction.LOAD,
+                                uses = [],
+                                uses_debug = [memslot])
 
-                            insert_before[instr.id].append(load)
+                        insert_before[instr.id].append(load)
 
-                    for (a, b) in replace:
-                        instr.uses.remove(a)
-                        instr.uses.add(b)
+                for (a, b) in replace:
+                    instr.uses.remove(a)
+                    instr.uses.add(b)
 
-                        # Replace all occurrences in uses_debug.
-                        for j, vd in enumerate(instr.uses_debug):
-                            if vd == a:
-                                instr.uses_debug[j] = b
+                    # Replace all occurrences in uses_debug.
+                    for j, vd in enumerate(instr.uses_debug):
+                        if vd == a:
+                            instr.uses_debug[j] = b
 
 
     # Reewrite instructions.
@@ -378,4 +420,4 @@ def insert_spill_code(f):
                     new_instructions.append(ia)
 
         bb.set_instructions(new_instructions)
-
+    

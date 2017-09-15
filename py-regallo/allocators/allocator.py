@@ -12,25 +12,40 @@ class Allocator(object):
     def perform_register_allocation(self, f, regcount, spilling=True):
         raise NotImplementedError()
 
-
     # Performs full register allocation on a given function using provided
     # allocator with specific number of available registers. 
-    # First, it performs allocation with spilling TODO: finish.
     def perform_full_register_allocation(self, f, regcount):
         first_phase_regcount = regcount
         while (first_phase_regcount >= 0):
-            self.perform_register_allocation(f, first_phase_regcount, spilling=True)
-            resolve.insert_spill_code(f)
-            f.perform_full_analysis()
-
-            success = self.perform_register_allocation(f, regcount, spilling=False)
+            # Phase 1: we allow spilling.
+            g = f.copy()
+            success = self.perform_register_allocation(g, first_phase_regcount, spilling=True)
             if success:
-                resolve.eliminate_phi(f, regcount)
-                f.perform_full_analysis()
-                return True
+                # It succeeded without spilling.
+                return g
+
+            resolve.insert_spill_code(g)
+            g.perform_full_analysis()
+            
+            # Phase 2: spilling forbidden.
+            second_phase_regcount = regcount
+            while (second_phase_regcount >= 1):
+                h = g.copy()
+                success = self.perform_register_allocation(h, regcount, spilling=False)
+                if not success:
+                    # Retry phase 1 with fewer registers.
+                    break
+
+                # Phi elimination.
+                success = resolve.eliminate_phi(h, regcount)
+                if success:
+                    h.perform_full_analysis()
+                    return h
+            
+                second_phase_regcount -= 1
 
             first_phase_regcount -= 1
 
-        return False
+        return None
 
 
