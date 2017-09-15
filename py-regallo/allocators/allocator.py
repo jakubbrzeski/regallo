@@ -16,35 +16,36 @@ class Allocator(object):
     # allocator with specific number of available registers. 
     def perform_full_register_allocation(self, f, regcount):
         first_phase_regcount = regcount
-        while (first_phase_regcount >= 0):
-            # Phase 1: we allow spilling.
-            g = f.copy()
-            success = self.perform_register_allocation(g, first_phase_regcount, spilling=True)
+
+        def try_allocate_and_eliminate_phi(fprim, rc, spilling):
+            while rc >= 0:
+                g = fprim.copy()
+                allocation_success = self.perform_register_allocation(g, rc, spilling)
+                if not allocation_success:
+                    return (g, False)
+                phi_elimination_success = resolve.eliminate_phi(g, regcount)
+                if phi_elimination_success:
+                    return (g, True)
+                rc -= 1
+
+            return None
+
+
+        while first_phase_regcount >= 0:
+            g, success = try_allocate_and_eliminate_phi(f, first_phase_regcount, spilling=True)
             if success:
-                # It succeeded without spilling.
+                g.perform_full_analysis()
                 return g
 
             resolve.insert_spill_code(g)
-            g.perform_full_analysis()
-            
-            # Phase 2: spilling forbidden.
-            second_phase_regcount = regcount
-            while (second_phase_regcount >= 1):
-                h = g.copy()
-                success = self.perform_register_allocation(h, regcount, spilling=False)
-                if not success:
-                    # Retry phase 1 with fewer registers.
-                    break
-
-                # Phi elimination.
-                success = resolve.eliminate_phi(h, regcount)
-                if success:
-                    h.perform_full_analysis()
-                    return h
-            
-                second_phase_regcount -= 1
+  
+            h, success = try_allocate_and_eliminate_phi(g, regcount, spilling=False) 
+            if success:
+                h.perform_full_analysis()
+                return h
 
             first_phase_regcount -= 1
+
 
         return None
 

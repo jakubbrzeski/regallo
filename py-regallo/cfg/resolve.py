@@ -420,4 +420,5 @@ def insert_spill_code(f):
                     new_instructions.append(ia)
 
         bb.set_instructions(new_instructions)
-    
+   
+    f.perform_full_analysis()
