@@ -122,28 +122,28 @@ def insert_moves(bb, moves, regcount=0):
 
             # REG - CONST
             if u.alloc is None:
-                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [], [u.val])
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [], [u.val], ssa=False)
                 new_instructions.append(instr)
            
             # REG - REG
             elif utils.is_regname(u.alloc):
-                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val], ssa=False)
                 new_instructions.append(instr)
 
             # REG - MEM
             elif utils.is_slotname(u.alloc):
-                instr = cfg.Instruction(bb, d.val, cfg.Instruction.LOAD, [], [u.val])
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.LOAD, [], [u.alloc], ssa=False)
                 new_instructions.append(instr)
 
         elif utils.is_slotname(d.alloc):
             # MEM - CONST
             if u.alloc is None:
-                instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [], [d.val, u.val])
+                instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [], [d.alloc, u.val], ssa=False)
                 new_instructions.append(instr)
 
             # MEM - REG
             elif utils.is_regname(u.alloc):
-                instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [u.val], [d.val, u.val])
+                instr = cfg.Instruction(bb, None, cfg.Instruction.STORE, [u.val], [d.alloc, u.val], ssa=False)
                 new_instructions.append(instr)
 
             # MEM - MEM
@@ -155,8 +155,8 @@ def insert_moves(bb, moves, regcount=0):
 
                 tmp = bb.f.get_or_create_variable()
                 tmp.alloc = free_regs.pop()
-                load = cfg.Instruction(bb, tmp, cfg.Instruction.LOAD, [], [u.alloc])
-                store = cfg.Instruction(bb, None, cfg.Instruction.STORE, [tmp], [d.alloc, tmp])
+                load = cfg.Instruction(bb, tmp, cfg.Instruction.LOAD, [], [u.alloc], ssa=False)
+                store = cfg.Instruction(bb, None, cfg.Instruction.STORE, [tmp], [d.alloc, tmp], ssa=False)
 
                 new_instructions.append(load)
                 new_instructions.append(store)
@@ -178,14 +178,14 @@ def insert_cycles(bb, cycles):
         for (d,u) in cycle:
             instr = None
             if d is None:
-                instr = cfg.Instruction(bb, tmp, cfg.Instruction.MOV, [u.val], [u.val])
+                instr = cfg.Instruction(bb, tmp, cfg.Instruction.MOV, [u.val], [u.val], ssa=False)
                 i1 = instr
             elif u is None:
-                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [tmp], [tmp])
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [tmp], [tmp], ssa=False)
                 cycle_allocs.add(d.alloc)
                 i2 = instr
             else:
-                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val])
+                instr = cfg.Instruction(bb, d.val, cfg.Instruction.MOV, [u.val], [u.val], ssa=False)
                 cycle_allocs.add(d.alloc)
 
             instructions.append(instr)

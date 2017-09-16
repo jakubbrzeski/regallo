@@ -9,6 +9,7 @@ from allocators.lscan.extended import ExtendedLinearScan
 from cost import MainCostCalculator, SpillInstructionsCounter
 
 import cfg
+import cfg.sanity as sanity
 import cfg.resolve as resolve
 from cfg.printer import InstrString, FunctionString, IntervalsString, CostString, Opts
 
@@ -35,20 +36,34 @@ sic = SpillInstructionsCounter()
 if args.function:
 
     f = m.functions[args.function]
+    print FunctionString(f, Opts(mark_non_ssa=True))
 
     res = bas.perform_full_register_allocation(f, 2)
     if res is None:
         print "allocation failed"
     else:
-        print "allocation correct:", res.allocation_is_correct()
-        print sic.function_diff(res, f)
-        print CostString(res, sic)
+        print "allocation succeeded"
+        print "allocation correct:", sanity.allocation_is_correct(res)
+        print FunctionString(res, Opts(mark_non_ssa=True))
+        dfc = sanity.data_flow_is_correct(res, f)
+
+        print "Data flow correct: ", dfc
+        #print sic.function_diff(res, f)
+        #print CostString(res, sic)
 
 else :
     flist = m.functions.values()
+    for f in flist:
+        print "FUNCTION: ", f.name
+        res = bas.perform_full_register_allocation(f, 4)
+        if res:
+            print "   allocation success"
+            dfc = sanity.data_flow_is_correct(res, f)
+            print "   data flow correct: ", dfc
+        else:
+            print "   allocation failed."
 
-
-    setting = utils.ResultCompSetting(flist, [2], [bas, bcf], [mcc, sic])
-    res = utils.compute_full_results(setting)
-    utils.compute_and_print_result_table(res, setting)
+#    setting = utils.ResultCompSetting(flist, [2], [bas, bcf], [mcc, sic])
+#    res = utils.compute_full_results(setting)
+#    utils.compute_and_print_result_table(res, setting)
 

@@ -47,7 +47,7 @@ class Instruction:
     MOV = "mov"
     BRANCH = "br"
 
-    def __init__(self, bb, defn, opname, uses, uses_debug=None):
+    def __init__(self, bb, defn, opname, uses, uses_debug, ssa=True):
         # Parent BasicBlock.
         self.bb = bb
 
@@ -65,6 +65,16 @@ class Instruction:
 
         # Operation name e.g. alloc, add, br, phi.
         self.opname = opname
+
+        # False if the instruction was created during phi elimination phase.
+        # Otherwise True.
+        self.ssa = ssa
+
+        # The first, original instruction this one was copied from (if this is a copy of another
+        # copy, we take the another copy's original recursively and so on).
+        # Register allocation returns a modified copy of the input function. During sanity check
+        # we want to know what was the original instructions of the modified ones.
+        self.original = None
 
         # Variables that are used by this instruction. It doesn't include constants, labels
         # or any other values that are not interesting for register allocator. 
@@ -131,6 +141,7 @@ class Instruction:
       
         cdefn = cf.vars[self.definition.id] if self.definition else None
         ci = Instruction(cbb, cdefn, self.opname, cuses, cuses_debug)
+        ci.original = self.original if self.f.is_copy else self
 
         ci.num = self.num
         
@@ -386,8 +397,9 @@ class Loop:
 
 
 class Function:
-    def __init__(self, fname):
+    def __init__(self, fname, is_copy=False):
         self.name = fname
+        self.is_copy = is_copy
 
         # Dictionary of all variables in this function {vid: Variable}.
         self.vars = {}
@@ -434,7 +446,7 @@ class Function:
 
     # Deepcopy of the function.
     def copy(self):
-        cf = Function(self.name)
+        cf = Function(self.name, is_copy=True)
         cf.vars = {vid: deepcopy(var) for (vid, var) in self.vars.iteritems()}
         cf.instr_counter = self.instr_counter
 
@@ -716,31 +728,6 @@ class Function:
         self.perform_liveness_analysis()
         self.perform_dominance_analysis()
         self.perform_loop_analysis()
-
-
-    # Sanity check.
-    # Checks whether at every program point every live variable has a register assigned
-    # and any two live variables have different register assigned. In other words, mapping
-    # from live variables to registers is injection.
-    def allocation_is_correct(self):
-        self.perform_liveness_analysis()
-
-        def allocation_is_injection(varset):
-            regs = set()
-            for var in varset:
-                if not utils.is_regname(var.alloc) or var.alloc in regs:
-                    return False
-                regs.add(var.alloc)
-            return True
-        
-        for bb in self.bblocks.values():
-            if not allocation_is_injection(bb.live_in):
-                return False
-            for instr in bb.instructions:
-                if not allocation_is_injection(instr.live_out):
-                    return False
-
-        return True
 
 
 # Module represents a program and consists of list of functions.
