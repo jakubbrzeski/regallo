@@ -6,7 +6,7 @@ from allocators.lscan.basic.spillers import CurrentFirst, LessUsedFirst
 from allocators.lscan.basic import BasicLinearScan
 from allocators.lscan.extended import ExtendedLinearScan
 
-from cost import BasicCostCalculator, SpillRatioCalculator
+from cost import MainCostCalculator, SpillInstructionsCounter
 
 import cfg
 import cfg.resolve as resolve
@@ -26,29 +26,29 @@ m.perform_full_analysis()
 print "Functions in the module: ", ", ".join(m.functions.keys())
 
 
-bas = BasicLinearScan(spiller=CurrentFirst())
+bas = BasicLinearScan(name="Furthest First")
+bcf = BasicLinearScan(spiller=CurrentFirst(), name="Current First")
 ext = ExtendedLinearScan()
 
+mcc = MainCostCalculator()
+sic = SpillInstructionsCounter()
 if args.function:
 
     f = m.functions[args.function]
-    print FunctionString(f, Opts(predecessors=True, successors=True, liveness=True))
-    print "-- -- -- -- -- -- -- --"
 
-    res = bas.perform_full_register_allocation(f, 3)
+    res = bas.perform_full_register_allocation(f, 2)
     if res is None:
         print "allocation failed"
     else:
-        print FunctionString(res, Opts(predecessors=True, successors=True, liveness=True))
         print "allocation correct:", res.allocation_is_correct()
+        print sic.function_diff(res, f)
+        print CostString(res, sic)
 
 else :
     flist = m.functions.values()
 
-    bcc = BasicCostCalculator()
-    src = SpillRatioCalculator()
 
-    rcs = utils.ResultCompSetting(flist, [3, 5, 7], [bas], [bcc])
-    res = utils.compute_full_results(rcs)
-    utils.print_result_table(res, rcs)
+    setting = utils.ResultCompSetting(flist, [2], [bas, bcf], [mcc, sic])
+    res = utils.compute_full_results(setting)
+    utils.compute_and_print_result_table(res, setting)
 

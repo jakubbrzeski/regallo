@@ -254,15 +254,14 @@ def compute_full_results(setting, analysis=False):
             # ALLOCATORS
             alloc_results = []
             for al in setting.allocators:
-                g = f.copy()
-                success = al.perform_full_register_allocation(g, regc)
+                g = al.perform_full_register_allocation(f, regc) # returns None or modified copy of f. 
 
                 cost_results = [(cc.name, -1) for cc in setting.cost_calculators]
-                if success:
+                if g:
                     # COSTS 
                     cost_results = []
                     for cc in setting.cost_calculators:
-                        res = cc.function_cost(g)
+                        res = cc.function_diff(g, f) # cost(g) - cost(f)
                         cost_results.append((cc.name, res))
 
                 alloc_results.append((al.name, cost_results))
@@ -338,7 +337,7 @@ def compute_result_table(d, setting):
     
     return table, spans
 
-def print_result_table(d, setting):
+def compute_and_print_result_table(d, setting):
     table, spans = compute_result_table(d, setting)
     print(data2rst(table, spans=spans, use_headers=True))
 
