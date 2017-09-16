@@ -1,5 +1,6 @@
 import unittest
 import cfg
+import cfg.analysis as analysis
 
 class GCDTest(unittest.TestCase):
     """
@@ -117,7 +118,7 @@ class GCDTest(unittest.TestCase):
         d["bb6"] = bb6
         f.set_bblocks(d, bb1)
 
-        f.perform_full_analysis()
+        analysis.perform_full_analysis(f)
         self.f = f
 
 

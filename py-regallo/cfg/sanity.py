@@ -1,5 +1,6 @@
 import cfg
 import utils
+import analysis
 
 # Assumption there is only one store for a given memslot.
 def data_flow_is_correct(f, f_orig):
@@ -109,7 +110,7 @@ def data_flow_is_correct(f, f_orig):
 # and any two live variables have different register assigned. In other words, mapping
 # from live variables to registers is injection.
 def allocation_is_correct(f):
-    f.perform_liveness_analysis()
+    analysis.perform_liveness_analysis(f)
 
     def allocation_is_injection(varset):
         regs = set()

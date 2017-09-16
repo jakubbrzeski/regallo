@@ -4,6 +4,7 @@ from allocators.lscan.basic import spillers
 import tests.cfgmocks as cfgmocks
 import cfg
 import cfg.sanity
+import cfg.analysis as analysis
 
 
 class BasicLinearScanTest(cfgmocks.GCDTest):
@@ -91,7 +92,7 @@ class CorrectnessTests(unittest.TestCase):
    
     def test_gcd(self):
         m = cfg.Module.from_file("programs/gcd.json")
-        m.perform_full_analysis()
+        analysis.perform_full_analysis(m)
         for allocator in self.allocators:
             self.assert_correct(m, allocator, 2)
             self.assert_correct(m, allocator, 3)
@@ -100,7 +101,7 @@ class CorrectnessTests(unittest.TestCase):
        
     def test_sort(self):
         m = cfg.Module.from_file("programs/sort.json")
-        m.perform_full_analysis()
+        analysis.perform_full_analysis(m)
         for allocator in self.allocators:
             self.assert_correct(m, allocator, 2)
             self.assert_correct(m, allocator, 3)
@@ -109,7 +110,7 @@ class CorrectnessTests(unittest.TestCase):
 
     def test_gjk(self):
         m = cfg.Module.from_file("programs/gjk.json")
-        m.perform_full_analysis()
+        analysis.perform_full_analysis(m)
         for allocator in self.allocators:
             self.assert_correct(m, allocator, 3)
             self.assert_correct(m, allocator, 5)
@@ -118,7 +119,7 @@ class CorrectnessTests(unittest.TestCase):
 
     def test_fft(self):
         m = cfg.Module.from_file("programs/fft.json")
-        m.perform_full_analysis()
+        analysis.perform_full_analysis(m)
         for allocator in self.allocators:
             self.assert_correct(m, allocator, 3)
             self.assert_correct(m, allocator, 5)
@@ -162,19 +163,19 @@ class AllocationWithMinRegPressureTests(unittest.TestCase):
 
     def test_gcd(self):
         m = cfg.Module.from_file("programs/gcd.json")
-        m.perform_full_analysis()
+        analysis.perform_full_analysis(m)
         for allocator in self.allocators:
             self.assert_allocation_success(m, allocator) 
 
     def test_sort(self):
         m = cfg.Module.from_file("programs/sort.json")
-        m.perform_full_analysis()
+        analysis.perform_full_analysis(m)
         for allocator in self.allocators:
             self.assert_allocation_success(m, allocator)
 
     def test_gjk(self):
         m = cfg.Module.from_file("programs/gjk.json")
-        m.perform_full_analysis()
+        analysis.perform_full_analysis(m)
         self.assert_allocation_success(m, self.allocators[0])
         for allocator in self.allocators:
             self.assert_allocation_success(m, allocator)

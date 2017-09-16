@@ -2,6 +2,8 @@ import re
 import numpy as np
 from cfg.printer import FunctionString, Opts
 import cfg.resolve as resolve
+import cfg.analysis as analysis
+
 from dashtable import data2rst
 import matplotlib.patches as mpatches
 from matplotlib import pyplot as plt
@@ -244,7 +246,7 @@ def compute_full_results(setting, analysis=False):
 
     if analysis:
         for f in setting.functions:
-            f.perform_full_analysis()
+            analysis.perform_full_analysis(f)
 
     for f in setting.functions:
         # REGISTERS

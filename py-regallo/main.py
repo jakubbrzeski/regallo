@@ -11,6 +11,7 @@ from cost import MainCostCalculator, SpillInstructionsCounter
 import cfg
 import cfg.sanity as sanity
 import cfg.resolve as resolve
+import cfg.analysis as analysis
 from cfg.printer import InstrString, FunctionString, IntervalsString, CostString, Opts
 
 parser = argparse.ArgumentParser(description='Process json with CFG')
@@ -23,7 +24,7 @@ with open(args.file) as f:
     module_json = json.load(f)
 
 m = cfg.Module.from_json(module_json)
-m.perform_full_analysis()
+analysis.perform_full_analysis(m)
 print "Functions in the module: ", ", ".join(m.functions.keys())
 
 

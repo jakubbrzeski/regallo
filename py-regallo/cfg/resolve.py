@@ -1,5 +1,6 @@
 import utils
 import cfg
+import analysis
 
 # A helper class storing a value plus its allocation (register
 # or memory slot in case of Variable, and None in case of const).
@@ -319,7 +320,7 @@ def eliminate_phi(f, regcount=0):
     
     # Functions repsonsible for inserting moves need up-to-date liveness information
     # which might have been disturbed if we added new basic blocks.
-    f.perform_liveness_analysis()
+    analysis.perform_liveness_analysis(f)
        
     # Now insert moves and cycles.
     for (bti, moves, cycles) in events:     
@@ -339,7 +340,7 @@ def eliminate_phi(f, regcount=0):
         bb.phis = []
 
     # After changes in instructions sets, we perform liveness analysis again.
-    f.perform_liveness_analysis()
+    analysis.perform_liveness_analysis(f)
 
     for (i1, i2, allocs) in cycles_endpoints:
         allocate_cycle(i1, i2, allocs, regcount)
@@ -421,4 +422,4 @@ def insert_spill_code(f):
 
         bb.set_instructions(new_instructions)
    
-    f.perform_full_analysis()
+    analysis.perform_full_analysis(f)

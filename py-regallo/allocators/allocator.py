@@ -1,5 +1,6 @@
 import cfg.resolve as resolve
 import cfg.printer as printer
+import cfg.analysis as analysis
 
 class Allocator(object):
     def __init__(self, name):
@@ -34,14 +35,14 @@ class Allocator(object):
         while first_phase_regcount >= 0:
             g, success = try_allocate_and_eliminate_phi(f, first_phase_regcount, spilling=True)
             if success:
-                g.perform_full_analysis()
+                analysis.perform_full_analysis(g)
                 return g
 
             resolve.insert_spill_code(g)
   
             h, success = try_allocate_and_eliminate_phi(g, regcount, spilling=False) 
             if success:
-                h.perform_full_analysis()
+                analysis.perform_full_analysis(h)
                 return h
 
             first_phase_regcount -= 1
