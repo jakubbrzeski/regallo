@@ -202,7 +202,6 @@ class Instruction:
 
         return False
 
-
     def get_loop_depth(self):
         assert self.f.loops is not None
         if self.bb.loop is None:
@@ -236,17 +235,12 @@ class BasicBlock:
         self.preds = {}
         self.succs = {}
 
-        # Sets of
-        # - definitions and upward-exposed variables (used before any redefinition)
-        # - definitions and upward-exposed registers
-        # - dictionary of definitions and upward-exposed variables with their allocations.
+        # Sets of definition and upward-exposed variables (used before any redefinition)
         self.defs = set()
         self.uevs = set()
 
 
-        # Sets of:
-        # - live-in and live-out variables in this block.
-        # - dictionary of live variables and their allocations. 
+        # Sets of live-in and live-out variables in this basic block.
         self.live_in = set()
         self.live_out = set()
 
@@ -342,7 +336,15 @@ class BasicBlock:
 
         return max_uses
 
-    
+    # Maximal register pressure is the maximum over register pressure 
+    # values in every point in this basic block.
+    def maximal_register_pressure(self):
+        max_pressure = self.register_pressure_in()
+        for instr in self.instructions:
+            max_pressure = max(max_pressure, instr.register_pressure_out())
+
+        return max_pressure
+
 # Loop is a list of basic blocks, the first of which is a header and last - a tail.
 # Loops may be nested, so it has a parent field which is the 'nearest' parent in the
 # dominance order.
@@ -466,6 +468,18 @@ class Function:
         max_pressure = 0
         for bb in self.bblocks.values():
             max_pressure = max(max_pressure, bb.minimal_register_pressure())
+
+        return max_pressure
+
+    # Returns the maximal "maximal register pressure" over
+    # all basic blocks. See BasicBlock.maximal_register_pressure().
+    # Any register allocation algorithm should
+    # be able to allocate as many registers as the value of maximal
+    # register pressure without spilling.
+    def maximal_register_pressure(self):
+        max_pressure = 0
+        for bb in self.bblocks.values():
+            max_pressure = max(max_pressure, bb.maximal_register_pressure())
 
         return max_pressure
 

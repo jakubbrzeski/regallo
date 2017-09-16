@@ -37,32 +37,35 @@ sic = SpillInstructionsCounter()
 if args.function:
 
     f = m.functions[args.function]
-    print FunctionString(f, Opts(mark_non_ssa=True))
+    print FunctionString(f, Opts(mark_non_ssa=True, liveness=True, predecessors=True))
+    max_pressure = f.maximal_register_pressure()
+    print "max pressure: ", max_pressure
+    res = bas.perform_full_register_allocation(f, max_pressure)
 
-    res = bas.perform_full_register_allocation(f, 2)
+
     if res is None:
         print "allocation failed"
     else:
         print "allocation succeeded"
-        print "allocation correct:", sanity.allocation_is_correct(res)
-        print FunctionString(res, Opts(mark_non_ssa=True))
-        dfc = sanity.data_flow_is_correct(res, f)
-
-        print "Data flow correct: ", dfc
-        #print sic.function_diff(res, f)
-        #print CostString(res, sic)
+        cost = sic.function_diff(res, f)
+        print "   spill instructions: ", cost
 
 else :
     flist = m.functions.values()
     for f in flist:
         print "FUNCTION: ", f.name
-        res = bas.perform_full_register_allocation(f, 4)
+        max_pressure = f.maximal_register_pressure()
+        print "   maximal pressure: ", max_pressure
+        res = bas.perform_full_register_allocation(f, max_pressure)
         if res:
             print "   allocation success"
             dfc = sanity.data_flow_is_correct(res, f)
             print "   data flow correct: ", dfc
+            cost = sic.function_diff(res, f)
+            print "   spill instructions: ", cost
         else:
             print "   allocation failed."
+        print "\n"
 
 #    setting = utils.ResultCompSetting(flist, [2], [bas, bcf], [mcc, sic])
 #    res = utils.compute_full_results(setting)
