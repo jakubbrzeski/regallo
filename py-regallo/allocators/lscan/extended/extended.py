@@ -22,26 +22,26 @@ class ExtendedLinearScan(LinearScan):
                         bb.last_instr().num + 0.5)
 
             for instr in bb.instructions[::-1]:
-                if instr.definition:
+                if instr.definition and not instr.definition.is_spilled():
                     intervals[instr.definition.id].defn = instr
                     last_sub = intervals[instr.definition.id].get_last_subinterval()
                     if last_sub: 
                         last_sub.fr = instr.num
 
-
                 if instr.is_phi():
                     for (bid, v) in instr.uses.iteritems():
-                        intervals[v.id].uses.append(instr)
+                        if not v.is_spilled():
+                            intervals[v.id].uses.append(instr)
 
                 else:
                     for v in instr.uses:
-                        intervals[v.id].uses.append(instr)
-                        last_sub = intervals[v.id].get_last_subinterval()
-                        if not last_sub or last_sub.fr > instr.num: 
-                            intervals[v.id].add_subinterval(
-                                    bb.first_instr().num - 0.5, 
-                                    instr.num)
-
+                        if not v.is_spilled():
+                            intervals[v.id].uses.append(instr)
+                            last_sub = intervals[v.id].get_last_subinterval()
+                            if not last_sub or last_sub.fr > instr.num: 
+                                intervals[v.id].add_subinterval(
+                                        bb.first_instr().num - 0.5, 
+                                        instr.num)
 
         for iv in intervals.values():
             if not iv.empty():
@@ -51,7 +51,6 @@ class ExtendedLinearScan(LinearScan):
         return {vid: [iv] for (vid, iv) in intervals.iteritems() if not iv.empty()}
 
 
-
     def try_allocate_free_register(self, current, active, inactive, regset):
         reg = regset.get_free()
         if reg:
@@ -59,35 +58,14 @@ class ExtendedLinearScan(LinearScan):
             active.add(current)
             return reg
 
-        """
-        According to Wimmer, Franz "Linear Scan Register Allocation on SSA Form":
-
-        All intervals in inactive start before the current interval, so they do 
-        not intersect with the current interval at their definition. 
-        They are inactive and thus have a lifetime hole at the current position, 
-        so they do not intersect with the current interval at its definition. 
-        SSA form therefore guarantees that they never intersect.
-        
-        Unfortunately, splitting of intervals leads to intervals that no
-        longer adhere to the SSA form properties because it destroys SSA
-        form. Therefore, the intersection test cannot be omitted completely;
-        it must be performed if the current interval has been split off from
-        another interval.
-
-         v1 |------           ----
-         v2 |------  ----     ----
-            ^        ^        ^
-            phi      loop     after loop
-        
-        We have 3 basic blocks. v1 is live in the loop header and after the loop.
-        v2 is live in header, some time in the loop body and after the loop.
-        Let's assume we split v2 at the beginning of the loop body where v1 has
-        lifetime hole. Becauce v2 has a new interval here, it doesn't start with
-        definition, so we don't know if definitions of v1 and v2 overlap. That's
-        why we can't be sure if the intervals intersect or not.
-        """
-
-        if not current.split and inactive:
+        # If we don't split intervals, the following is true (according to
+        # Wimmer, Franz "Linear Scan Register Allocation on SSA From"):
+        # All intervals in inactive start before the current interval, so they do 
+        # not intersect with the current interval at their definition. 
+        # They are inactive and thus have a lifetime hole at the current position, 
+        # so they do not intersect with the current interval at its definition. 
+        # SSA form therefore guarantees that they never intersect.
+        if inactive:
             # TODO: poor complexity. Change that. E.g. remember and pass active_regs.
             occupied_regs = set([iv.alloc for iv in active])
             for iv in inactive:
@@ -96,33 +74,11 @@ class ExtendedLinearScan(LinearScan):
                     active.add(current)
                     return iv.alloc
 
-            return None
-
-        elif current.split and inactive: 
-            regs = {} # reg -> (min free_until_pos for all ivs with this reg, iv)
-            for iv in inactive:
-                cfup = iv.intersection(current.fr)
-                if cfup is None:
-                    cfup = maxint
-
-                if iv.reg not in regs or cfup < regs[reg][0]:
-                    regs[reg] = (cfup, iv)
-
-            # Choose reg with max free_until_pos.
-            m = None
-            for reg, (fup, iv) in regs.iteritems():
-                if m is None or m[0] < fup:
-                    m = (fup, iv)
-            
-            # TODO: Split current until m[0]
-            current.allocate(iv.alloc)
-            active.add(current)
-            return iv.alloc
-
         return None
 
     def allocate_registers(self, intervals, regcount, spilling=True):
         regset = utils.RegisterSet(regcount)
+        spill_occurred = False
 
         class Action:
             START, END = 1, -1
@@ -150,21 +106,20 @@ class ExtendedLinearScan(LinearScan):
                 #print "OPTION 1"
                 # If it was not in active, it must have been spilled.
                 active.remove(iv)
+                regset.set_free(iv.alloc)
                 if sub.to < iv.to: # If it's not the last subinterval.
                     inactive.add(action.sub.parent)
-
-                regset.set_free(iv.alloc)
 
             elif action.kind == Action.START and iv.fr == sub.fr: 
                 # If this SubInterval is the beginning of new Interval.
                 #print "OPTION 2"
                 reg_found = self.try_allocate_free_register(iv, active, inactive, regset)
                 if not reg_found:
-                    if spilling:
-                        spilled = self.spiller.spill_at_interval(iv, active, inactive)
-                        #print "Spilling: ", spilled.var.id, "[", spilled.fr, spilled.to, "]"
-                    else:
+                    if not spilling:
                         return False
+
+                    self.spiller.spill_at_interval(iv, active, inactive)
+                    spill_occurred = True
 
             elif action.kind == Action.START and iv in inactive: 
                 #print "OPTION 3"
@@ -172,15 +127,14 @@ class ExtendedLinearScan(LinearScan):
                 inactive.remove(iv)
                 active.add(iv)
                 regset.occupy(iv.alloc)
-            
-            #print "active:", [(ivv.var.id, ivv.alloc) for ivv in active]
-            #print "inactive:", [(ivv.var.id, ivv.alloc) for ivv in inactive]
-            #print "occupied regs:", regset.occupied
-            #print ""
+        
+        if not spill_occurred:
+            return True
 
-        return True
+        return False
 
     def resolve(self, intervals):
-        # If there were no splits, we don't need resolving.
+        # If we don't split, there is nothing to resolve.
         pass
-       
+      
+

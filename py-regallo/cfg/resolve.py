@@ -162,8 +162,6 @@ def insert_moves(bb, moves, regcount=0):
                 new_instructions.append(load)
                 new_instructions.append(store)
 
-                #return False
-
 
     bb.instructions.extend(new_instructions)
     return True
@@ -274,8 +272,6 @@ def allocate_cycle(i1, i2, cycle_allocs, regcount=0):
 #            need additional when dealing with memory to memory copies
 #            or in case of mov-cycles.
 def eliminate_phi(f, regcount=0):
-
-
     # List of tuples (instr1, instr2, allocs) denoting start and end instruction
     # where a particular cycle was inserted and set of registers allocated to
     # all variables on the cycle.
