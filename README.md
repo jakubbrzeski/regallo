@@ -1,20 +1,17 @@
-# Register Allocators testing framework
+# Python framework for testing register allocation algorithms
 
-Regallo is a framework for testing and comparison of register allocators.
+Regallo is a framework for testing and comparison of register allocation algorithms.
 It consists of two parts:
-* LLVM dynamic library for extracting Control Flow Graphs (CFG) of functions from programs in C.
-* Python library for testing various register allocators on the extracted functions' CFGs.
+* LLVM dynamic library for extracting Control Flow Graphs (CFG) of programs in .LL (LLVM assembly language) 
+* Python library for testing allocation algorithms on the extracted CFGs.
 
 
-## Extracting CFG from C files
+## Extracting CFG from .LL files
 
      
 ### Requirements:
 * LLVM source code
-* Clang
-
-It was tested with LLVM 5.0 and Clang 3.9.0. Other version should work but it is important
-to use dynamic library with the same LLVM version it was compiled with.
+* Clang (binary or compiled from source together with LLVM)
 
 LLVM and Clang source codes as well as binaries are available here: http://releases.llvm.org/download.html#5.0.0
 
@@ -42,7 +39,7 @@ It will generate files necessary for building LLVM.
 
 At the same directory, build LLVM 
 
-     make -j2
+     make -j($NUM_THREADS)
      
 or if using another build tool:
 
@@ -56,39 +53,53 @@ or if we use Linux:
 
      llvm/build/lib/LLVMCFGextractor.so
      
-opt tool (see https://llvm.org/docs/CommandGuide/opt.html) that we also need should be in:
+*opt* tool (see https://llvm.org/docs/CommandGuide/opt.html) that we also need, should be located in:
 
      llvm/build/lib/opt
 
+### Compiling C and C++ programs into .LL ###
+To compile C files we need to run
 
-### Extracting CFG from programs in C into JSON.
-Compile to .ll (LLVM IR)
+     clang -S -emit-llvm file.c
+     
+For C++, we use *clang++*.
 
-    clang -S -emit-llvm file.c
-        
-Extract CFG into JSON
+     clang++ -S -emit-llvm file.cpp
+     
+In case of problems with compiling C++ it's worth to look at https://clang.llvm.org/get_started.html. 
+
+### Extracting CFG from .LL into JSON.
+It is necessary to use *opt* binary from the same LLVM version as the *LLVMCFGextractor* was compiled with.
+
+Extract CFG into JSON (Mac OS and Linux respectively)
 
     opt -mem2reg -load=path/to/LLVMCFGextractor.dylib -extract_cfg file.ll -to-json file.json
+    
+    opt -mem2reg -load=path/to/LLVMCFGextractor.so -extract_cfg file.ll -to-json file.json
 
 ### CFG visualization
-For each function in .ll file generates .dot.cfg file
+For each function in .LL file, generate .dot.cfg file
 
-    opt -mem2reg -dot-cfg hello.ll     
+    opt -mem2reg -dot-cfg file.ll     
 
-Generates PNG with visualized CFG of the function
+Generates PNG image with visualized CFG of the function
 
     dot -Tpng file.dot -o file.png
 
 ## Using py-regallo
 
-Install all required python libraries
+### Requirements:
+* Python 2.7
+* pip (https://pypi.python.org/pypi/pip)
 
-    py-regallo/make
+Install all required python libraries (in py-regallo directory)
 
-For interactive use and tutorial reading ipython is necessary
+    pip install -r requirements.txt
+
+For interactive use and tutorial reading, *ipython* is necessary
 
     pip install ipython
 
-Show tutorial
+Open tutorial
 
     ipython notebook py-regallo/tutorial.ipynb 
