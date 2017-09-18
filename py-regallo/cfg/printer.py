@@ -19,8 +19,9 @@ class Opts:
         # Besides variable names, print allocs, also with defs, uevs and liveness sets.
         self.with_alloc = options.get("with_alloc", False)
 
-        # Mark instruction inserted in phi elimination phase.
+        # Mark instruction inserted in phi elimination phase or spill instructions.
         self.mark_non_ssa = options.get("mark_non_ssa", False)
+        self.mark_spill = options.get("mark_spill", False)
         
         self.intervals_verbose = options.get("intervals_verbose", False)
         self.subintervals = options.get("subintervals", False)
@@ -132,6 +133,8 @@ class InstrString:
         num = str(self.instr.num) + ":" if self.options.nums and self.instr.num is not None else ">"
         opname = colored(self.instr.opname, 'red')
         if self.options.mark_non_ssa and not self.instr.ssa:
+            opname = colored(self.instr.opname, 'magenta')
+        if self.options.mark_spill and (self.instr.opname == cfg.Instruction.LOAD or self.instr.opname == cfg.Instruction.STORE):
             opname = colored(self.instr.opname, 'magenta')
 
         defn = self.defn()

@@ -335,8 +335,8 @@ def eliminate_phi(f, regcount=0):
         bb.instructions = [instr for instr in bb.instructions if not instr.is_phi()]
         bb.phis = []
 
-    # After changes in instructions sets, we perform liveness analysis again.
-    analysis.perform_liveness_analysis(f)
+    # After changes in instructions sets, we perform full analysis again.
+    analysis.perform_full_analysis(f)
 
     for (i1, i2, allocs) in cycles_endpoints:
         allocate_cycle(i1, i2, allocs, regcount)

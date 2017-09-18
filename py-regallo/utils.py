@@ -1,8 +1,6 @@
 import re
 import numpy as np
 from cfg.printer import FunctionString, Opts
-import cfg.resolve as resolve
-import cfg.analysis as analysis
 
 from dashtable import data2rst
 import matplotlib.patches as mpatches
@@ -164,8 +162,6 @@ def draw_intervals(intervals, regcount=0, to_file=None, figsize=None, with_subin
     plt.figure(figsize=figsize)
     id_nums = []
 
-
-
     cmap = plt.get_cmap('gnuplot')
     colors = [cmap(i) for i in np.linspace(0, 0.8, regcount+1)]
     black = colors[0]
@@ -202,8 +198,8 @@ def draw_intervals(intervals, regcount=0, to_file=None, figsize=None, with_subin
             plt.plot(x, y, color=color, linestyle=linestyle)
 
     plt.title(title)
-    plt.xlabel('Instruction numbers')
-    plt.ylabel('Variable ids')
+    plt.xlabel('Instruction number')
+    plt.ylabel('Variable id')
     plt.margins(0.05)
 
     #plt.legend(loc='best')
@@ -240,13 +236,8 @@ class ResultCompSetting:
 
 # Returns mapping: list [(function_name, [(regcount, [(allocator_name, [(cost_name, RESULT)] )] )] )]
 # setting - a ResultCompSetting object.
-# analysis - whether to do full analysis for each function.
-def compute_full_results(setting, analysis=False):
+def compute_full_results(setting):
     results = []
-
-    if analysis:
-        for f in setting.functions:
-            analysis.perform_full_analysis(f)
 
     for f in setting.functions:
         # REGISTERS
@@ -343,43 +334,48 @@ def compute_and_print_result_table(d, setting):
     table, spans = compute_result_table(d, setting)
     print(data2rst(table, spans=spans, use_headers=True))
 
-# TODO: check it out
-# For given function and cost calculator, draws
-# a plot (regcount -> result) for each algorithm
-# (i.e. one drawing but separate plots for each algorithm).
-# We assume that results contain numbers only for one function and cost calculator.
-def plot_reg_algorithm(results, setting, to_file=None, figsize=None):
-    assert len(results) == 1
-    d = {alname: [] for alname in setting.allocator_names()}
-    f, reg_results = results[0]
+# For given setting (with only one cost calculator possible) and corresponding results,
+# draws a plot (regcount -> sum of costs of each function) for each provided algorithm.
+# (one drawing but separate plots for each algorithm).
+def plot_reg_to_cost(results, settings, to_file=None, figsize=None):
+    plots = {alname: {} for alname in settings.allocator_names()}
+    regcounts = set()
+    for (fname, regs) in results:
+        for (reg, allocators) in regs:
+            regcounts.add(reg)
+            for (alname, costs) in allocators:
+                c = costs[0][1]
+                if reg in plots[alname]:
+                    if c == -1:
+                        # -1 means failure, don't add
+                        plots[alname][reg] = -1
+                    elif plots[alname][reg] >= 0:
+                        plots[alname][reg] += c
+                else:
+                    plots[alname][reg] = c
 
-    cname = setting.cost_calc_names()[0]
-    regcounts = [rc for (rc, _) in reg_results]
-
-    for regcount, alloc_results in reg_results:
-        for (alname, cost_results) in alloc_results:
-            assert len(cost_results) == 1
-            cname, cost = cost_results[0]
-            d[alname].append((regcount,cost))
-
-
+    cname = settings.cost_calc_names()[0]
+   
     plt.figure(figsize=figsize)
-    for alname, values in d.iteritems():
-        x = [rc for (rc, _) in values]
-        y = [val for (_, val) in values]
+    for alname, costs in plots.iteritems():
+        x = sorted(costs.keys())
+        y = [costs[reg] for reg in x]
+        failures = len([val for val in y if val < 0])
+        x = x[failures:]
+        y = y[failures:]
 
         plt.plot(x, y, label=alname) # colors
 
-    plt.legend(loc='upper left')
+    plt.legend(loc='upper right')
     plt.margins(0.05)
-    plt.xticks(regcounts)
-    plt.title("Results")
-    plt.ylabel("cost")
-    plt.xlabel("number of #registers")
+    plt.xticks(list(regcounts))
+    plt.title("regcount - cost")
+    plt.ylabel(cname)
+    plt.xlabel("number of registers")
     if to_file:
         plt.savefig(to_file)
     else:
         plt.show()
     plt.close()
-
+    
 
