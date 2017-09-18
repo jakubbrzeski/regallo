@@ -25,7 +25,7 @@ with open(args.file) as f:
 
 m = cfg.Module.from_json(module_json)
 analysis.perform_full_analysis(m)
-print "Functions in the module: ", ", ".join(m.functions.keys())
+#print "Functions in the module: ", ", ".join(m.functions.keys())
 
 
 bas = BasicLinearScan(name="Furthest First")
@@ -36,40 +36,24 @@ mcc = MainCostCalculator()
 sic = SpillInstructionsCounter()
 if args.function:
     f = m.functions[args.function]
-
-    """ 
-    g = f.copy()
-    success = ext.perform_register_allocation(g, 2, spilling=True)
-    print FunctionString(g, Opts(with_alloc=True))
-    print "allocation success", success
-    resolve.insert_spill_code(g)
-    print FunctionString(g)
-    print "\nSECOND PHASE:"
-    ivs = ext.compute_intervals(g)
-    success = ext.allocate_registers(ivs, 2, spilling=False)
-    print IntervalsString(ivs)
-    print "allocation success", success
-    print FunctionString(g, Opts(with_alloc=True))
-    phi_success = resolve.eliminate_phi(g, 2)
-    print "phi elimination:", phi_success
-    print FunctionString(g, Opts(with_alloc=True, liveness=True))
-    correct = sanity.allocation_is_correct(g)
-    print "correct: ", correct
-
-    
-    """
-    res = ext.perform_full_register_allocation(f, 2)
+    print f.vars
+    print FunctionString(f)
+    min_pressure = f.minimal_register_pressure()
+    max_pressure = f.maximal_register_pressure()
+    print "   maximal pressure: ", max_pressure
+    print "   minimal pressure: ", min_pressure
+    print "   reachable bblocks:", [bid for bid in f.bblocks.keys()]
+    res = bas.perform_full_register_allocation(f, min_pressure)
     if res is None:
         print "allocation failed"
     else:
         print "allocation succeeded"
-        #print FunctionString(res, Opts(mark_non_ssa=True, liveness=True, with_alloc=True, predecessors=True))
+        print FunctionString(res, Opts(mark_non_ssa=True, liveness=True, with_alloc=True, predecessors=True))
         correct = sanity.allocation_is_correct(res)
         print "allocation is correct: ", correct
         #cost = sic.function_diff(res, f)
         #print "   spill instructions: ", cost
     
-
 else :
     flist = m.functions.values()
     for f in flist:
@@ -94,4 +78,3 @@ else :
 #    setting = utils.ResultCompSetting(flist, [2], [bas, bcf], [mcc, sic])
 #    res = utils.compute_full_results(setting)
 #    utils.compute_and_print_result_table(res, setting)
-

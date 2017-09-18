@@ -405,8 +405,14 @@ class Function:
                 bblocks[bid].preds[pid] = bblocks[pid]
                 bblocks[pid].succs[bid] = bblocks[bid]
 
+        reachable = set()
+        def store_reachable(bb):
+            reachable.add(bb.id)
 
-        f.set_bblocks(bblocks, entry_bblock)
+        utils.dfs(entry_bblock, set(), vpre=store_reachable)
+        reachable_bblocks = {bid: bb for (bid, bb) in bblocks.iteritems() if bid in reachable}
+
+        f.set_bblocks(reachable_bblocks, entry_bblock)
         return f
 
     # Deepcopy of the function.
