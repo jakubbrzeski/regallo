@@ -1,6 +1,7 @@
 import json
 import argparse
 import utils
+import pprint
 
 from allocators.lscan.basic.spillers import CurrentFirst, LessUsedFirst
 from allocators.lscan.basic import BasicLinearScan
@@ -37,9 +38,11 @@ sic = SpillInstructionsCounter()
 if args.function:
     f = m.functions[args.function]
     print FunctionString(f)
-    neighs = graph.build_graph(f)
-    print neighs
+
+    neighs = graph.build_interference_graph(f)
     utils.draw_graph(neighs, 'graph.dot')
+    chordal = sanity.is_chordal(neighs)
+    print "IS CHORDAL: ", chordal
 
  
 else:

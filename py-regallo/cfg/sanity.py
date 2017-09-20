@@ -1,6 +1,9 @@
 import cfg
 import utils
 import analysis
+import heapq
+
+from sortedcontainers import SortedSet
 
 # Assumption there is only one store for a given memslot.
 def data_flow_is_correct(f, f_orig):
@@ -125,6 +128,63 @@ def allocation_is_correct(f):
             return False
         for instr in bb.instructions:
             if not allocation_is_injection(instr.live_out):
+                return False
+
+    return True
+
+
+
+def lex_bfs(neighs):
+    # Lexicographical BFS
+    class Label:
+        def __init__(self, var):
+            self.var = var
+            self.l = () 
+
+    sorted_labels = SortedSet(key = lambda label: label.l)
+    label = {var: Label(var) for var in neighs}
+    num = {var: 0 for var in neighs}
+
+#    print num
+
+    for var in neighs:
+        sorted_labels.add(label[var])
+
+    for i in reversed(range(1, len(neighs))):
+        largest = sorted_labels.pop() # v with the 'largest' label that was not vistied
+#        print [l.var for l in sorted_labels]
+
+        num[largest.var] = i
+#        print "assign ", i, "to", largest.var
+        for n in neighs[largest.var]:
+            if num[n] == 0:
+#                print "neighbour", n
+                sorted_labels.remove(label[n])
+                label[n].l += (i,)
+                sorted_labels.add(label[n])
+
+    
+    return sorted(neighs.keys(), key = lambda v: num[v])
+
+        
+
+# Checks if the graph represented as a dictionary of negihbours is chordal.
+def is_chordal(neighs):
+    order = lex_bfs(neighs)
+    f = {order[i]: i for i in range(0, len(order))}
+    A = {var: set() for var in neighs}
+
+#    print order
+    for v in order:
+        # neighbours of v occuring after v in the lex_bfs order (those with the higher number f).
+        l = sorted([n for n in neighs[v] if f[n] > f[v]], key = lambda u: f[u])
+        if l:
+            #print "v =", v, " l =", l
+            u = l[0] # neighbour with the smallest number.
+            A[u] |= set(l[1:])
+
+            if (A[u] - set(neighs[u])):
+                print "False returned for", u, neighs[u]
                 return False
 
     return True
