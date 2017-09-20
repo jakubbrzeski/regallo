@@ -14,6 +14,8 @@ import cfg.resolve as resolve
 import cfg.analysis as analysis
 from cfg.printer import InstrString, FunctionString, IntervalsString, CostString, Opts
 
+import allocators.graph as graph
+
 parser = argparse.ArgumentParser(description='Process json with CFG')
 parser.add_argument('-file', help="Name of the json file with CFG")
 parser.add_argument('-function', help="Name of the json file with CFG")
@@ -34,6 +36,10 @@ mcc = MainCostCalculator()
 sic = SpillInstructionsCounter()
 if args.function:
     f = m.functions[args.function]
+    print FunctionString(f)
+    neighs = graph.build_graph(f)
+    print neighs
+    utils.draw_graph(neighs, 'graph.dot')
 
  
 else:

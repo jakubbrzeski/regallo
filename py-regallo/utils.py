@@ -1,4 +1,5 @@
 import re
+import pygraphviz as pgv
 import numpy as np
 from cfg.printer import FunctionString, Opts
 
@@ -210,6 +211,21 @@ def draw_intervals(intervals, regcount=0, to_file=None, figsize=None, with_subin
         plt.show()
     plt.close()
 
+# Takes dictionary of neighbours and draws corresponding
+# graph saving it either as png or dot. It seems that the
+# pictures are better if we save it in .dot and later
+# execute 'dot -Tpng file.dot -o file.png'.
+def draw_graph(neighs, filename, dot=True):
+    A=pgv.AGraph()
+    for v, nlist in neighs.iteritems():
+        for n in nlist:
+            A.add_edge(v.id, n.id)
+    
+    if filename.endswith('.dot'):
+        A.write(filename)
+    elif filename.endswith('.png'):
+        A.layout()
+        A.draw(filename)
 
 #########################################################################
 ########################### COMPUTING RESULTS ###########################
