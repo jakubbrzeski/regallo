@@ -28,13 +28,15 @@ class BasicLinearScan(LinearScan):
                 iv = intervals[v.id]
                 if iv.to < bb.last_instr().num + 0.5:
                     iv.to = bb.last_instr().num + 0.5
+                iv.fr = bb.first_instr().num - 0.5
 
             for instr in bb.instructions[::-1]:
                 # Definition.
                 if instr.definition and not instr.definition.is_spilled():
                     iv = intervals[instr.definition.id]
-                    iv.fr = instr.num 
                     iv.defn = instr
+                    if not instr.is_phi():
+                        iv.fr = instr.num 
                 
                 # Uses.
                 if instr.is_phi():

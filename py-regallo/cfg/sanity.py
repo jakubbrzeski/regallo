@@ -145,20 +145,15 @@ def lex_bfs(neighs):
     label = {var: Label(var) for var in neighs}
     num = {var: 0 for var in neighs}
 
-#    print num
-
     for var in neighs:
         sorted_labels.add(label[var])
 
     for i in reversed(range(1, len(neighs))):
         largest = sorted_labels.pop() # v with the 'largest' label that was not vistied
-#        print [l.var for l in sorted_labels]
 
         num[largest.var] = i
-#        print "assign ", i, "to", largest.var
         for n in neighs[largest.var]:
             if num[n] == 0:
-#                print "neighbour", n
                 sorted_labels.remove(label[n])
                 label[n].l += (i,)
                 sorted_labels.add(label[n])
@@ -174,17 +169,14 @@ def is_chordal(neighs):
     f = {order[i]: i for i in range(0, len(order))}
     A = {var: set() for var in neighs}
 
-#    print order
     for v in order:
         # neighbours of v occuring after v in the lex_bfs order (those with the higher number f).
         l = sorted([n for n in neighs[v] if f[n] > f[v]], key = lambda u: f[u])
         if l:
-            #print "v =", v, " l =", l
             u = l[0] # neighbour with the smallest number.
             A[u] |= set(l[1:])
 
             if (A[u] - set(neighs[u])):
-                print "False returned for", u, neighs[u]
                 return False
 
     return True

@@ -25,7 +25,7 @@ class ExtendedLinearScan(LinearScan):
                 if instr.definition and not instr.definition.is_spilled():
                     intervals[instr.definition.id].defn = instr
                     last_sub = intervals[instr.definition.id].get_last_subinterval()
-                    if last_sub: 
+                    if last_sub and not instr.is_phi(): 
                         last_sub.fr = instr.num
 
                 if instr.is_phi():

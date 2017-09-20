@@ -47,10 +47,10 @@ class BasicLinearScanTest(cfgmocks.GCDTest):
         [2, 4]     v5            -     
         [3, 5.5]   v6            -     
         [4, 5.5]   v7            -     
-        [6, 8.5]   v9            -     
-        [7, 8.5]   v10           -     
-        [9, 14.5]  v12           -     
-        [10, 15]   v14           -     
+        [5.5, 8.5]   v9            -     
+        [5.5, 8.5]   v10           -     
+        [8.5, 14.5]  v12           -     
+        [8.5, 15]   v14           -     
         [11, 12]   v15           -     
         [13, 14.5] v13           - 
 
@@ -64,12 +64,12 @@ class BasicLinearScanTest(cfgmocks.GCDTest):
         assertInterval("v6", 3, 5.5, 3, [4, 6])
         assertInterval("v7", 4, 5.5, 4, [7])
         self.assertNotIn("v8", intervals)
-        assertInterval("v9", 6, 8.5, 6, [9])
-        assertInterval("v10", 7, 8.5, 7, [10])
+        assertInterval("v9", 5.5, 8.5, 6, [9])
+        assertInterval("v10", 5.5, 8.5, 7, [10])
         self.assertNotIn("v11", intervals)
-        assertInterval("v12", 9, 14.5, 9, [10, 11, 13])
+        assertInterval("v12", 8.5, 14.5, 9, [10, 11, 13])
         assertInterval("v13", 13, 14.5, 13, [9])
-        assertInterval("v14", 10, 15, 10, [13, 15])
+        assertInterval("v14", 8.5, 15, 10, [13, 15])
         assertInterval("v15", 11, 12, 11, [12])
         self.assertNotIn("v16", intervals)
         self.assertNotIn("v17", intervals)

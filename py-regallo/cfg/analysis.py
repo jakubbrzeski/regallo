@@ -61,10 +61,12 @@ def perform_liveness_analysis(f, ordered_bbs = None):
             live_out_size = len(bb.live_out)
             for succ in bb.succs.values():
                 bb.live_out |= (succ.live_in)
-                # We add to the live-out set these input variables of phi instructions,
-                # that were upward exposed in the successor block.
+                # We add to the live-out set the input variables of phi instructions,
+                # and remove their output variables.
                 for phi in succ.phis:
                     if bb.id in phi.uses: # it may not be in there if the used value is not Variable.
+                        if not phi.definition.is_spilled() and phi.definition in bb.live_out:
+                            bb.live_out.remove(phi.definition)
                         if not phi.uses[bb.id].is_spilled():
                             bb.live_out.add(phi.uses[bb.id])
             
@@ -72,7 +74,9 @@ def perform_liveness_analysis(f, ordered_bbs = None):
             # Variable is in live-in set if
             # - it is upword-exposed in bb (i.e. used before any redefinition)
             # - or is live on the exit from bb and not defined in this block.
-            maybe_live_in = (bb.uevs | (bb.live_out - bb.defs))
+            # - or is defined by phi instruction.
+            phi_defs = set([phi.definition for phi in bb.phis if phi.definition and not phi.definition.is_spilled()])
+            maybe_live_in = (bb.uevs | (bb.live_out - bb.defs) | phi_defs)
             bb.live_in = set([v for v in maybe_live_in if not v.is_spilled()])
 
             if len(bb.live_in) > live_in_size or len(bb.live_out) > live_out_size:

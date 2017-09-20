@@ -37,23 +37,33 @@ mcc = MainCostCalculator()
 sic = SpillInstructionsCounter()
 if args.function:
     f = m.functions[args.function]
-    print FunctionString(f)
+#    print FunctionString(f, Opts(liveness=True))
 
-    neighs = graph.build_interference_graph(f)
-    utils.draw_graph(neighs, 'graph.dot')
-    chordal = sanity.is_chordal(neighs)
-    print "IS CHORDAL: ", chordal
+    g = f.copy()
+    ivs = bas.compute_intervals(g)
+    bas.allocate_registers(ivs, 2, spilling=True)
+    print IntervalsString(ivs), "\n"
+    resolve.insert_spill_code(g)
+    ivs = bas.compute_intervals(g)
+
+    print IntervalsString(ivs), "\n"
+    bas.allocate_registers(ivs, 2, spilling=False)
+    print IntervalsString(ivs), "\n"
+    
+
+
 
  
 else:
     setting = utils.ResultCompSetting(
         functions = m.functions.values(), # We take all the functions from the module
-        regcounts = range(1, 20), 
-        allocators = [bas, bcf], 
-        cost_calculators = [sic])
+        regcounts = range(1, 4), 
+        allocators = [bas, ext], 
+        cost_calculators = [mcc, sic])
 
     res = utils.compute_full_results(setting)
-    utils.plot_reg_to_cost(res, setting)
+    utils.compute_and_print_result_table(res, setting)
+    #utils.plot_reg_to_cost(res, setting)
     """
     flist = m.functions.values()
     for f in flist:
