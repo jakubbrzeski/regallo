@@ -405,12 +405,23 @@ class Function:
                 bblocks[bid].preds[pid] = bblocks[pid]
                 bblocks[pid].succs[bid] = bblocks[bid]
 
+        # Find all reachable blocks and remove unreachable ones.
         reachable = set()
         def store_reachable(bb):
             reachable.add(bb.id)
 
         utils.dfs(entry_bblock, set(), vpre=store_reachable)
         reachable_bblocks = {bid: bb for (bid, bb) in bblocks.iteritems() if bid in reachable}
+        for bb in bblocks.values():
+            pred_ids = bb.preds.keys()
+            for pid in pred_ids:
+                if pid not in reachable_bblocks:
+                    del bb.preds[pid]
+
+            succ_ids = bb.succs.keys()
+            for sid in succ_ids:
+                if sid not in reachable_bblocks:
+                    del bb.succs[sid]
 
         f.set_bblocks(reachable_bblocks, entry_bblock)
         return f
