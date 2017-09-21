@@ -1,4 +1,7 @@
 import re
+import json
+import glob
+import cfg
 import pygraphviz as pgv
 import numpy as np
 from cfg.printer import FunctionString, Opts
@@ -51,9 +54,15 @@ def is_slotname(name):
 def slot(var):
     return "mem("+var.id+")"
 
-def scratch_reg():
-    return "reg0"
+# Reads all json files from the given directory and creates a Module
+# from each. Returns a list of the Modules.
+def modules_from_files(dir_path):
+    modules = []
+    for filename in glob.glob(dir_path+'*.json'):
+        m = cfg.Module.from_file(filename)
+        modules.append(m)
 
+    return modules
 
 #########################################################################
 ########################### GRAPH OPERATIONS ############################
@@ -232,13 +241,13 @@ def draw_graph(neighs, filename, dot=True):
 #########################################################################
 
 # A helper class for storing arguments for computing full results. 
-# functions - list of Functions.
+# inputs - list of Functions or list of Modules
 # regcounts - list of ints denoting number of registers.
 # allocators - list of triples allocators.
 # cost_calculators - list of CostCalculators.
 class ResultCompSetting:
-    def __init__(self, functions, regcounts, allocators, cost_calculators):
-        self.functions = functions
+    def __init__(self, inputs, regcounts, allocators, cost_calculators):
+        self.inputs = inputs
         self.regcounts = regcounts
         self.allocators = allocators
         self.cost_calculators = cost_calculators
@@ -250,37 +259,45 @@ class ResultCompSetting:
         return [cc.name for cc in self.cost_calculators]
 
 
-# Returns mapping: list [(function_name, [(regcount, [(allocator_name, [(cost_name, RESULT)] )] )] )]
-# setting - a ResultCompSetting object.
+# For provided ResultSetting object, computes results for provided arguments returning
+# list [(input_name, [(regcount, [(allocator_name, [(cost_name, RESULT)] )] )] )].
 def compute_full_results(setting):
     results = []
 
-    for f in setting.functions:
+    for inp in setting.inputs:
         # REGISTERS
         reg_results = []
         for regc in setting.regcounts:
-
             # ALLOCATORS
             alloc_results = []
             for al in setting.allocators:
-                g = al.perform_full_register_allocation(f, regc) # returns None or modified copy of f. 
+                input_after_allocation = None
+                if isinstance(inp, cfg.Function):
+                    input_after_allocation = al.perform_full_register_allocation(inp, regc)
+                elif isinstance(inp, cfg.Module):
+                    input_after_allocation = al.perform_full_module_register_allocation(inp, regc)
 
-                cost_results = [(cc.name, -1) for cc in setting.cost_calculators]
-                if g:
-                    # COSTS 
-                    cost_results = []
-                    for cc in setting.cost_calculators:
-                        res = cc.function_diff(g, f) # cost(g) - cost(f)
-                        cost_results.append((cc.name, res))
+                # COSTS 
+                cost_results = []
+                for cc in setting.cost_calculators:
+                    res =  -1
+                    if input_after_allocation:
+                        if isinstance(inp, cfg.Function):
+                            res = cc.function_diff(input_after_allocation, inp) # cost(g) - cost(f)
+                        if isinstance(inp, cfg.Module):
+                            res = cc.module_diff(input_after_allocation, inp)
+                    
+                    cost_results.append((cc.name, res))
 
                 alloc_results.append((al.name, cost_results))
 
             reg_results.append((regc, alloc_results))
 
-        results.append((f.name, reg_results))
+        results.append((inp.name, reg_results))
 
     return results
-                
+
+
 # Computes a table with span lists that we can print out to the
 # console using dashtable.data2rst.
 # d - results computed by compute_full_results
@@ -312,7 +329,7 @@ def compute_result_table(d, setting):
 
 
     # First row: Costs
-    row1 = ["Functions", "Registers"]
+    row1 = ["Input", "Registers"]
     for al in allocator_names:
         row1.extend(cost_calc_names)
     table.append(row1)
@@ -346,17 +363,20 @@ def compute_result_table(d, setting):
     
     return table, spans
 
-def compute_and_print_result_table(d, setting):
-    table, spans = compute_result_table(d, setting)
+# Computes and prints to the output table with results provided as argument.
+def compute_and_print_result_table(results, setting):
+    table, spans = compute_result_table(results, setting)
     print(data2rst(table, spans=spans, use_headers=True))
 
-# For given setting (with only one cost calculator possible) and corresponding results,
-# draws a plot (regcount -> sum of costs of each function) for each provided algorithm.
-# (one drawing but separate plots for each algorithm).
+# For given setting (with only one cost calculator allowed) and corresponding results,
+# draws a separate plot (regcount -> sum of costs of each input) for every provided algorithm.
+# (one image but different plots for each algorithm).
+# It can be used when settings.inputs are Modules but it's sensible to draw it for one Module
+# only because costs for multiple inputs are summed up.
 def plot_reg_to_cost(results, settings, to_file=None, figsize=None):
     plots = {alname: {} for alname in settings.allocator_names()}
     regcounts = set()
-    for (fname, regs) in results:
+    for (input_name, regs) in results:
         for (reg, allocators) in regs:
             regcounts.add(reg)
             for (alname, costs) in allocators:

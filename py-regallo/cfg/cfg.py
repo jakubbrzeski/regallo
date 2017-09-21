@@ -1,5 +1,6 @@
 import utils
 import json
+import os.path
 from copy import deepcopy
 
 #########################################################################
@@ -597,13 +598,14 @@ class Function:
 
 # Module represents a program and consists of list of functions.
 class Module:
-    def __init__(self, functions):
+    def __init__(self, name, functions):
+        self.name = name
         self.functions = {f.name: f for f in functions}
 
     @classmethod
-    def from_json(cls, json):
+    def from_json(cls, name, json):
         functions = [Function.from_json(f_json) for f_json in json]
-        return cls(functions)
+        return cls(name, functions)
 
     @classmethod
     def from_file(cls, filename):
@@ -612,7 +614,8 @@ class Module:
             module_json = json.load(f)
 
         if module_json:
-            return cls.from_json(module_json)
+            name = os.path.splitext(os.path.basename(filename))[0]
+            return cls.from_json(name, module_json)
 
         return None
 

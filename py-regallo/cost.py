@@ -16,6 +16,16 @@ class CostCalculator():
     def function_diff(self, f1, f2):
         return self.function_cost(f1) - self.function_cost(f2)
 
+    # Computes sum of cost differences between modules' corresponding functions.
+    def module_diff(self, m1, m2):
+        total = 0
+        assert set(m1.functions.keys()) == set(m2.functions.keys())
+        for f in m1.functions.values():
+            res =  self.function_diff(f, m2.functions[f.name])
+            total += res
+
+        return total
+
 
 # Calculates how many spill instructions (i.e. store nad laod)
 # are in provided function, basic block or instruction.

@@ -1,3 +1,4 @@
+from cfg import Module
 import cfg.resolve as resolve
 import cfg.printer as printer
 import cfg.analysis as analysis
@@ -13,8 +14,9 @@ class Allocator(object):
     def perform_register_allocation(self, f, regcount, spilling=True):
         raise NotImplementedError()
 
-    # Performs full register allocation on a given function using provided
-    # allocator with specific number of available registers. 
+    # Performs full register allocation on a given function
+    # with specific number of available registers. In case of success it returns
+    # the modified copy of the function and None otherwise.
     def perform_full_register_allocation(self, f, regcount):
         first_phase_regcount = regcount
 
@@ -51,3 +53,16 @@ class Allocator(object):
         return None
 
 
+    # Performs full register allocation on each function in a module with provided 
+    # number of available registers. If register allocation succeeded for each
+    # function from the module, a copy of the module with modified function copies is
+    # returned. If allocation failed for at least one function, None is returned.
+    def perform_full_module_register_allocation(self, m, regcount):
+        processed_functions = []
+        for f in m.functions.values():
+            g = self.perform_full_register_allocation(f, regcount)
+            if g is None:
+                return None
+            processed_functions.append(g)
+
+        return Module(m.name, processed_functions)
