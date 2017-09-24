@@ -38,6 +38,9 @@ class Variable:
     def __repr__(self):
         return str(self.id)
 
+    def spill(self):
+        self.alloc = utils.slot(self)
+    
     def is_spilled(self):
         return utils.is_slotname(self.alloc)
 
@@ -81,7 +84,6 @@ class Instruction:
         # or any other values that are not interesting for register allocator. 
         # All values (also constants and labels) are hold in self.uses_debug (see below).
         # If this is PHI instruction, self.uses is turned into dictionary {pred block id: var}.
-        # TODO describe set
         self.uses = uses if uses else set()
 
         # If this is PHI instruction, phi_preds maps variable id to corresponding
@@ -372,6 +374,8 @@ class Function:
         self.free_vid = "v1"
 
         # Counter of instruction ids.
+        # Ids are consecutive integers, so this is equal to
+        # current number of instructions in the function.
         self.instr_counter = 0
 
         # Dictionary of basic blocks {bid: bb}.
@@ -491,9 +495,6 @@ class Function:
 
     # Returns the maximal "maximal register pressure" over
     # all basic blocks. See BasicBlock.maximal_register_pressure().
-    # Any register allocation algorithm should
-    # be able to allocate as many registers as the value of maximal
-    # register pressure without spilling.
     def maximal_register_pressure(self):
         max_pressure = 0
         for bb in self.bblocks.values():

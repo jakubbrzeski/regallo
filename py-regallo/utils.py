@@ -138,7 +138,10 @@ class RegisterSet:
     def __init__(self, count):
         self.count = count
         # A list of free registers ['reg_count', 'reg_{count-1}', ..., 'reg3', 'reg2', 'reg1']
-        self.free = set(["reg"+str(i+1) for i in range(count)])
+        self.reset()
+
+    def reset(self):
+        self.free = set(["reg"+str(i+1) for i in range(self.count)])
         self.occupied = set()
 
     # Returns id of one of free registers. If there are no free registers, returns None.
@@ -221,19 +224,49 @@ def draw_intervals(intervals, regcount=0, to_file=None, figsize=None, with_subin
     plt.close()
 
 # Takes dictionary of neighbours and draws corresponding
-# graph saving it either as png or dot. It seems that the
-# pictures are better if we save it in .dot and later
-# execute 'dot -Tpng file.dot -o file.png'.
-def draw_graph(neighs, filename, dot=True):
-    A=pgv.AGraph()
+# graph saving it to file in png or dot.
+# dot - whether to draws it through dot program (usually better but wider view)
+def draw_graph(neighs, filename, regcount, dot=False):
+    A = pgv.AGraph()
+    A.node_attr['style']='filled'
+
+    white = 0xFFFFFF
+    dist = white/(7 + regcount) # by adding 5 we force higher distance
+                                # which will allow us to choose brighter colors.
+    color = white - dist 
+    reg_to_color = {}
+
+    for v in neighs:
+        if not v.is_spilled():
+            A.add_node(v.id)
+            n = A.get_node(v.id)
+
+            # Choose color
+            v_color = ("#%06x" % white)
+            if v.alloc:
+                v_color = color
+                if v.alloc in reg_to_color:
+                    v_color = reg_to_color[v.alloc]
+                else:
+                    v_color = ("#%06x" % np.random.randint(1000, white))
+                    color -= dist # next color
+                    reg_to_color[v.alloc] = v_color
+
+            n.attr['fillcolor'] = v_color
+
+
     for v, nlist in neighs.iteritems():
         for n in nlist:
             A.add_edge(v.id, n.id)
-    
+
     if filename.endswith('.dot'):
         A.write(filename)
     elif filename.endswith('.png'):
-        A.layout()
+        if dot:
+            A.layout(prog='dot')
+        else:
+            A.layout()
+
         A.draw(filename)
 
 #########################################################################

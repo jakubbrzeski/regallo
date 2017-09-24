@@ -28,7 +28,7 @@ class ResultTableTests(unittest.TestCase):
 
         correct_table = [
             ['', '', 'Allocator1', '', '', 'Allocator2', '', ''],
-            ['Functions', 'Registers', 'cost1', 'cost2', 'cost3', 'cost1', 'cost2', 'cost3'],
+            ['Input', 'Registers', 'cost1', 'cost2', 'cost3', 'cost1', 'cost2', 'cost3'],
             ['f1', 1, 1, 2, 3, 1, 2, 3],
             ['', 2, 1, 2, 3, 1, 2, 3],
             ['', 3, 1, 2, 3, 1, 2, 3],
@@ -70,7 +70,7 @@ class ResultTableTests(unittest.TestCase):
 
         correct_table = [
             ['', '', 'Allocator1', 'Allocator2'],
-            ['Functions', 'Registers', 'cost1', 'cost1'],
+            ['Input', 'Registers', 'cost1', 'cost1'],
             ['f1', 1, 1, 1],
             ['', 2, 1, 1],
             ['', 3, 1, 1]]
@@ -97,7 +97,7 @@ class ResultTableTests(unittest.TestCase):
 
         correct_table = [
             ['', '', 'Allocator1'],
-            ['Functions', 'Registers', 'cost1'],
+            ['Input', 'Registers', 'cost1'],
             ['f1', 1, 1]]
         self.assertEqual(table, correct_table)
 

@@ -1,7 +1,7 @@
 import utils
-import allocators.allocator as allocator
+from allocators.allocator import Allocator
 
-class LinearScan(allocator.Allocator): 
+class LinearScan(Allocator): 
     def __init__(self, name):
         self.name = name
 
@@ -13,8 +13,9 @@ class LinearScan(allocator.Allocator):
     def allocate_registers(self, intervals, regcount, spilling=True):
         raise NotImplementedError()
 
-    # This function deals with spill code insertion, PHI Elimination or 
-    # MOV insertion between split intervals. 
+    # This function should deal with any function modification needed
+    # after single phase of register allocation. E.g. mov insertion
+    # between split intervals (if splitting is implemented).
     def resolve(self, intervals):
         raise NotImplementedError()
 
