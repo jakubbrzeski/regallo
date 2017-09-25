@@ -148,8 +148,8 @@ class Instruction:
 
         ci.num = self.num
         
-        ci.live_in = self.live_in
-        ci.live_out = self.live_out
+        ci.live_in = set([cf.vars[var.id] for var in self.live_in])
+        ci.live_out = set([cf.vars[var.id] for var in self.live_out])
         
         return ci
 
@@ -435,6 +435,8 @@ class Function:
     def copy(self):
         cf = Function(self.name, is_copy=True)
         cf.vars = {vid: deepcopy(var) for (vid, var) in self.vars.iteritems()}
+        #cf.reset_alloc_assignment()
+
         cf.instr_counter = self.instr_counter
 
         for (bid, bb) in self.bblocks.iteritems():
@@ -501,6 +503,10 @@ class Function:
             max_pressure = max(max_pressure, bb.maximal_register_pressure())
 
         return max_pressure
+
+    def reset_alloc_assignment(self):
+        for var in self.vars.values():
+            var.alloc = None
 
     def set_bblocks(self, bbs_dict, entrybb):
         self.entry_bblock = entrybb
@@ -624,3 +630,18 @@ class Module:
         copies = [f.copy() for f in self.functions.values()]
         return Module(copies)
 
+    # The highest minimal register pressure among all the functions in the module.
+    def minimal_register_pressure(self):
+        min_pressure = 0
+        for f in self.functions.values():
+            min_pressure = max(min_pressure, f.minimal_register_pressure())
+
+        return min_pressure
+
+    # The highest maximal register pressure among all the functions in the module.
+    def maximal_register_pressure(self):
+        max_pressure = 0
+        for f in self.functions.values():
+            max_pressure = max(max_pressure, f.maximal_register_pressure())
+
+        return max_pressure

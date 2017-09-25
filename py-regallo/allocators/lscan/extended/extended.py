@@ -18,8 +18,8 @@ class ExtendedLinearScan(LinearScan):
         for bb in bbs[::-1]:
             for v in bb.live_out:
                 intervals[v.id].add_subinterval(
-                        bb.first_instr().num - 0.5, 
-                        bb.last_instr().num + 0.5)
+                        bb.first_instr().num - 0.4, 
+                        bb.last_instr().num + 0.4)
 
             for instr in bb.instructions[::-1]:
                 if instr.definition and not instr.definition.is_spilled():
@@ -40,7 +40,7 @@ class ExtendedLinearScan(LinearScan):
                             last_sub = intervals[v.id].get_last_subinterval()
                             if not last_sub or last_sub.fr > instr.num: 
                                 intervals[v.id].add_subinterval(
-                                        bb.first_instr().num - 0.5, 
+                                        bb.first_instr().num - 0.4, 
                                         instr.num)
 
         for iv in intervals.values():
@@ -71,7 +71,9 @@ class ExtendedLinearScan(LinearScan):
             for iv in inactive:
                 if iv.alloc not in occupied_regs:
                     current.allocate(iv.alloc)
+                    current.in_lifetime_hole = True
                     active.add(current)
+
                     return iv.alloc
 
         return None
@@ -100,19 +102,17 @@ class ExtendedLinearScan(LinearScan):
 
         for action in actions:
             sub, iv = action.sub, action.sub.parent
-            #print " NUM:", action.num, "sub", iv.var.id, "kind: ", action.kind, "[", sub.fr, sub.to, "]", "alloc: ", iv.alloc
 
             if action.kind == Action.END and iv in active:
-                #print "OPTION 1"
                 # If it was not in active, it must have been spilled.
                 active.remove(iv)
-                regset.set_free(iv.alloc)
                 if sub.to < iv.to: # If it's not the last subinterval.
                     inactive.add(action.sub.parent)
+                elif not iv.in_lifetime_hole:
+                    regset.set_free(iv.alloc)
 
             elif action.kind == Action.START and iv.fr == sub.fr: 
                 # If this SubInterval is the beginning of new Interval.
-                #print "OPTION 2"
                 reg_found = self.try_allocate_free_register(iv, active, inactive, regset)
                 if not reg_found:
                     if not spilling:
@@ -122,11 +122,9 @@ class ExtendedLinearScan(LinearScan):
                     spill_occurred = True
 
             elif action.kind == Action.START and iv in inactive: 
-                #print "OPTION 3"
                 # If it was not in inactive, it must have been spilled.
                 inactive.remove(iv)
                 active.add(iv)
-                regset.occupy(iv.alloc)
         
         if not spill_occurred:
             return True

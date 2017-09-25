@@ -1,6 +1,7 @@
 import utils
 import spillers
 from allocators.allocator import Allocator
+from cfg.printer import FunctionString, BBString, Opts
 
 # Build Interference Graph from provided function.
 def build_interference_graph(f):
@@ -44,9 +45,10 @@ def color(f, regcount):
             if var.alloc and not var.is_spilled():
                 # Note carefully that variables defined by phi instructions are
                 # live-in at this basic block, although at the moment of coloring
-                # their definitions are later.
+                # their definitions are later so their alloc is None.
                 #print "occupy", var, var.alloc
                 regset.occupy(var.alloc)
+
 
         for instr in bb.instructions:
             #print " ", instr.num, regset.free
@@ -58,7 +60,7 @@ def color(f, regcount):
 
             defn = instr.definition
             if defn and defn.alloc is None and defn in instr.live_out:
-                # defn.alloc may be None if it is spilled or is a variable defined by
+                # defn.alloc may not be None if it is spilled or is a variable defined by
                 # phi instruction in a loop header which has been assigned a register
                 # in the first loop of the function colorbb.
                 reg = regset.get_free()

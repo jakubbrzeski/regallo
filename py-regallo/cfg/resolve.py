@@ -78,7 +78,7 @@ def order_moves(moves):
         
         for rem in OUT[edge.u.alloc]:
             rem.u = edge.d
-            OUT[edge.d.alloc].append(rem)
+            OUT[edge.d.alloc].add(rem)
 
         OUT[edge.u.alloc] = set()
         leaves.extend(IN[edge.u.alloc])

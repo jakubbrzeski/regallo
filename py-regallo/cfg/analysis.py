@@ -58,30 +58,28 @@ def perform_liveness_analysis(f, ordered_bbs = None):
     while change:
         change = False
         for bb in ordered_bbs:
-            live_out_size = len(bb.live_out)
+            prev_bb_live_out = bb.live_out.copy()
+            prev_bb_live_in = bb.live_in.copy()
+
             for succ in bb.succs.values():
-                bb.live_out |= (succ.live_in)
                 # We add to the live-out set the input variables of phi instructions,
                 # and remove their output variables.
-                for phi in succ.phis:
-                    if bb.id in phi.uses: # it may not be in there if the used value is not Variable.
-                        if not phi.definition.is_spilled() and phi.definition in bb.live_out:
-                            bb.live_out.remove(phi.definition)
-                        if not phi.uses[bb.id].is_spilled():
-                            bb.live_out.add(phi.uses[bb.id])
-            
-            live_in_size = len(bb.live_in)
+                phi_defs = set([phi.definition for phi in succ.phis if not phi.definition.is_spilled()])
+                phi_uses = set([phi.uses[bb.id] for phi in succ.phis if bb.id in phi.uses and not phi.uses[bb.id].is_spilled()])
+                bb.live_out |= ((succ.live_in - phi_defs) | phi_uses)
+
             # Variable is in live-in set if
             # - it is upword-exposed in bb (i.e. used before any redefinition)
             # - or is live on the exit from bb and not defined in this block.
             # - or is defined by phi instruction.
-            phi_defs = set([phi.definition for phi in bb.phis if phi.definition and not phi.definition.is_spilled()])
+            phi_defs = set([phi.definition for phi in bb.phis if not phi.definition.is_spilled()])
             maybe_live_in = (bb.uevs | (bb.live_out - bb.defs) | phi_defs)
             bb.live_in = set([v for v in maybe_live_in if not v.is_spilled()])
 
-            if len(bb.live_in) > live_in_size or len(bb.live_out) > live_out_size:
+            if prev_bb_live_out != bb.live_out or prev_bb_live_in != bb.live_in:
                 change = True
 
+    
     for bb in ordered_bbs:
         perform_instr_liveness_analysis(bb) # updates liveness for each instruction.
 

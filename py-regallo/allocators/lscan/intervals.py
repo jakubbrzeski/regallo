@@ -31,13 +31,11 @@ class Interval(object):
 
     def allocate(self, alloc):
         self.alloc = alloc
-        self.update_variables(alloc)
+        self.var.alloc = alloc
 
     def spill(self):
-        self.alloc = utils.slot(self.var)
-        self.update_variables(self.alloc)
-
-
+        self.var.spill()
+        self.alloc = self.var.alloc
 
 # Extended version of the Interval used in ExtendedLinearScan
 # register allocator. 
@@ -62,6 +60,11 @@ class ExtendedInterval(Interval):
         super(ExtendedInterval, self).__init__(var, fr, to, alloc, defn, uses)
         self.subintervals = []
         self.split = False
+        # If the field below is True, it means that this interval was allocated
+        # register occupied by another interval which is currently inactive.
+        # It helps us figure out whether the register is still in use by an
+        # inactive interval.
+        self.in_lifetime_hole = False
         self.next_use = 0 if uses else None
 
     # For a single case O(n) but overall O(1).
@@ -175,8 +178,6 @@ class ExtendedInterval(Interval):
         new_iv = ExtendedInterval(self.var, fr_new, to_new, self.alloc, defn, uses_new)
         for sub in sub_new:
             new_iv.add_subinterval(sub[0], sub[1])
-
-
 
         return new_iv
 
