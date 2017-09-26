@@ -26,9 +26,9 @@ class BasicLinearScan(LinearScan):
         for bb in bbs[::-1]:
             for v in bb.live_out:
                 iv = intervals[v.id]
-                if iv.to < bb.last_instr().num + 0.5:
-                    iv.to = bb.last_instr().num + 0.5
-                iv.fr = bb.first_instr().num - 0.5
+                if iv.to < bb.last_instr().num + 0.1:
+                    iv.to = bb.last_instr().num + 0.1
+                iv.fr = bb.first_instr().num - 0.1
 
             for instr in bb.instructions[::-1]:
                 # Definition.
@@ -44,8 +44,8 @@ class BasicLinearScan(LinearScan):
                         if not var.is_spilled():
                             iv = intervals[var.id]
                             pred = f.bblocks[bid]
-                            if iv.to < pred.last_instr().num + 0.5:
-                                iv.to = pred.last_instr().num + 0.5
+                            if iv.to < pred.last_instr().num + 0.1:
+                                iv.to = pred.last_instr().num + 0.1
                             # We update interval only to the end of the predecessor block,
                             # not including the current phi instruction. However, we record
                             # that the variable was used here.
@@ -57,6 +57,9 @@ class BasicLinearScan(LinearScan):
                             if iv.to < instr.num:
                                 iv.to = instr.num
                             iv.uses.append(instr)
+
+        for iv in intervals.values():
+            iv.uses = sorted(iv.uses, key = lambda instr: instr.num)
 
         # We skip empty intervals.
         return {vid: [iv] for (vid,iv) in intervals.iteritems() if not iv.empty()}

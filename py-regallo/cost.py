@@ -70,6 +70,9 @@ class MainCostCalculator(CostCalculator):
         if instr.is_redundant():
             return 0
 
+        if instr.is_phi():
+            return 0
+
         loop_depth = math.pow(self.L, instr.get_loop_depth())
 
         if instr.opname == cfg.Instruction.LOAD or instr.opname == cfg.Instruction.STORE:

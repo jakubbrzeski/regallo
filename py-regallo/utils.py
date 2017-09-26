@@ -406,14 +406,14 @@ def compute_and_print_result_table(results, setting):
 # (one image but different plots for each algorithm).
 # It can be used when settings.inputs are Modules but it's sensible to draw it for one Module
 # only because costs for multiple inputs are summed up.
-def plot_reg_to_cost(results, settings, to_file=None, figsize=None):
+def plot_reg_to_cost(results, settings, cost_calc_index=0, to_file=None, figsize=None, title=None):
     plots = {alname: {} for alname in settings.allocator_names()}
     regcounts = set()
     for (input_name, regs) in results:
         for (reg, allocators) in regs:
             regcounts.add(reg)
             for (alname, costs) in allocators:
-                c = costs[0][1]
+                c = costs[cost_calc_index][1]
                 if reg in plots[alname]:
                     if c == -1:
                         # -1 means failure, don't add
@@ -423,7 +423,7 @@ def plot_reg_to_cost(results, settings, to_file=None, figsize=None):
                 else:
                     plots[alname][reg] = c
 
-    cname = settings.cost_calc_names()[0]
+    cname = settings.cost_calc_names()[cost_calc_index]
    
     plt.figure(figsize=figsize)
     for alname, costs in plots.iteritems():
@@ -434,15 +434,16 @@ def plot_reg_to_cost(results, settings, to_file=None, figsize=None):
         y = y[failures:]
 
         plt.plot(x, y, label=alname) # colors
-
+    
     plt.legend(loc='upper right')
     plt.margins(0.05)
-    plt.xticks(list(regcounts))
-    plt.title("regcount - cost")
+    #plt.xticks(list(regcounts))
+    if title:
+        plt.title(title)
     plt.ylabel(cname)
     plt.xlabel("number of registers")
     if to_file:
-        plt.savefig(to_file)
+        plt.savefig(to_file, bbox_inches='tight')
     else:
         plt.show()
     plt.close()

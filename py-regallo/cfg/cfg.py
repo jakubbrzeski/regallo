@@ -645,3 +645,10 @@ class Module:
             max_pressure = max(max_pressure, f.maximal_register_pressure())
 
         return max_pressure
+
+    def instr_count(self):
+        total = 0
+        for f in self.functions.values():
+            total += f.instr_counter
+
+        return total

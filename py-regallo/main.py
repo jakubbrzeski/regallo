@@ -4,7 +4,8 @@ import utils
 import pprint
 
 
-from allocators.lscan.basic.spillers import CurrentFirst, LessUsedFirst
+import allocators.lscan.basic.spillers as bspillers 
+import allocators.lscan.extended.spillers as extspillers 
 from allocators.lscan.basic import BasicLinearScan
 from allocators.lscan.extended import ExtendedLinearScan
 
@@ -27,10 +28,14 @@ parser.add_argument('-function', help="Name of the json file with CFG.")
 
 args = parser.parse_args()
 
-bas = BasicLinearScan(name="Furthest First")
-bcf = BasicLinearScan(spiller=CurrentFirst(), name="Current First")
-ext = ExtendedLinearScan()
-bgca = BasicGraphColoringAllocator()
+bas = BasicLinearScan(name = "Furthest End First")
+bcf = BasicLinearScan(spiller=bspillers.CurrentFirst(), name="Current First")
+bnu = BasicLinearScan(spiller=bspillers.FurthestNextUseFirst(), name="Basic Linear Scan")
+blu = BasicLinearScan(spiller=bspillers.LessUsedFirst(), name="Less Used First")
+
+ext = ExtendedLinearScan(name="Furthext First")
+extnu = ExtendedLinearScan(spiller=extspillers.FurthestNextUseFirst(), name="Furthext Next Use First")
+bgca = BasicGraphColoringAllocator(name="Graph Coloring")
 
 mcc = MainCostCalculator()
 sic = SpillInstructionsCounter()
@@ -38,66 +43,39 @@ sic = SpillInstructionsCounter()
 if args.file:
     
     m = cfg.Module.from_file(args.file)
-#    analysis.perform_full_analysis(m)
-
-
-    """
+    analysis.perform_full_analysis(m)
+   
     setting = utils.ResultCompSetting(
-        inputs = m.functions.values(),
-        regcounts = [6, 7, 8],
-        allocators = [bgca],
-        cost_calculators = [mcc])
-
+            inputs = [m],
+            regcounts = range(m.minimal_register_pressure(), m.maximal_register_pressure()+1),
+            allocators = [ext, extnu],
+            cost_calculators = [mcc, sic])
 
     res = utils.compute_full_results(setting)
     utils.compute_and_print_result_table(res, setting)
-    """
-
-    #name = "LZ4_sizeofStreamState"
-    #name = "LZ4_compress_fast_continue"
-    name = "LZ4_compress_forceExtDict"
-    f = m.functions[name]
-    analysis.perform_full_analysis(f)
-    #for f in m.functions.values():
-    print "FUNCTION", f.name
-    print "min / max pressure: ", f.minimal_register_pressure(), f.maximal_register_pressure()
-#    print FunctionString(f, Opts(successors=True, liveness=True, predecessors=True, dominators=True))
-   
-    """
-    print BBString(f.entry_bblock, Opts(successors=True, liveness=True, predecessors=True, dominance=True))
-    print BBString(f.bblocks["bb1184"], Opts(successors=True, liveness=True, predecessors=True, dominance=True))
-    print BBString(f.bblocks["bb1181"], Opts(successors=True, liveness=True, predecessors=True, dominance=True))
-    print BBString(f.bblocks["bb1177"], Opts(successors=True, liveness=True, predecessors=True, dominance=True))
-    print BBString(f.bblocks["bb1194"], Opts(successors=True, liveness=True, predecessors=True, dominance=True))
-    print BBString(f.bblocks["bb1176"], Opts(successors=True, liveness=True, predecessors=True, dominance=True))
-    print BBString(f.bblocks["bb1195"], Opts(successors=True, liveness=True, predecessors=True, dominance=True))
-    g = bgca.perform_full_register_allocation(f, 20)
-    if g:
-        print "SUCCESS"
-        #print FunctionString(g, Opts(successors=True, liveness=True))
-        print "max pressure: ", g.maximal_register_pressure()
-    else:
-        print "FAILURE"
-
-    print "\n"
-    """    
+    utils.plot_reg_to_cost(res, setting, cost_calc_index=0, to_file="1", title=m.name)
+    utils.plot_reg_to_cost(res, setting, cost_calc_index=1, to_file="2", title=m.name)
+    
 
 if args.dir:
     modules = utils.modules_from_files(args.dir)
     for m in modules:
         analysis.perform_full_analysis(m)
-        print "START WITH", m.name, m.minimal_register_pressure(), m.maximal_register_pressure()
+        print m.name, m.minimal_register_pressure(), m.maximal_register_pressure(), m.instr_count()
 
+        
         setting = utils.ResultCompSetting(
             inputs = [m],
-            regcounts = [20, 21, 22, 23, 24, 25], #range(modules[0].minimal_register_pressure(), modules[0].maximal_register_pressure()+1),
-            allocators = [bgca, bas, ext],
-            cost_calculators = [mcc])
+            regcounts = range(m.minimal_register_pressure(), m.maximal_register_pressure()+1),
+            allocators = [bgca, bnu, extnu],
+            cost_calculators = [mcc, sic])
 
         res = utils.compute_full_results(setting)
         utils.compute_and_print_result_table(res, setting)
-        utils.plot_reg_to_cost(res, setting, to_file=m.name)
-    
+        utils.plot_reg_to_cost(res, setting, cost_calc_index=0, to_file=m.name+"MainCost", title=m.name)
+        utils.plot_reg_to_cost(res, setting, cost_calc_index=1, to_file=m.name+"SpillCode", title=m.name)
+        
+
     #res = utils.compute_full_results(setting)
     #utils.compute_and_print_result_table(res, setting)
 

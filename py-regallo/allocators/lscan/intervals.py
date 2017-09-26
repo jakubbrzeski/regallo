@@ -23,12 +23,6 @@ class Interval(object):
         if to is not None and (self.to is None or self.to < to):
             self.to = to
 
-    def update_variables(self, alloc):
-        if self.defn is not None:
-            self.var.alloc = alloc
-        for use in self.uses:
-            self.var.alloc = alloc
-
     def allocate(self, alloc):
         self.alloc = alloc
         self.var.alloc = alloc

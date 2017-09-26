@@ -18,8 +18,8 @@ class ExtendedLinearScan(LinearScan):
         for bb in bbs[::-1]:
             for v in bb.live_out:
                 intervals[v.id].add_subinterval(
-                        bb.first_instr().num - 0.4, 
-                        bb.last_instr().num + 0.4)
+                        bb.first_instr().num - 0.1, 
+                        bb.last_instr().num + 0.1)
 
             for instr in bb.instructions[::-1]:
                 if instr.definition and not instr.definition.is_spilled():
@@ -40,11 +40,12 @@ class ExtendedLinearScan(LinearScan):
                             last_sub = intervals[v.id].get_last_subinterval()
                             if not last_sub or last_sub.fr > instr.num: 
                                 intervals[v.id].add_subinterval(
-                                        bb.first_instr().num - 0.4, 
+                                        bb.first_instr().num - 0.1, 
                                         instr.num)
 
         for iv in intervals.values():
             if not iv.empty():
+                iv.uses = sorted(iv.uses, key = lambda instr: instr.num)
                 iv.rebuild_and_order_subintervals()
                 iv.update_endpoints(iv.subintervals[0].fr, iv.subintervals[-1].to)
 
