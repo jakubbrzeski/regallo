@@ -78,8 +78,8 @@ class InstrString:
         else:
             vstr = ValueString(d, self.options).vid()
 
-        if self.options.colors:
-            vstr = colored(vstr, 'yellow', attrs=['bold'])
+#        if self.options.colors:
+#            vstr = colored(vstr, 'yellow', attrs=['bold'])
 
         if self.options.alloc_only and d.alloc:
             vstr = allocstr(d.alloc)
@@ -95,7 +95,7 @@ class InstrString:
         if self.instr.is_phi():
             for (bid, var) in self.instr.uses_debug.iteritems():
                 if isinstance(var, cfg.Variable):
-                    vstr = colored(var, 'yellow')
+                    vstr = str(var) #colored(var, 'yellow')
                     if self.options.alloc_only and var.alloc:
                         vstr = allocstr(var.alloc)
                     elif self.options.with_alloc and var.alloc:
@@ -112,7 +112,7 @@ class InstrString:
         else:
             for var in self.instr.uses_debug:
                 if isinstance(var, cfg.Variable):
-                    vstr = colored(var, 'yellow', attrs=['bold'])
+                    vstr = str(var) #colored(var, 'yellow', attrs=['bold'])
                     if self.options.alloc_only and var.alloc:
                         vstr = allocstr(var.alloc)
                     elif self.options.with_alloc and var.alloc:
