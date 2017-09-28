@@ -110,6 +110,11 @@ class PhiEliminationTests(unittest.TestCase):
         bb2 = cfg.BasicBlock("bb2", f)
         bb3 = cfg.BasicBlock("bb3", f)
         bb4 = cfg.BasicBlock("bb4", f)
+        # add empty branch instructions for the "middle" blocks
+        bb0.instructions.append(cfg.Instruction(bb0, None, cfg.Instruction.BRANCH, [], []))
+        bb1.instructions.append(cfg.Instruction(bb1, None, cfg.Instruction.BRANCH, [], []))
+        bb4.instructions.append(cfg.Instruction(bb4, None, cfg.Instruction.BRANCH, [], []))
+
         f.bblocks["bb0"] = bb0
         f.bblocks["bb1"] = bb1
         f.bblocks["bb2"] = bb2
@@ -226,7 +231,7 @@ class PhiEliminationTests(unittest.TestCase):
         v6   =  v16     (reg4 = reg6)
         v5   =  None    (reg6 = None)
 
-
+        + branch
         """
 
 
@@ -238,7 +243,7 @@ class PhiEliminationTests(unittest.TestCase):
 
         # Assert new block between bb1 nad bb2 has been created.
         self.assertIsNotNone(new_bb)
-        self.assertEquals(len(new_bb.instructions), 8)
+        self.assertEquals(len(new_bb.instructions), 9)
         self.assert_mov(new_bb.instructions[0], "v1", "v11", redundant=True)
         self.assert_mov(new_bb.instructions[1], "v3", "v13")
         self.assert_mov(new_bb.instructions[2], "v2", "v12")

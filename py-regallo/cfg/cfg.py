@@ -588,6 +588,10 @@ class Function:
                 del phi.uses[bb1.id]
                 phi.uses[bti.id] = v # if condition was true, it is the same var
 
+        # Append instruction "br bb2" in bti. We use this function only for
+        # new, empty basic blocks, so it is safe.
+        bti.instructions.append(Instruction(bti, None, Instruction.BRANCH, [], [bb2.id])) 
+
     def temp_variable(self):
         return self.get_or_create_variable("v0")
 

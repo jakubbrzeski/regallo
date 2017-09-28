@@ -19,7 +19,7 @@ from cfg.printer import BBString, InstrString, FunctionString, IntervalsString, 
 
 import allocators.graph as graph
 from allocators.graph import BasicGraphColoringAllocator
-from allocators.graph.spillers import BeladySpiller
+from allocators.graph.spillers import BeladySpiller, BeladyWithLoopsSpiller
 
 parser = argparse.ArgumentParser(description='Process json with CFG')
 parser.add_argument('-file', help="Name of the json file with CFG.")
@@ -30,12 +30,13 @@ args = parser.parse_args()
 
 bas = BasicLinearScan(name = "Furthest End First")
 bcf = BasicLinearScan(spiller=bspillers.CurrentFirst(), name="Current First")
-bnu = BasicLinearScan(spiller=bspillers.FurthestNextUseFirst(), name="Basic Linear Scan")
+bnu = BasicLinearScan(spiller=bspillers.FurthestNextUseFirst(), name="Furthest Next Use First")
 blu = BasicLinearScan(spiller=bspillers.LessUsedFirst(), name="Less Used First")
 
-ext = ExtendedLinearScan(name="Furthext First")
-extnu = ExtendedLinearScan(spiller=extspillers.FurthestNextUseFirst(), name="Furthext Next Use First")
+ext = ExtendedLinearScan(name="Ext Furthext First")
+extnu = ExtendedLinearScan(spiller=extspillers.FurthestNextUseFirst(), name="Ext Furthext Next Use First")
 bgca = BasicGraphColoringAllocator(name="Graph Coloring")
+bgcaloops = BasicGraphColoringAllocator(name="Graph Coloring (Loops)", spiller=BeladyWithLoopsSpiller())
 
 mcc = MainCostCalculator()
 sic = SpillInstructionsCounter()
@@ -47,14 +48,14 @@ if args.file:
    
     setting = utils.ResultCompSetting(
             inputs = [m],
-            regcounts = range(m.minimal_register_pressure(), m.maximal_register_pressure()+1),
-            allocators = [ext, extnu],
+            regcounts = range(m.minimal_register_pressure(), m.minimal_register_pressure()+3),
+            allocators = [bas, bnu],
             cost_calculators = [mcc, sic])
 
     res = utils.compute_full_results(setting)
     utils.compute_and_print_result_table(res, setting)
-    utils.plot_reg_to_cost(res, setting, cost_calc_index=0, to_file="1", title=m.name)
-    utils.plot_reg_to_cost(res, setting, cost_calc_index=1, to_file="2", title=m.name)
+#    utils.plot_reg_to_cost(res, setting, cost_calc_index=0, to_file="1", title=m.name)
+#    utils.plot_reg_to_cost(res, setting, cost_calc_index=1, to_file="2", title=m.name)
     
 
 if args.dir:

@@ -149,7 +149,14 @@ def insert_moves(bb, moves, regcount=0):
 
             # MEM - MEM
             elif utils.is_slotname(u.alloc):
-                occupied_regs = set(var.alloc for var in bb.live_out) | reg_defs
+                # we used last instruction live_out set instead of basic blocks live_out set
+                # because we popped the branching instruction. If there are no instructions,
+                # in case of new basic block, we use the basic block's live_in set.
+                live_out = bb.live_in
+                if bb.instructions:
+                    live_out = bb.instructions[-1].live_out
+
+                occupied_regs = set(var.alloc for var in live_out) | reg_defs
                 free_regs = all_regs - occupied_regs
                 if not free_regs:
                     return False
@@ -317,9 +324,13 @@ def eliminate_phi(f, regcount=0):
     # Functions repsonsible for inserting moves need up-to-date liveness information
     # which might have been disturbed if we added new basic blocks.
     analysis.perform_liveness_analysis(f)
-       
+
+
+
     # Now insert moves and cycles.
     for (bti, moves, cycles) in events:     
+        branch_instruction = bti.instructions.pop()
+
         if moves:
             success = insert_moves(bti, moves, regcount)
             if not success:
@@ -329,6 +340,8 @@ def eliminate_phi(f, regcount=0):
         if cycles:
             endpoints = insert_cycles(bti, cycles)
             cycles_endpoints.extend(endpoints)
+
+        bti.instructions.append(branch_instruction)
 
     for bb in f.bblocks.values():
         # Remove phi instructions from this block.
