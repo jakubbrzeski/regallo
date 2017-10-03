@@ -103,3 +103,14 @@ For interactive use and tutorial reading, *ipython* is necessary
 Open tutorial
 
     ipython notebook py-regallo/tutorial.ipynb 
+
+## Docker
+It is possible to launch the pre-installed project in Docker, using the enclosed Dockerfile.
+To build the image, run the command below in the main regallo directory:
+
+     docker build -t image_name .
+     
+To run a container:
+
+     docker run --net=host container_id
+     
